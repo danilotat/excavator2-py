@@ -136,12 +136,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 73% code coverage for analyze module (91% for call.py, 95% for segment.py)
 - End-to-end pipeline integration verified
 
+#### Added - Phase 5: Data Preparation Pipeline
+- BAM/CRAM file I/O module (`src/excavator2/io/bam.py`)
+  - `BAMReader` class for reading BAM/CRAM files with pysam
+  - `GenomicRegion` dataclass for genomic intervals
+  - `ReadCountResult` dataclass for read counting results
+  - Read counting with MAPQ filtering and duplicate exclusion
+  - `load_regions_from_bed()` for BED file parsing
+  - Support for CRAM files with reference FASTA
+- Read count processing module (`src/excavator2/prepare/readcount.py`)
+  - `WindowData` dataclass for window metadata (GC, mappability, class)
+  - `SampleReadCounts` dataclass for raw read counts per sample
+  - `ReadCountProcessor` class for BAM→counts pipeline
+  - Chromosome-wise data access methods
+  - IN-target vs OFF-target region masks
+  - HDF5 save/load functions for read counts
+- Normalization module (`src/excavator2/prepare/normalize.py`)
+  - `ReadCountNormalizer` class implementing median-based corrections
+  - `NormalizationResult` dataclass for normalized counts
+  - Three-stage normalization pipeline:
+    1. Size/length normalization (5 bp bins)
+    2. Mappability normalization (5% bins)
+    3. GC-content normalization (5% bins)
+  - Separate handling for IN-target and OFF-target regions
+  - Zero replacement with minimum non-zero value
+  - HDF5 save/load functions for normalized counts
+- CLI `prepare` command fully implemented
+  - Sample sheet YAML parsing
+  - Read counting from BAM files
+  - Normalization with progress output
+  - Output to HDF5 format (`.RC.h5` and `.NRC.h5`)
+  - Support for parallel processing (via `--threads`)
+  - Reference FASTA option for CRAM files
+
+#### Notes - Phase 5
+- All tests passing (122/122)
+- 30 new tests for prepare module
+- 67% overall code coverage
+- Normalization algorithm matches original R implementation
+- HDF5 format for efficient storage and cross-platform compatibility
+
 ## Roadmap
 
 - ~~**Phase 2 (Weeks 3-5)**: C++ HSLM Algorithm~~ COMPLETED
 - ~~**Phase 3 (Weeks 6-8)**: C++ FastCall Algorithm~~ COMPLETED
 - ~~**Phase 4 (Week 9)**: Python Algorithm Wrappers~~ COMPLETED
-- **Phase 5 (Weeks 10-12)**: Data Preparation Pipeline
+- ~~**Phase 5 (Weeks 10-12)**: Data Preparation Pipeline~~ COMPLETED
 - **Phase 6 (Weeks 13-14)**: Target Initialization
 - **Phase 7 (Weeks 15-16)**: Integration & Full Pipeline
 - **Phase 8 (Week 17)**: Documentation, CI/CD, Release
