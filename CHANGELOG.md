@@ -103,11 +103,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - EM converges in 1-10 iterations for typical data
 - Algorithm matches expected behavior from original R implementation
 
+#### Added - Phase 4: Python Algorithm Wrappers
+- High-level Python wrappers for HSLM and FastCall algorithms
+  - `src/excavator2/analyze/segment.py` - HSLM segmentation wrapper
+  - `src/excavator2/analyze/call.py` - FastCall classification wrapper
+  - `src/excavator2/analyze/__init__.py` - Module exports
+- HSLMSegmenter class:
+  - Pythonic interface with parameter validation
+  - `segment()` method for single-chromosome segmentation
+  - `segment_multi()` method for multi-sample joint segmentation
+  - Returns `SegmentationResult` with `Segment` objects containing genomic coordinates
+  - Input validation (empty arrays, NaN/Inf, length mismatches)
+- FastCallCaller class:
+  - Pythonic interface with parameter validation
+  - `call()` method for CNV classification
+  - Returns `ClassificationResult` with `CNVCall` objects
+  - `CopyNumberState` enum with labels and helper methods
+  - Helper methods: `get_cnvs()`, `get_deletions()`, `get_gains()`
+- Convenience functions:
+  - `segment()` for one-off HSLM segmentation
+  - `call()` for one-off FastCall classification
+- Data classes with full type hints:
+  - `Segment`: start/end indices, genomic positions, mean, n_probes
+  - `SegmentationResult`: segments, breakpoints, state_path, success/error
+  - `CNVCall`: cn_call, absolute_cn, state, probability, segment_mean
+  - `ClassificationResult`: calls, state_means/sds/priors, EM stats
+- Integration tests for full HSLM→FastCall pipeline
+
+#### Notes - Phase 4
+- All tests passing (92/92)
+- 40 new tests for Python wrappers
+- 73% code coverage for analyze module (91% for call.py, 95% for segment.py)
+- End-to-end pipeline integration verified
+
 ## Roadmap
 
 - ~~**Phase 2 (Weeks 3-5)**: C++ HSLM Algorithm~~ COMPLETED
 - ~~**Phase 3 (Weeks 6-8)**: C++ FastCall Algorithm~~ COMPLETED
-- **Phase 4 (Week 9)**: Python Algorithm Wrappers
+- ~~**Phase 4 (Week 9)**: Python Algorithm Wrappers~~ COMPLETED
 - **Phase 5 (Weeks 10-12)**: Data Preparation Pipeline
 - **Phase 6 (Weeks 13-14)**: Target Initialization
 - **Phase 7 (Weeks 15-16)**: Integration & Full Pipeline

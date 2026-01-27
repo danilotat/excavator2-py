@@ -2,6 +2,13 @@
 EXCAVATOR2 - CNV detection from whole-exome sequencing data.
 
 This is a complete rewrite of EXCAVATOR2 in Python/C++.
+
+Example:
+    >>> from excavator2.analyze import HSLMSegmenter, FastCallCaller
+    >>> segmenter = HSLMSegmenter()
+    >>> seg_result = segmenter.segment(log2_ratios, positions)
+    >>> caller = FastCallCaller()
+    >>> call_result = caller.call([s.mean for s in seg_result.segments])
 """
 
 __version__ = "3.0.0"
@@ -16,3 +23,12 @@ try:
 except ImportError:
     # C++ module not yet built
     pass
+
+# Expose analyze module for convenience
+from excavator2 import analyze
+
+__all__ = [
+    "__version__",
+    "__author__",
+    "analyze",
+]
