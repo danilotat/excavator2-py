@@ -40,14 +40,185 @@ def cli(ctx, verbose):
 @click.pass_context
 def target(ctx, config, output, force):
     """
-    Initialize target regions (BED → HDF5 with MAP/GCC/FRB).
+    Initialize target regions (BED -> HDF5 with MAP/GCC/FRB).
 
-    Stage 1 of the EXCAVATOR2 pipeline.
+    Stage 1 of the EXCAVATOR2 pipeline. This command:
+
+    1. Reads the configuration YAML with Reference and Target sections
+    2. Creates analysis windows from target BED regions
+    3. Filters windows overlapping genomic gaps (centromeres, telomeres)
+    4. Calculates GC content from reference FASTA
+    5. Extracts mappability from BigWig file
+    6. Saves all data to HDF5 format
+
+    Example:
+
+        excavator2 target -c config.yaml -o output/
+
+    Config file format:
+
+    \b
+        Reference:
+          Assembly: hg38
+          FASTA: /path/to/ref.fasta
+          BigWig: /path/to/mappability.bw
+          Chromosomes: /path/to/chromosomes.txt
+          Gaps: /path/to/gaps.txt
+
+        Target:
+          Name: SureSelectV7
+          BED: /path/to/targets.bed
+          Window: 30000
     """
-    click.echo("🚧 target command not yet implemented (Phase 6)")
-    click.echo(f"  Config: {config}")
-    click.echo(f"  Output: {output}")
-    click.echo(f"  Force: {force}")
+    import logging
+    from pathlib import Path
+    import yaml
+
+    from excavator2.target import (
+        initialize_target,
+        save_target_data,
+    )
+
+    # Setup logging
+    verbose = ctx.obj.get('verbose', 0)
+    log_level = logging.DEBUG if verbose > 1 else logging.INFO if verbose else logging.WARNING
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    logger = logging.getLogger('excavator2.target')
+
+    # Parse output path
+    output_dir = Path(output)
+
+    # Load configuration
+    logger.info(f"Loading configuration: {config}")
+    with open(config) as f:
+        cfg = yaml.safe_load(f)
+
+    # Validate configuration sections
+    if 'Reference' not in cfg:
+        raise click.ClickException("Configuration missing 'Reference' section")
+    if 'Target' not in cfg:
+        raise click.ClickException("Configuration missing 'Target' section")
+
+    ref_cfg = cfg['Reference']
+    target_cfg = cfg['Target']
+
+    # Validate required Reference fields
+    required_ref = ['Assembly', 'FASTA', 'BigWig', 'Chromosomes', 'Gaps']
+    for field in required_ref:
+        if field not in ref_cfg:
+            raise click.ClickException(f"Reference section missing '{field}' field")
+
+    # Validate required Target fields
+    required_target = ['Name', 'BED', 'Window']
+    for field in required_target:
+        if field not in target_cfg:
+            raise click.ClickException(f"Target section missing '{field}' field")
+
+    # Extract configuration values
+    assembly = ref_cfg['Assembly']
+    fasta_path = Path(ref_cfg['FASTA'])
+    bigwig_path = Path(ref_cfg['BigWig'])
+    chromosome_path = Path(ref_cfg['Chromosomes'])
+    gap_path = Path(ref_cfg['Gaps'])
+    target_name = target_cfg['Name']
+    bed_path = Path(target_cfg['BED'])
+    window_size = int(target_cfg['Window'])
+
+    # Validate window size
+    if window_size < 10:
+        raise click.ClickException(f"Window size must be at least 10bp, got {window_size}")
+
+    # Validate input files exist
+    for path, name in [(fasta_path, 'FASTA'), (bigwig_path, 'BigWig'),
+                       (chromosome_path, 'Chromosomes'), (gap_path, 'Gaps'),
+                       (bed_path, 'BED')]:
+        if not path.exists():
+            raise click.ClickException(f"{name} file not found: {path}")
+
+    # Create output directory structure
+    target_output_dir = output_dir / assembly / target_name / f"w_{window_size}"
+
+    if target_output_dir.exists() and not force:
+        existing_files = list(target_output_dir.glob('*.h5'))
+        if existing_files:
+            raise click.ClickException(
+                f"Output directory {target_output_dir} contains existing files. "
+                "Use --force to overwrite."
+            )
+
+    target_output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Display configuration
+    click.echo(f"Assembly: {assembly}")
+    click.echo(f"Target: {target_name}")
+    click.echo(f"Window size: {window_size}")
+    click.echo(f"Output: {target_output_dir}")
+    click.echo(f"BED file: {bed_path}")
+    click.echo(f"FASTA file: {fasta_path}")
+    click.echo(f"BigWig file: {bigwig_path}")
+
+    # Initialize target
+    try:
+        click.echo("\nInitializing target regions...")
+        target_data = initialize_target(
+            bed_path=bed_path,
+            fasta_path=fasta_path,
+            bigwig_path=bigwig_path,
+            chromosome_path=chromosome_path,
+            gap_path=gap_path,
+            target_name=target_name,
+            assembly=assembly,
+            window_size=window_size
+        )
+
+        click.echo(f"\nTarget statistics:")
+        click.echo(f"  Total windows: {target_data.n_windows}")
+        click.echo(f"  IN-target windows: {target_data.n_in_target}")
+        click.echo(f"  OUT-target windows: {target_data.n_out_target}")
+        click.echo(f"  Chromosomes: {len(target_data.chromosomes)}")
+
+        # Save to HDF5
+        output_file = target_output_dir / f"{target_name}.h5"
+        click.echo(f"\nSaving target data to: {output_file}")
+        save_target_data(target_data, output_file)
+
+        # Also save a settings file for reference
+        settings_file = target_output_dir / "settings.yaml"
+        settings = {
+            'Reference': {
+                'Assembly': assembly,
+                'FASTA': str(fasta_path),
+                'BigWig': str(bigwig_path),
+                'Chromosomes': str(chromosome_path),
+                'Gaps': str(gap_path)
+            },
+            'Target': {
+                'Name': target_name,
+                'BED': str(bed_path),
+                'Window': window_size
+            },
+            'Output': {
+                'n_windows': target_data.n_windows,
+                'n_in_target': target_data.n_in_target,
+                'n_out_target': target_data.n_out_target,
+                'n_chromosomes': len(target_data.chromosomes)
+            }
+        }
+        with open(settings_file, 'w') as f:
+            yaml.dump(settings, f, default_flow_style=False)
+        click.echo(f"Saved settings to: {settings_file}")
+
+        click.echo("\nTarget initialization complete.")
+
+    except Exception as e:
+        logger.error(f"Target initialization failed: {e}")
+        if verbose > 0:
+            import traceback
+            traceback.print_exc()
+        raise click.ClickException(str(e))
 
 
 @cli.command()

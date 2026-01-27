@@ -176,12 +176,68 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Normalization algorithm matches original R implementation
 - HDF5 format for efficient storage and cross-platform compatibility
 
+#### Added - Phase 6: Target Initialization
+- BED file parsing module (`src/excavator2/io/bed.py`)
+  - `TargetRegion` dataclass for target regions
+  - `ChromosomeInfo` dataclass for chromosome metadata
+  - `GapRegion` dataclass for gap annotations
+  - `load_target_bed()` for BED file parsing with filtering
+  - `load_chromosome_coordinates()` for chromosome size files
+  - `load_gap_file()` for UCSC gap file parsing
+  - `merge_overlapping_regions()` for region merging
+  - Chromosome name normalization utilities
+- BigWig reading module (`src/excavator2/io/bigwig.py`)
+  - `BigWigReader` class for mappability extraction
+  - `MappabilityResult` dataclass for results
+  - Support for pyBigWig library
+  - Mean/min/max statistics per region
+- FASTA reading module (`src/excavator2/io/fasta.py`)
+  - `FastaReader` class for reference genome access
+  - `GCResult` dataclass for GC content results
+  - `SequenceResult` dataclass for sequence extraction
+  - Auto-indexing with pysam if .fai missing
+- Target filtering module (`src/excavator2/target/filter.py`)
+  - `AnalysisWindow` dataclass for analysis windows
+  - `create_analysis_windows()` for IN-target and OUT-target windows
+  - `filter_gap_overlapping_windows()` for gap filtering
+  - `create_filtered_target()` main entry point
+  - Window renumbering utilities
+- GC content module (`src/excavator2/target/gc_content.py`)
+  - `calculate_gc_content()` for window GC calculation
+  - `calculate_gc_content_by_chromosome()` for per-chromosome processing
+  - `get_window_gc_stats()` for statistics
+- Mappability module (`src/excavator2/target/mappability.py`)
+  - `extract_mappability()` for window mappability extraction
+  - `extract_mappability_by_chromosome()` for per-chromosome processing
+  - `get_mappability_stats()` for statistics
+  - `filter_low_mappability_windows()` for quality filtering
+- Target initialization module (`src/excavator2/target/init.py`)
+  - `TargetData` dataclass for complete target data
+  - `initialize_target()` main initialization function
+  - `save_target_data()` HDF5 serialization
+  - `load_target_data()` HDF5 deserialization
+- CLI `target` command fully implemented
+  - Config YAML parsing (Reference + Target sections)
+  - Window creation from BED regions
+  - Gap/centromere filtering
+  - GC content calculation from FASTA
+  - Mappability extraction from BigWig
+  - Output to HDF5 format
+  - Settings file generation
+
+#### Notes - Phase 6
+- All tests passing (161/161)
+- 39 new tests for target module
+- 61% overall code coverage
+- Window creation matches original R/Perl implementation
+- HDF5 format compatible with prepare module
+
 ## Roadmap
 
 - ~~**Phase 2 (Weeks 3-5)**: C++ HSLM Algorithm~~ COMPLETED
 - ~~**Phase 3 (Weeks 6-8)**: C++ FastCall Algorithm~~ COMPLETED
 - ~~**Phase 4 (Week 9)**: Python Algorithm Wrappers~~ COMPLETED
 - ~~**Phase 5 (Weeks 10-12)**: Data Preparation Pipeline~~ COMPLETED
-- **Phase 6 (Weeks 13-14)**: Target Initialization
+- ~~**Phase 6 (Weeks 13-14)**: Target Initialization~~ COMPLETED
 - **Phase 7 (Weeks 15-16)**: Integration & Full Pipeline
 - **Phase 8 (Week 17)**: Documentation, CI/CD, Release
