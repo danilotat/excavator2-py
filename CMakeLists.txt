@@ -21,10 +21,9 @@ endif()
 # Source files
 set(CPP_SOURCES
     cpp/src/bindings.cpp
-    # Will add more as we implement:
-    # cpp/src/common.cpp
-    # cpp/src/hslm.cpp
-    # cpp/src/fastcall.cpp
+    cpp/src/common.cpp
+    cpp/src/hslm.cpp
+    cpp/src/fastcall.cpp
 )
 
 # Create Python module
