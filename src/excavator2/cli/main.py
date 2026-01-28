@@ -481,7 +481,7 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
         HSLM:
           Omega: 0.1           # Variance partitioning (0-1)
           Theta: 1e-5          # Base transition probability
-          D_norm: 200000       # Distance normalization step
+          D_norm: 1000000      # Distance normalization step
         FastCall:
           Cellularity: 1.0     # Tumor purity (0-1)
           d: 0.5               # Lower threshold for normal

@@ -159,7 +159,7 @@ class AnalysisParameters:
     # HSLM parameters
     omega: float = 0.1
     theta: float = 1e-5
-    step_eta: float = 200000.0
+    step_eta: float = 1000000.0
     n_states: int = 21
 
     # FastCall parameters
