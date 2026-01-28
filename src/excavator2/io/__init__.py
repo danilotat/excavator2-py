@@ -45,6 +45,9 @@ from excavator2.io.fasta import (
     get_sequence_for_region,
 )
 
+# VCF/BED output is imported lazily to avoid circular imports
+# Use: from excavator2.io.vcf import write_vcf
+
 __all__ = [
     # BAM/CRAM
     "BAMReader",
@@ -74,4 +77,23 @@ __all__ = [
     "GCResult",
     "get_gc_content_for_regions",
     "get_sequence_for_region",
+    # VCF/BED output (lazy imports)
+    "write_vcf",
+    "write_vcf_regions",
+    "write_vcf_windows",
+    "write_bed",
+    "write_segments_tsv",
+    "write_fastcall_bed",
 ]
+
+
+def __getattr__(name):
+    """Lazy import for vcf module to avoid circular imports."""
+    vcf_exports = {
+        'write_vcf', 'write_vcf_regions', 'write_vcf_windows',
+        'write_bed', 'write_segments_tsv', 'write_fastcall_bed'
+    }
+    if name in vcf_exports:
+        from excavator2.io import vcf
+        return getattr(vcf, name)
+    raise AttributeError(f"module 'excavator2.io' has no attribute '{name}'")

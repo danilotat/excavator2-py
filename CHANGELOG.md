@@ -232,6 +232,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Window creation matches original R/Perl implementation
 - HDF5 format compatible with prepare module
 
+#### Added - Phase 7: Integration & Full Pipeline
+- Log2 ratio computation module (`src/excavator2/analyze/ratio.py`)
+  - `Log2RatioResult` dataclass with chromosome/region accessors
+  - `compute_log2_ratio()` for paired test vs control
+  - `compute_log2_ratio_pooled()` for pooled control mode
+  - `apply_cellularity_correction()` for tumor purity adjustment
+  - Median centering with separate IN/OUT target handling
+- Analysis pipeline module (`src/excavator2/analyze/pipeline.py`)
+  - `CNVSegment` dataclass with genomic coordinates and CN calls
+  - `ChromosomeResult` for per-chromosome results
+  - `AnalysisResult` for complete analysis output
+  - `AnalysisParameters` for HSLM + FastCall configuration
+  - `CNVAnalyzer` class orchestrating full pipeline:
+    - `analyze_paired()` for matched test/control samples
+    - `analyze_pooled()` for pooled control experiments
+  - Segment filtering by minimum probe count
+- VCF/BED output module (`src/excavator2/io/vcf.py`)
+  - `write_vcf()` - VCF 4.2 format with SV annotations
+  - `write_vcf_regions()` - CNVs only for downstream analysis
+  - `write_vcf_windows()` - All segments for visualization
+  - `write_bed()` - BED format with CNV type and probability
+  - `write_segments_tsv()` - Full segment details (HSLM format)
+  - `write_fastcall_bed()` - FastCall format with CN calls
+- CLI `analyze` command fully implemented
+  - Sample file list YAML parsing (T1/C1, T2/C2 format)
+  - Paired mode: matched test/control pairs
+  - Pooled mode: test samples vs pooled controls
+  - Parameters YAML with HSLM and FastCall settings
+  - Multi-sample batch processing
+  - Per-sample output directories
+  - Output formats: VCF, BED, TSV, FastCall BED
+  - Analysis settings saved with each run
+
+#### Notes - Phase 7
+- All tests passing (192/192)
+- 31 new tests for Phase 7 integration
+- 62% overall code coverage
+- Full end-to-end pipeline integration verified
+- Both paired and pooled experimental modes working
+- Output formats match original EXCAVATOR2 conventions
+
 ## Roadmap
 
 - ~~**Phase 2 (Weeks 3-5)**: C++ HSLM Algorithm~~ COMPLETED
@@ -239,5 +280,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - ~~**Phase 4 (Week 9)**: Python Algorithm Wrappers~~ COMPLETED
 - ~~**Phase 5 (Weeks 10-12)**: Data Preparation Pipeline~~ COMPLETED
 - ~~**Phase 6 (Weeks 13-14)**: Target Initialization~~ COMPLETED
-- **Phase 7 (Weeks 15-16)**: Integration & Full Pipeline
+- ~~**Phase 7 (Weeks 15-16)**: Integration & Full Pipeline~~ COMPLETED
 - **Phase 8 (Week 17)**: Documentation, CI/CD, Release
