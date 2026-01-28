@@ -226,7 +226,7 @@ def _process_single_sample(args):
 
     This is a module-level function so it can be pickled for multiprocessing.
     """
-    sample_name, bam_path, target_path, output_dir, mapq, reference, n_threads = args
+    sample_name, bam_path, target_path, output_dir, mapq, reference, n_threads, generate_plots = args
 
     from pathlib import Path
     from excavator2.prepare import (
@@ -262,6 +262,17 @@ def _process_single_sample(args):
     norm_output = output_dir / f"{sample_name}.NRC.h5"
     save_normalized_counts(norm_result, norm_output)
 
+    # Generate QC plots if requested
+    qc_plot_dir = None
+    if generate_plots:
+        try:
+            from excavator2.report.qc import create_qc_plots
+            qc_plot_dir = output_dir / "plots" / sample_name
+            create_qc_plots(sample_data, norm_result, qc_plot_dir, format="pdf")
+        except Exception as e:
+            # Don't fail the whole process if plotting fails
+            qc_plot_dir = f"ERROR: {e}"
+
     return {
         'sample_name': sample_name,
         'total_reads': sample_data.total_reads,
@@ -269,6 +280,7 @@ def _process_single_sample(args):
         'mean_norm': float(norm_result.normalized_counts.mean()),
         'raw_output': str(raw_output),
         'norm_output': str(norm_output),
+        'qc_plots': str(qc_plot_dir) if qc_plot_dir else None,
     }
 
 
@@ -283,9 +295,10 @@ def _process_single_sample(args):
 @click.option('--mapq', '-q', default=20, type=int, help='Minimum mapping quality')
 @click.option('--reference', '-r', type=click.Path(exists=True),
               help='Reference FASTA (required for CRAM files)')
+@click.option('--no-plots', is_flag=True, help='Skip QC plot generation')
 @click.option('--force', '-f', is_flag=True, help='Overwrite existing output')
 @click.pass_context
-def prepare(ctx, samples, target, output, threads, mapq, reference, force):
+def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, force):
     """
     Read counting and normalization (BAM → NRC).
 
@@ -383,13 +396,16 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, force):
     click.echo(f"Target has {n_windows} windows across {n_chromosomes} chromosomes")
 
     # Prepare arguments for workers (each sample uses all threads for chromosome parallelization)
+    generate_plots = not no_plots
     worker_args = [
-        (sample_name, bam_path, str(target_path), str(output_dir), mapq, reference, threads)
+        (sample_name, bam_path, str(target_path), str(output_dir), mapq, reference, threads, generate_plots)
         for sample_name, bam_path in valid_samples.items()
     ]
 
     # Process samples sequentially, with chromosome-level parallelization within each sample
     click.echo(f"\nProcessing samples with {threads} parallel chromosome workers...")
+    if generate_plots:
+        click.echo("QC plots will be generated in output/plots/")
     for args in worker_args:
         sample_name = args[0]
         click.echo(f"\nProcessing: {sample_name}")
@@ -399,6 +415,11 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, force):
             click.echo(f"  Mean raw count: {result['mean_raw']:.2f}")
             click.echo(f"  Mean normalized: {result['mean_norm']:.2f}")
             click.echo(f"  Saved: {result['norm_output']}")
+            if result.get('qc_plots'):
+                if result['qc_plots'].startswith('ERROR'):
+                    click.echo(f"  QC plots: {result['qc_plots']}", err=True)
+                else:
+                    click.echo(f"  QC plots: {result['qc_plots']}")
         except Exception as e:
             click.echo(f"  ERROR: {e}", err=True)
             if verbose > 0:
@@ -424,9 +445,10 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, force):
               help='Parameters YAML (optional, uses defaults if not specified)')
 @click.option('--threads', '-@', default=1, type=int,
               help='Number of threads (for future parallel support)')
+@click.option('--no-plots', is_flag=True, help='Skip CNV plot generation')
 @click.option('--force', '-f', is_flag=True, help='Overwrite existing output')
 @click.pass_context
-def analyze(ctx, samples, input, target, output, experiment, parameters, threads, force):
+def analyze(ctx, samples, input, target, output, experiment, parameters, threads, no_plots, force):
     """
     Segmentation and CNV calling (HSLM + FastCall).
 
@@ -475,6 +497,7 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
         CNVAnalyzer,
         AnalysisParameters,
     )
+    from excavator2.analyze.ratio import compute_log2_ratio, compute_log2_ratio_pooled
     from excavator2.prepare import load_normalized_counts
     from excavator2.io import (
         write_vcf,
@@ -482,6 +505,9 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
         write_segments_tsv,
         write_fastcall_bed,
     )
+
+    # Import report module for plot generation (lazy import to avoid startup overhead)
+    generate_plots = not no_plots
 
     # Setup logging
     verbose = ctx.obj.get('verbose', 0)
@@ -686,6 +712,47 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
             }
             with open(settings_path, 'w') as f:
                 yaml.dump(settings, f, default_flow_style=False)
+
+            # Generate CNV plots if requested
+            if generate_plots:
+                try:
+                    from excavator2.report import (
+                        create_chromosome_plots,
+                        create_genome_plot,
+                        create_cnv_summary_table,
+                    )
+
+                    # Compute ratio result for plotting
+                    if experiment == 'paired':
+                        ratio_result = compute_log2_ratio(test_data, control_data[control_label])
+                    else:
+                        ratio_result = compute_log2_ratio_pooled(test_data, list(control_data.values()))
+
+                    # Create plots directory
+                    plots_dir = sample_output / "plots"
+                    plots_dir.mkdir(exist_ok=True)
+
+                    click.echo(f"\n  Generating plots...")
+
+                    # Chromosome plots
+                    create_chromosome_plots(result, ratio_result, plots_dir, format="pdf")
+                    click.echo(f"    Chromosome plots: {plots_dir}")
+
+                    # Genome-wide plot
+                    genome_plot_path = plots_dir / "PlotResults.pdf"
+                    create_genome_plot(result, genome_plot_path)
+                    click.echo(f"    Genome-wide plot: {genome_plot_path}")
+
+                    # Summary table
+                    summary_path = plots_dir / "CNV_Summary.pdf"
+                    create_cnv_summary_table(result, summary_path)
+                    click.echo(f"    Summary table: {summary_path}")
+
+                except Exception as e:
+                    click.echo(f"  WARNING: Plot generation failed: {e}", err=True)
+                    if verbose > 0:
+                        import traceback
+                        traceback.print_exc()
 
         except Exception as e:
             click.echo(f"  ERROR analyzing {test_name}: {e}", err=True)
