@@ -221,6 +221,57 @@ def target(ctx, config, output, force):
         raise click.ClickException(str(e))
 
 
+def _process_single_sample(args):
+    """Worker function to process a single sample (for parallel execution).
+
+    This is a module-level function so it can be pickled for multiprocessing.
+    """
+    sample_name, bam_path, target_path, output_dir, mapq, reference, n_threads = args
+
+    from pathlib import Path
+    from excavator2.prepare import (
+        ReadCountProcessor,
+        ReadCountNormalizer,
+        save_read_counts,
+        save_normalized_counts,
+    )
+
+    bam_path = Path(bam_path)
+    output_dir = Path(output_dir)
+    target_path = Path(target_path)
+
+    # Create processor and normalizer in this process
+    processor = ReadCountProcessor(
+        target_path=target_path,
+        min_mapq=mapq,
+        reference=reference
+    )
+    normalizer = ReadCountNormalizer()
+
+    # Count reads (with chromosome-level parallelization)
+    sample_data = processor.process_sample(bam_path, sample_name, n_threads=n_threads)
+
+    # Save raw counts
+    raw_output = output_dir / f"{sample_name}.RC.h5"
+    save_read_counts(sample_data, raw_output)
+
+    # Normalize
+    norm_result = normalizer.normalize(sample_data)
+
+    # Save normalized counts
+    norm_output = output_dir / f"{sample_name}.NRC.h5"
+    save_normalized_counts(norm_result, norm_output)
+
+    return {
+        'sample_name': sample_name,
+        'total_reads': sample_data.total_reads,
+        'mean_raw': float(sample_data.raw_counts.mean()),
+        'mean_norm': float(norm_result.normalized_counts.mean()),
+        'raw_output': str(raw_output),
+        'norm_output': str(norm_output),
+    }
+
+
 @cli.command()
 @click.option('--samples', '-s', required=True, type=click.Path(exists=True),
               help='Sample sheet YAML file')
@@ -228,7 +279,7 @@ def target(ctx, config, output, force):
               help='Target HDF5 file (from target command)')
 @click.option('--output', '-o', required=True, type=click.Path(),
               help='Output directory')
-@click.option('--threads', '-@', default=1, type=int, help='Number of threads')
+@click.option('--threads', '-@', default=1, type=int, help='Number of parallel workers')
 @click.option('--mapq', '-q', default=20, type=int, help='Minimum mapping quality')
 @click.option('--reference', '-r', type=click.Path(exists=True),
               help='Reference FASTA (required for CRAM files)')
@@ -251,6 +302,7 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, force):
     """
     import logging
     from pathlib import Path
+    from concurrent.futures import ProcessPoolExecutor, as_completed
     import yaml
 
     from excavator2.prepare import (
@@ -295,67 +347,63 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, force):
             "sample names to BAM paths."
         )
 
-    click.echo(f"Processing {len(sample_sheet)} samples")
+    # Validate BAM paths upfront
+    valid_samples = {}
+    for sample_name, bam_path in sample_sheet.items():
+        bam_path = Path(bam_path)
+        if not bam_path.exists():
+            click.echo(f"WARNING: BAM file not found, skipping: {bam_path}", err=True)
+            continue
+        valid_samples[sample_name] = str(bam_path)
+
+    if not valid_samples:
+        raise click.ClickException("No valid BAM files found in sample sheet")
+
+    click.echo(f"Processing {len(valid_samples)} samples")
     click.echo(f"Target file: {target_path}")
     click.echo(f"Output directory: {output_dir}")
     click.echo(f"MAPQ threshold: {mapq}")
-    click.echo(f"Threads: {threads}")
+    click.echo(f"Parallel workers: {threads}")
 
-    # Initialize processor
+    # Verify target file is readable and get info
     try:
         processor = ReadCountProcessor(
             target_path=target_path,
             min_mapq=mapq,
             reference=reference
         )
+        n_windows = len(processor.windows)
+        n_chromosomes = len(processor.chromosomes)
+        del processor  # Don't keep it, each worker will create its own
     except FileNotFoundError as e:
         raise click.ClickException(str(e))
     except ValueError as e:
         raise click.ClickException(f"Invalid target file: {e}")
 
-    click.echo(f"Loaded {len(processor.windows)} windows from target file")
+    click.echo(f"Target has {n_windows} windows across {n_chromosomes} chromosomes")
 
-    # Initialize normalizer
-    normalizer = ReadCountNormalizer()
+    # Prepare arguments for workers (each sample uses all threads for chromosome parallelization)
+    worker_args = [
+        (sample_name, bam_path, str(target_path), str(output_dir), mapq, reference, threads)
+        for sample_name, bam_path in valid_samples.items()
+    ]
 
-    # Process each sample
-    for sample_name, bam_path in sample_sheet.items():
-        click.echo(f"\nProcessing sample: {sample_name}")
-
-        # Validate BAM path
-        bam_path = Path(bam_path)
-        if not bam_path.exists():
-            click.echo(f"  WARNING: BAM file not found: {bam_path}", err=True)
-            continue
-
+    # Process samples sequentially, with chromosome-level parallelization within each sample
+    click.echo(f"\nProcessing samples with {threads} parallel chromosome workers...")
+    for args in worker_args:
+        sample_name = args[0]
+        click.echo(f"\nProcessing: {sample_name}")
         try:
-            # Count reads
-            click.echo(f"  Counting reads from: {bam_path}")
-            sample_data = processor.process_sample(bam_path, sample_name)
-            click.echo(f"  Total reads: {sample_data.total_reads:,}")
-            click.echo(f"  Mean count per window: {sample_data.raw_counts.mean():.2f}")
-
-            # Save raw counts
-            raw_output = output_dir / f"{sample_name}.RC.h5"
-            save_read_counts(sample_data, raw_output)
-            click.echo(f"  Saved raw counts: {raw_output}")
-
-            # Normalize
-            click.echo("  Normalizing read counts...")
-            norm_result = normalizer.normalize(sample_data)
-            click.echo(f"  Normalized mean: {norm_result.normalized_counts.mean():.2f}")
-
-            # Save normalized counts
-            norm_output = output_dir / f"{sample_name}.NRC.h5"
-            save_normalized_counts(norm_result, norm_output)
-            click.echo(f"  Saved normalized counts: {norm_output}")
-
+            result = _process_single_sample(args)
+            click.echo(f"  Total reads: {result['total_reads']:,}")
+            click.echo(f"  Mean raw count: {result['mean_raw']:.2f}")
+            click.echo(f"  Mean normalized: {result['mean_norm']:.2f}")
+            click.echo(f"  Saved: {result['norm_output']}")
         except Exception as e:
-            click.echo(f"  ERROR: Failed to process {sample_name}: {e}", err=True)
+            click.echo(f"  ERROR: {e}", err=True)
             if verbose > 0:
                 import traceback
                 traceback.print_exc()
-            continue
 
     click.echo("\nData preparation complete.")
 

@@ -19,6 +19,35 @@ from excavator2.io.bam import BAMReader, GenomicRegion, ReadCountResult
 logger = logging.getLogger(__name__)
 
 
+def _count_chromosome_reads(args):
+    """Count reads for a single chromosome (picklable for multiprocessing).
+
+    Args:
+        args: Tuple of (chrom, bam_path, min_mapq, reference, regions)
+            where regions is a list of (start, end, name) tuples
+
+    Returns:
+        Tuple of (counts_array, total_reads, filtered_reads)
+    """
+    chrom, bam_path, min_mapq, reference, regions = args
+
+    from excavator2.io.bam import BAMReader, GenomicRegion
+
+    # Create fresh BAM reader for this process
+    reader = BAMReader(bam_path, min_mapq=min_mapq, reference=reference)
+
+    # Convert to GenomicRegion objects
+    genomic_regions = [
+        GenomicRegion(chrom=chrom, start=start, end=end, name=name)
+        for start, end, name in regions
+    ]
+
+    # Count reads
+    result = reader.count_reads(genomic_regions, count_method="overlap")
+
+    return result.counts, result.total_reads, result.filtered_reads
+
+
 @dataclass
 class WindowData:
     """Data for a single genomic window/exon.
@@ -199,13 +228,15 @@ class ReadCountProcessor:
     def process_sample(
         self,
         bam_path: Union[str, Path],
-        sample_name: str
+        sample_name: str,
+        n_threads: int = 1
     ) -> SampleReadCounts:
         """Process a BAM file and count reads in all windows.
 
         Args:
             bam_path: Path to BAM/CRAM file
             sample_name: Sample identifier
+            n_threads: Number of parallel threads for chromosome processing
 
         Returns:
             SampleReadCounts with raw counts and metadata
@@ -213,6 +244,10 @@ class ReadCountProcessor:
         logger.info(f"Processing sample: {sample_name}")
         logger.info(f"BAM file: {bam_path}")
 
+        if n_threads > 1 and len(self.chromosomes) > 1:
+            return self._process_sample_parallel(bam_path, sample_name, n_threads)
+
+        # Sequential processing
         # Create BAM reader
         reader = BAMReader(
             bam_path,
@@ -234,6 +269,86 @@ class ReadCountProcessor:
         return SampleReadCounts(
             sample_name=sample_name,
             raw_counts=result.counts,
+            windows=self.windows.copy(),
+            chromosomes=self.chromosomes.copy()
+        )
+
+    def _process_sample_parallel(
+        self,
+        bam_path: Union[str, Path],
+        sample_name: str,
+        n_threads: int
+    ) -> SampleReadCounts:
+        """Process a BAM file with chromosome-level parallelization.
+
+        Args:
+            bam_path: Path to BAM/CRAM file
+            sample_name: Sample identifier
+            n_threads: Number of parallel threads
+
+        Returns:
+            SampleReadCounts with raw counts and metadata
+        """
+        from concurrent.futures import ProcessPoolExecutor, as_completed
+
+        # Group windows by chromosome
+        windows_by_chrom = {}
+        for i, w in enumerate(self.windows):
+            if w.chrom not in windows_by_chrom:
+                windows_by_chrom[w.chrom] = []
+            windows_by_chrom[w.chrom].append((i, w))
+
+        # Prepare work items for each chromosome
+        work_items = []
+        for chrom in self.chromosomes:
+            if chrom in windows_by_chrom:
+                chrom_windows = windows_by_chrom[chrom]
+                work_items.append((
+                    chrom,
+                    str(bam_path),
+                    self.min_mapq,
+                    str(self.reference) if self.reference else None,
+                    [(w.start, w.end, w.name) for _, w in chrom_windows]
+                ))
+
+        # Process chromosomes in parallel
+        logger.info(f"Processing {len(work_items)} chromosomes with {n_threads} threads...")
+
+        chrom_results = {}
+        with ProcessPoolExecutor(max_workers=n_threads) as executor:
+            futures = {
+                executor.submit(_count_chromosome_reads, item): item[0]
+                for item in work_items
+            }
+
+            for future in as_completed(futures):
+                chrom = futures[future]
+                try:
+                    chrom_results[chrom] = future.result()
+                    logger.debug(f"Completed chromosome {chrom}")
+                except Exception as e:
+                    logger.error(f"Failed to process chromosome {chrom}: {e}")
+                    raise
+
+        # Reassemble results in original window order
+        counts = np.zeros(len(self.windows), dtype=np.int32)
+        total_reads = 0
+        filtered_reads = 0
+
+        for chrom, (chrom_counts, chrom_total, chrom_filtered) in chrom_results.items():
+            chrom_windows = windows_by_chrom[chrom]
+            for (orig_idx, _), count in zip(chrom_windows, chrom_counts):
+                counts[orig_idx] = count
+            total_reads += chrom_total
+            filtered_reads += chrom_filtered
+
+        logger.info(f"Total reads processed: {total_reads}")
+        logger.info(f"Filtered reads: {filtered_reads}")
+        logger.info(f"Mean count per window: {counts.mean():.2f}")
+
+        return SampleReadCounts(
+            sample_name=sample_name,
+            raw_counts=counts,
             windows=self.windows.copy(),
             chromosomes=self.chromosomes.copy()
         )
