@@ -124,6 +124,31 @@ PYBIND11_MODULE(_excavator_core, m) {
                    " n_states=" + std::to_string(p.n_states) + ">";
         });
 
+    // PreEstimatedParams struct
+    py::class_<hslm::PreEstimatedParams>(hslm_mod, "PreEstimatedParams", R"pbdoc(
+        Pre-estimated parameters for HSLM segmentation.
+
+        These can be computed once from all chromosomes' data,
+        then used for per-chromosome segmentation (matching R behavior).
+
+        Attributes:
+            mi (list[float]): Mean for each sequence (typically 0)
+            smu (list[float]): State standard deviation
+            sepsilon (list[float]): Noise standard deviation
+            muk (list[list[float]]): State means matrix (n_sequences x n_states)
+            valid (bool): Whether parameters are valid
+    )pbdoc")
+        .def(py::init<>())
+        .def_readwrite("mi", &hslm::PreEstimatedParams::mi)
+        .def_readwrite("smu", &hslm::PreEstimatedParams::smu)
+        .def_readwrite("sepsilon", &hslm::PreEstimatedParams::sepsilon)
+        .def_readwrite("muk", &hslm::PreEstimatedParams::muk)
+        .def_readwrite("valid", &hslm::PreEstimatedParams::valid)
+        .def("__repr__", [](const hslm::PreEstimatedParams& p) {
+            return "<PreEstimatedParams valid=" + std::string(p.valid ? "True" : "False") +
+                   " smu_size=" + std::to_string(p.smu.size()) + ">";
+        });
+
     // HSLMResult struct
     py::class_<hslm::HSLMResult>(hslm_mod, "HSLMResult", R"pbdoc(
         Result of HSLM segmentation.
@@ -195,6 +220,38 @@ PYBIND11_MODULE(_excavator_core, m) {
 
                 Returns:
                     HSLMResult containing breakpoints
+             )pbdoc")
+        .def("estimate_params", &hslm::HSLM::estimate_params,
+             py::arg("data_matrix"),
+             R"pbdoc(
+                Estimate parameters from data without running segmentation.
+
+                This allows computing parameters once from all chromosomes' data,
+                then using them for per-chromosome segmentation (matching R behavior).
+
+                Args:
+                    data_matrix: List of log2 ratio vectors (combine all chromosomes)
+
+                Returns:
+                    PreEstimatedParams containing mi, smu, sepsilon, muk
+             )pbdoc")
+        .def("segment_with_params", &hslm::HSLM::segment_with_params,
+             py::arg("log2_ratios"),
+             py::arg("positions"),
+             py::arg("params"),
+             R"pbdoc(
+                Run segmentation with pre-estimated parameters.
+
+                This matches the original R behavior where parameters are estimated
+                globally from all data, then used for per-chromosome segmentation.
+
+                Args:
+                    log2_ratios: Vector of log2 ratio values for a single chromosome
+                    positions: Genomic positions
+                    params: Pre-estimated parameters from estimate_params()
+
+                Returns:
+                    HSLMResult containing breakpoints and segment information
              )pbdoc")
         .def_property("params",
             &hslm::HSLM::params,

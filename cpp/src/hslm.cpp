@@ -382,17 +382,37 @@ std::vector<int> HSLM::filter_segments(
     int min_size
 ) {
     // Ported from FilterSeg in LibraryJSLMIn.R
+    //
+    // R logic: for each segment i with length <= FW, remove the breakpoint
+    // at the START of that segment. Special case: if segment 0 is short,
+    // we can't remove bp[0], so remove bp[1] instead.
 
     if (breakpoints.size() <= 2) {
         return breakpoints;  // Can't filter if only one segment
     }
 
+    // Identify breakpoints to remove
+    std::vector<bool> remove(breakpoints.size(), false);
+
+    for (size_t seg = 0; seg < breakpoints.size() - 1; ++seg) {
+        int seg_length = breakpoints[seg + 1] - breakpoints[seg];
+        if (seg_length <= min_size) {
+            // Segment is short, mark its starting breakpoint for removal
+            // But if seg == 0, we can't remove bp[0], so mark bp[1] instead
+            if (seg == 0) {
+                remove[1] = true;
+            } else {
+                remove[seg] = true;
+            }
+        }
+    }
+
+    // Build filtered result, always keeping first and last
     std::vector<int> filtered;
     filtered.push_back(breakpoints[0]);  // Always keep start
 
     for (size_t i = 1; i < breakpoints.size() - 1; ++i) {
-        int seg_length = breakpoints[i + 1] - breakpoints[i];
-        if (seg_length > min_size) {
+        if (!remove[i]) {
             filtered.push_back(breakpoints[i]);
         }
     }
@@ -400,6 +420,131 @@ std::vector<int> HSLM::filter_segments(
     filtered.push_back(breakpoints.back());  // Always keep end
 
     return filtered;
+}
+
+PreEstimatedParams HSLM::estimate_params(
+    const std::vector<std::vector<double>>& data_matrix
+) {
+    PreEstimatedParams result;
+
+    if (data_matrix.empty() || data_matrix[0].empty()) {
+        result.valid = false;
+        return result;
+    }
+
+    // Estimate mi, smu, sepsilon
+    EstimatedParameters est = estimate_parameters(data_matrix);
+    result.mi = est.mi;
+    result.smu = est.smu;
+    result.sepsilon = est.sepsilon;
+
+    // Estimate state means
+    result.muk = estimate_state_means(data_matrix);
+
+    result.valid = true;
+    return result;
+}
+
+HSLMResult HSLM::segment_with_params(
+    const std::vector<double>& log2_ratios,
+    const std::vector<int64_t>& positions,
+    const PreEstimatedParams& params
+) {
+    // Wrap single sequence as matrix for unified processing
+    std::vector<std::vector<double>> data_matrix = {log2_ratios};
+
+    HSLMResult result;
+    result.success = false;
+
+    // Input validation
+    if (data_matrix.empty() || data_matrix[0].empty()) {
+        result.error_message = "Empty data matrix";
+        return result;
+    }
+
+    size_t n_positions = data_matrix[0].size();
+    if (positions.size() != n_positions) {
+        result.error_message = "Position vector length does not match data";
+        return result;
+    }
+
+    if (n_positions < 2) {
+        result.error_message = "Need at least 2 positions for segmentation";
+        return result;
+    }
+
+    if (!params.valid) {
+        result.error_message = "Invalid pre-estimated parameters";
+        return result;
+    }
+
+    // Use pre-estimated parameters instead of computing from this data
+    // We need to adapt the parameters to single-sample mode:
+    // Extract first element for single-sample
+    EstimatedParameters est_params;
+    est_params.mi = {params.mi.empty() ? 0.0 : params.mi[0]};
+    est_params.smu = {params.smu.empty() ? 0.01 : params.smu[0]};
+    est_params.sepsilon = {params.sepsilon.empty() ? 0.01 : params.sepsilon[0]};
+
+    // Use the state means from pre-estimated params
+    // For single sample, we need a 1 x n_states matrix
+    std::vector<std::vector<double>> muk;
+    if (!params.muk.empty() && !params.muk[0].empty()) {
+        muk = {params.muk[0]};  // Take first row for single sample
+    } else {
+        // Fallback to default state means
+        muk = estimate_state_means(data_matrix);
+    }
+
+    int n_states = static_cast<int>(muk[0].size());
+
+    // Compute distance-dependent transition probabilities
+    std::vector<double> eta_vec = compute_eta_vector(positions);
+    int n_cov = static_cast<int>(eta_vec.size());
+
+    // Initialize uniform log-probabilities for states
+    double log_prob = std::log(1.0 / n_states);
+    std::vector<double> etav(n_states, log_prob);
+
+    // Compute transition and emission matrices
+    std::vector<std::vector<double>> P(n_states, std::vector<double>(n_states * n_cov, 0.0));
+    std::vector<std::vector<double>> emission(n_states, std::vector<double>(n_positions, 0.0));
+
+    compute_transition_emission(
+        muk, est_params.mi, eta_vec, data_matrix,
+        est_params.smu, est_params.sepsilon,
+        P, emission
+    );
+
+    // Run Viterbi algorithm
+    std::vector<int> state_path = viterbi(etav, P, emission);
+
+    // Extract breakpoints from state path
+    std::vector<int> breakpoints = extract_breakpoints(state_path);
+
+    // Filter short segments if requested
+    if (params_.min_segment_size > 1) {
+        breakpoints = filter_segments(breakpoints, params_.min_segment_size);
+    }
+
+    // Compute segment means for first sequence
+    std::vector<double> segment_means = compute_segment_means(data_matrix[0], breakpoints);
+
+    // Store state values
+    std::vector<double> state_values(n_states);
+    for (int i = 0; i < n_states; ++i) {
+        state_values[i] = muk[0][i];
+    }
+
+    // Populate result
+    result.breakpoints = breakpoints;
+    result.segment_means = segment_means;
+    result.state_path = state_path;
+    result.state_values = state_values;
+    result.n_segments = static_cast<int>(breakpoints.size()) - 1;
+    result.success = true;
+
+    return result;
 }
 
 } // namespace hslm
