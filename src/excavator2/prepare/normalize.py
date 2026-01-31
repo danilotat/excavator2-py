@@ -51,7 +51,7 @@ def _median_normalize(
     counts: np.ndarray,
     feature: np.ndarray,
     bin_size: float,
-    min_bin_count: int = 10
+    min_bin_count: int = 1
 ) -> Tuple[np.ndarray, dict]:
     """Apply median-based normalization within feature bins.
 
@@ -60,11 +60,15 @@ def _median_normalize(
     - Calculate the median count in that bin
     - Scale all counts in the bin by (master_median / bin_median)
 
+    Bin boundaries follow the original R implementation:
+    - First bin: [bin_start, bin_end] (inclusive both ends)
+    - Other bins: (bin_start, bin_end] (exclusive left, inclusive right)
+
     Args:
         counts: Read counts to normalize
         feature: Feature values to bin by (same length as counts)
         bin_size: Size of each feature bin
-        min_bin_count: Minimum windows in a bin to apply correction
+        min_bin_count: Minimum windows in a bin to apply correction (default: 1)
 
     Returns:
         Tuple of (normalized_counts, stats_dict)
@@ -75,12 +79,14 @@ def _median_normalize(
     # Work with float copy
     normalized = counts.astype(np.float64)
 
-    # Calculate master median (excluding zeros)
-    nonzero_mask = normalized > 0
-    if not np.any(nonzero_mask):
-        return normalized, {'master_median': 0.0, 'n_bins': 0}
+    # Calculate master median INCLUDING zeros (matching R's na.rm=T behavior)
+    # R: MasterMedian <- median(RC, na.rm = T)
+    # This includes zeros but excludes NaN values
+    master_median = np.nanmedian(normalized)
 
-    master_median = np.median(normalized[nonzero_mask])
+    # If master median is 0, no normalization is possible
+    if master_median == 0:
+        return normalized, {'master_median': 0.0, 'n_bins': 0}
 
     # Create bins
     feature_min = np.floor(np.min(feature) / bin_size) * bin_size
@@ -95,20 +101,27 @@ def _median_normalize(
         bin_end = bins[i + 1]
 
         # Find windows in this bin
-        bin_mask = (feature >= bin_start) & (feature < bin_end)
+        # Match R boundary handling:
+        # - First bin: >= bin_start AND <= bin_end
+        # - Other bins: > bin_start AND <= bin_end
+        if i == 0:
+            bin_mask = (feature >= bin_start) & (feature <= bin_end)
+        else:
+            bin_mask = (feature > bin_start) & (feature <= bin_end)
+
         bin_counts = normalized[bin_mask]
 
+        # R only requires length(ind) > 0, so min_bin_count defaults to 1
         if len(bin_counts) < min_bin_count:
             continue
 
-        # Calculate bin median (excluding zeros)
-        bin_nonzero = bin_counts[bin_counts > 0]
-        if len(bin_nonzero) == 0:
-            continue
-
-        bin_median = np.median(bin_nonzero)
+        # Calculate bin median INCLUDING zeros (matching R's na.rm=T)
+        # R: m <- median(RC[ind], na.rm = T)
+        bin_median = np.nanmedian(bin_counts)
         bin_medians.append(bin_median)
 
+        # R checks: if (m > 0) - skip normalization if bin median is 0
+        # This is critical: R leaves data unchanged for bins with median=0
         if bin_median > 0:
             # Scale counts in this bin
             scale_factor = master_median / bin_median
@@ -145,7 +158,7 @@ class ReadCountNormalizer:
         size_bin: Bin size for length normalization (bp). Default: 5
         mappability_bin: Bin size for mappability (%). Default: 5
         gc_bin: Bin size for GC content (%). Default: 5
-        min_bin_count: Minimum windows per bin. Default: 10
+        min_bin_count: Minimum windows per bin. Default: 1 (matches original R)
     """
 
     def __init__(
@@ -153,7 +166,7 @@ class ReadCountNormalizer:
         size_bin: float = 5.0,
         mappability_bin: float = 5.0,
         gc_bin: float = 5.0,
-        min_bin_count: int = 10
+        min_bin_count: int = 1
     ):
         self.size_bin = size_bin
         self.mappability_bin = mappability_bin
@@ -181,8 +194,16 @@ class ReadCountNormalizer:
         logger.info(f"Normalizing sample: {sample_data.sample_name}")
 
         # Extract arrays
-        counts = sample_data.raw_counts.astype(np.float64)
+        raw_counts = sample_data.raw_counts.astype(np.float64)
         lengths = np.array([w.length for w in sample_data.windows])
+
+        # CRITICAL: Convert raw counts to WMRC (Width-normalized Mapped Read Count)
+        # by dividing by window length. This is essential before any other normalization.
+        # Original R: RCTMatrixL <- t(t(RCTL) / L)
+        # Avoid division by zero for zero-length windows
+        safe_lengths = np.maximum(lengths, 1.0)
+        counts = raw_counts / safe_lengths
+        logger.info(f"  Converted to WMRC (counts/length)")
         mappability = np.array([w.mappability * 100 for w in sample_data.windows])  # Convert to %
         gc_content = np.array([w.gc_content * 100 for w in sample_data.windows])  # Convert to %
 

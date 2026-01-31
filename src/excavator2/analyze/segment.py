@@ -33,6 +33,27 @@ class Segment:
 
 
 @dataclass
+class PreEstimatedParams:
+    """Pre-estimated parameters for HSLM segmentation.
+
+    These can be computed once from all chromosomes' data,
+    then used for per-chromosome segmentation (matching R behavior).
+
+    Attributes:
+        mi: Mean for each sequence (typically 0)
+        smu: State standard deviation
+        sepsilon: Noise standard deviation
+        muk: State means matrix (n_sequences x n_states)
+        valid: Whether parameters are valid
+    """
+    mi: List[float]
+    smu: List[float]
+    sepsilon: List[float]
+    muk: List[List[float]]
+    valid: bool = True
+
+
+@dataclass
 class SegmentationResult:
     """Result of HSLM segmentation.
 
@@ -173,6 +194,105 @@ class HSLMSegmenter:
             )
 
         # Convert breakpoints to Segment objects
+        segments = self._breakpoints_to_segments(
+            result.breakpoints,
+            result.segment_means,
+            ratios,
+            pos
+        )
+
+        return SegmentationResult(
+            segments=segments,
+            breakpoints=list(result.breakpoints),
+            state_path=list(result.state_path),
+            n_segments=result.n_segments,
+            success=True
+        )
+
+    def estimate_params(
+        self,
+        log2_ratios: Union[np.ndarray, List[float]]
+    ) -> PreEstimatedParams:
+        """Estimate HSLM parameters from data without running segmentation.
+
+        This allows computing parameters once from all chromosomes' data,
+        then using them for per-chromosome segmentation (matching R behavior).
+
+        Args:
+            log2_ratios: Array of log2 ratio values (all chromosomes combined)
+
+        Returns:
+            PreEstimatedParams containing mi, smu, sepsilon, muk
+        """
+        ratios = np.asarray(log2_ratios, dtype=np.float64)
+
+        if len(ratios) == 0:
+            return PreEstimatedParams(mi=[], smu=[], sepsilon=[], muk=[], valid=False)
+
+        # Call C++ implementation with single-sample matrix
+        data_matrix = [ratios.tolist()]
+        result = self._hslm.estimate_params(data_matrix)
+
+        return PreEstimatedParams(
+            mi=list(result.mi),
+            smu=list(result.smu),
+            sepsilon=list(result.sepsilon),
+            muk=[list(row) for row in result.muk],
+            valid=result.valid
+        )
+
+    def segment_with_params(
+        self,
+        log2_ratios: Union[np.ndarray, List[float]],
+        positions: Union[np.ndarray, List[int]],
+        params: PreEstimatedParams
+    ) -> SegmentationResult:
+        """Run segmentation with pre-estimated parameters.
+
+        This matches the original R behavior where parameters are estimated
+        globally from all data, then used for per-chromosome segmentation.
+
+        Args:
+            log2_ratios: Array of log2 ratio values
+            positions: Genomic positions
+            params: Pre-estimated parameters from estimate_params()
+
+        Returns:
+            SegmentationResult with detected segments
+        """
+        ratios = np.asarray(log2_ratios, dtype=np.float64)
+        pos = np.asarray(positions, dtype=np.int64)
+
+        if len(ratios) == 0:
+            raise ValueError("log2_ratios cannot be empty")
+        if len(ratios) != len(pos):
+            raise ValueError(
+                f"Length mismatch: log2_ratios ({len(ratios)}) vs positions ({len(pos)})"
+            )
+
+        if np.any(~np.isfinite(ratios)):
+            raise ValueError("log2_ratios contains NaN or Inf values")
+
+        # Convert PreEstimatedParams to C++ format
+        cpp_params = hslm.PreEstimatedParams()
+        cpp_params.mi = params.mi
+        cpp_params.smu = params.smu
+        cpp_params.sepsilon = params.sepsilon
+        cpp_params.muk = params.muk
+        cpp_params.valid = params.valid
+
+        result = self._hslm.segment_with_params(ratios.tolist(), pos.tolist(), cpp_params)
+
+        if not result.success:
+            return SegmentationResult(
+                segments=[],
+                breakpoints=[],
+                state_path=[],
+                n_segments=0,
+                success=False,
+                error_message=result.error_message
+            )
+
         segments = self._breakpoints_to_segments(
             result.breakpoints,
             result.segment_means,

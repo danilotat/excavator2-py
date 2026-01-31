@@ -12,7 +12,7 @@ import logging
 
 import numpy as np
 
-from excavator2.analyze.segment import HSLMSegmenter, Segment, SegmentationResult
+from excavator2.analyze.segment import HSLMSegmenter, Segment, SegmentationResult, PreEstimatedParams
 from excavator2.analyze.call import FastCallCaller, CNVCall, ClassificationResult, CopyNumberState
 from excavator2.analyze.ratio import (
     Log2RatioResult,
@@ -97,6 +97,36 @@ class ChromosomeResult:
 
 
 @dataclass
+class WindowResult:
+    """Per-window result data for output compatibility.
+
+    Attributes:
+        chrom: Chromosome name
+        position: Window midpoint position
+        start: Window start position
+        end: Window end position
+        log2_ratio: Raw log2 ratio for this window
+        segment_mean: Mean log2 ratio of the segment this window belongs to
+        region_class: 'IN' or 'OUT'
+        segment_idx: Index of the segment this window belongs to
+        cn_call: Relative CN call for the segment
+        absolute_cn: Absolute copy number for the segment
+        probability: Posterior probability of the call
+    """
+    chrom: str
+    position: int
+    start: int
+    end: int
+    log2_ratio: float
+    segment_mean: float
+    region_class: str
+    segment_idx: int
+    cn_call: int
+    absolute_cn: int
+    probability: float
+
+
+@dataclass
 class AnalysisResult:
     """Complete CNV analysis result for a sample pair.
 
@@ -108,6 +138,7 @@ class AnalysisResult:
         n_segments: Total number of segments
         n_cnvs: Total number of CNV calls
         parameters: Algorithm parameters used
+        window_results: Per-window results (for HSLM-style output)
     """
     test_sample: str
     control_sample: str
@@ -116,6 +147,7 @@ class AnalysisResult:
     n_segments: int
     n_cnvs: int
     parameters: dict = field(default_factory=dict)
+    window_results: List[WindowResult] = field(default_factory=list)
 
     @property
     def n_deletions(self) -> int:
@@ -216,7 +248,7 @@ class CNVAnalyzer:
             theta=params.theta,
             step_eta=params.step_eta,
             n_states=params.n_states,
-            min_segment_size=1
+            min_segment_size=params.min_exons
         )
 
         self._caller = FastCallCaller(
@@ -290,7 +322,19 @@ class CNVAnalyzer:
             chromosomes = ratio_result.chromosomes
 
         all_segments = []
+        all_window_results = []
         chromosome_results = {}
+
+        # CRITICAL: Estimate HSLM parameters globally from ALL chromosomes' data
+        # This matches the original R implementation where ParamEstSeq is called once
+        # with all log2 ratios combined before per-chromosome segmentation.
+        logger.info("Estimating HSLM parameters from global data...")
+        global_params = self._segmenter.estimate_params(ratio_result.log2_ratios)
+        if global_params.valid:
+            logger.info(f"  Global parameters: smu={global_params.smu[0]:.4f}, sepsilon={global_params.sepsilon[0]:.4f}")
+        else:
+            logger.warning("  Failed to estimate global parameters, will use per-chromosome estimation")
+            global_params = None
 
         for chrom in chromosomes:
             logger.info(f"Analyzing chromosome: {chrom}")
@@ -302,17 +346,19 @@ class CNVAnalyzer:
                 logger.warning(f"  No windows for chromosome {chrom}, skipping")
                 continue
 
-            # Run analysis on this chromosome
-            chrom_result = self._analyze_chromosome(
+            # Run analysis on this chromosome with global parameters
+            chrom_result, window_results = self._analyze_chromosome(
                 chrom=chrom,
                 log2_ratios=chrom_data['log2_ratios'],
                 positions=chrom_data['positions'],
                 windows=chrom_data['windows'],
-                in_target_mask=chrom_data['in_target_mask']
+                in_target_mask=chrom_data['in_target_mask'],
+                global_params=global_params
             )
 
             chromosome_results[chrom] = chrom_result
             all_segments.extend(chrom_result.segments)
+            all_window_results.extend(window_results)
 
         # Summary statistics
         n_segments = len(all_segments)
@@ -327,7 +373,8 @@ class CNVAnalyzer:
             chromosome_results=chromosome_results,
             n_segments=n_segments,
             n_cnvs=n_cnvs,
-            parameters=self.params.to_dict()
+            parameters=self.params.to_dict(),
+            window_results=all_window_results
         )
 
     def _analyze_chromosome(
@@ -336,8 +383,9 @@ class CNVAnalyzer:
         log2_ratios: np.ndarray,
         positions: np.ndarray,
         windows: list,
-        in_target_mask: np.ndarray
-    ) -> ChromosomeResult:
+        in_target_mask: np.ndarray,
+        global_params: Optional[PreEstimatedParams] = None
+    ) -> Tuple[ChromosomeResult, List[WindowResult]]:
         """Analyze a single chromosome.
 
         Args:
@@ -346,10 +394,14 @@ class CNVAnalyzer:
             positions: Genomic positions
             windows: Window metadata
             in_target_mask: Boolean mask for IN-target windows
+            global_params: Pre-estimated HSLM parameters (optional)
 
         Returns:
-            ChromosomeResult with segments
+            Tuple of (ChromosomeResult, list of WindowResult)
         """
+        # Store original log2 ratios for per-window output
+        original_log2_ratios = log2_ratios.copy()
+
         # Apply cellularity correction if needed
         if self.params.cellularity < 1.0:
             log2_ratios = apply_cellularity_correction(
@@ -358,17 +410,26 @@ class CNVAnalyzer:
 
         # Step 1: HSLM Segmentation
         logger.info(f"  Running HSLM segmentation ({len(log2_ratios)} windows)")
-        seg_result = self._segmenter.segment(log2_ratios, positions)
+
+        # Use global parameters if available (matching R behavior)
+        if global_params is not None and global_params.valid:
+            seg_result = self._segmenter.segment_with_params(log2_ratios, positions, global_params)
+        else:
+            seg_result = self._segmenter.segment(log2_ratios, positions)
 
         if not seg_result.success:
             logger.error(f"  Segmentation failed: {seg_result.error_message}")
+            # Return empty results but still create window results with NA-like values
+            window_results = self._create_window_results_no_seg(
+                chrom, original_log2_ratios, windows, in_target_mask
+            )
             return ChromosomeResult(
                 chrom=chrom,
                 segments=[],
                 breakpoints=[],
                 n_segments=0,
                 n_cnvs=0
-            )
+            ), window_results
 
         logger.info(f"  Found {seg_result.n_segments} segments")
 
@@ -381,7 +442,11 @@ class CNVAnalyzer:
             if not call_result.success:
                 logger.error(f"  Classification failed: {call_result.error_message}")
                 # Return segments without calls
-                return self._segments_without_calls(chrom, seg_result, windows, in_target_mask)
+                chrom_result = self._segments_without_calls(chrom, seg_result, windows, in_target_mask)
+                window_results = self._create_window_results(
+                    chrom, original_log2_ratios, seg_result, None, windows, in_target_mask
+                )
+                return chrom_result, window_results
 
             logger.info(f"  EM converged in {call_result.iterations} iterations")
         else:
@@ -403,13 +468,18 @@ class CNVAnalyzer:
         n_cnvs = sum(1 for s in segments if s.is_cnv)
         logger.info(f"  Final: {len(segments)} segments, {n_cnvs} CNVs")
 
+        # Create per-window results
+        window_results = self._create_window_results(
+            chrom, original_log2_ratios, seg_result, call_result, windows, in_target_mask
+        )
+
         return ChromosomeResult(
             chrom=chrom,
             segments=segments,
             breakpoints=seg_result.breakpoints,
             n_segments=len(segments),
             n_cnvs=n_cnvs
-        )
+        ), window_results
 
     def _combine_results(
         self,
@@ -555,6 +625,130 @@ class CNVAnalyzer:
                 filtered.append(seg)
 
         return filtered
+
+    def _create_window_results(
+        self,
+        chrom: str,
+        log2_ratios: np.ndarray,
+        seg_result: SegmentationResult,
+        call_result: Optional[ClassificationResult],
+        windows: list,
+        in_target_mask: np.ndarray
+    ) -> List[WindowResult]:
+        """Create per-window results for HSLM-style output.
+
+        This creates one WindowResult per input window, with:
+        - log2_ratio: The original per-window log2 ratio
+        - segment_mean: The mean of the segment this window belongs to
+        - cn_call, absolute_cn, probability: From FastCall for the segment
+
+        Args:
+            chrom: Chromosome name
+            log2_ratios: Original per-window log2 ratios
+            seg_result: HSLM segmentation result
+            call_result: FastCall classification result (may be None)
+            windows: Window metadata
+            in_target_mask: Boolean mask for IN-target windows
+
+        Returns:
+            List of WindowResult, one per window
+        """
+        window_results = []
+        n_windows = len(log2_ratios)
+
+        # Build a mapping from window index to segment info
+        window_to_segment = np.zeros(n_windows, dtype=int)
+        segment_means = np.zeros(n_windows)
+        cn_calls = np.zeros(n_windows, dtype=int)
+        absolute_cns = np.full(n_windows, 2, dtype=int)  # Default to normal
+        probabilities = np.zeros(n_windows)
+
+        for seg_idx, seg in enumerate(seg_result.segments):
+            start_idx = seg.start_idx
+            end_idx = seg.end_idx
+
+            # Segment mean (median of log2 ratios in segment)
+            seg_mean = seg.mean
+
+            # Get call info if available
+            if call_result and seg_idx < len(call_result.calls):
+                call = call_result.calls[seg_idx]
+                cn_call = call.cn_call
+                absolute_cn = call.absolute_cn
+                prob = call.probability
+            else:
+                cn_call = 0
+                absolute_cn = 2
+                prob = 0.0
+
+            # Assign to all windows in this segment
+            window_to_segment[start_idx:end_idx] = seg_idx
+            segment_means[start_idx:end_idx] = seg_mean
+            cn_calls[start_idx:end_idx] = cn_call
+            absolute_cns[start_idx:end_idx] = absolute_cn
+            probabilities[start_idx:end_idx] = prob
+
+        # Create WindowResult for each window
+        for i in range(n_windows):
+            w = windows[i]
+            region_class = 'IN' if in_target_mask[i] else 'OUT'
+
+            window_results.append(WindowResult(
+                chrom=chrom,
+                position=w.position,
+                start=w.start,
+                end=w.end,
+                log2_ratio=float(log2_ratios[i]),
+                segment_mean=float(segment_means[i]),
+                region_class=region_class,
+                segment_idx=int(window_to_segment[i]),
+                cn_call=int(cn_calls[i]),
+                absolute_cn=int(absolute_cns[i]),
+                probability=float(probabilities[i])
+            ))
+
+        return window_results
+
+    def _create_window_results_no_seg(
+        self,
+        chrom: str,
+        log2_ratios: np.ndarray,
+        windows: list,
+        in_target_mask: np.ndarray
+    ) -> List[WindowResult]:
+        """Create per-window results when segmentation failed.
+
+        Uses NaN for segment_mean and default values for calls.
+
+        Args:
+            chrom: Chromosome name
+            log2_ratios: Original per-window log2 ratios
+            windows: Window metadata
+            in_target_mask: Boolean mask for IN-target windows
+
+        Returns:
+            List of WindowResult, one per window
+        """
+        window_results = []
+
+        for i, w in enumerate(windows):
+            region_class = 'IN' if in_target_mask[i] else 'OUT'
+
+            window_results.append(WindowResult(
+                chrom=chrom,
+                position=w.position,
+                start=w.start,
+                end=w.end,
+                log2_ratio=float(log2_ratios[i]),
+                segment_mean=float('nan'),  # No segmentation
+                region_class=region_class,
+                segment_idx=-1,  # No segment
+                cn_call=0,
+                absolute_cn=2,
+                probability=0.0
+            ))
+
+        return window_results
 
 
 def analyze_sample_pair(
