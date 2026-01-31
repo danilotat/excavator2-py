@@ -37,6 +37,20 @@ struct HSLMResult {
 };
 
 /**
+ * Pre-estimated parameters for HSLM segmentation.
+ *
+ * These can be computed globally from all chromosomes' data,
+ * then passed to per-chromosome segmentation calls.
+ */
+struct PreEstimatedParams {
+    std::vector<double> mi;                 // Mean for each sequence (typically 0)
+    std::vector<double> smu;                // State standard deviation
+    std::vector<double> sepsilon;           // Noise standard deviation
+    std::vector<std::vector<double>> muk;   // State means matrix (n_sequences x n_states)
+    bool valid = false;                     // Whether params are valid
+};
+
+/**
  * Estimated parameters from data.
  */
 struct EstimatedParameters {
@@ -83,6 +97,36 @@ public:
     HSLMResult segment_multi(
         const std::vector<std::vector<double>>& data_matrix,
         const std::vector<int64_t>& positions
+    );
+
+    /**
+     * Estimate parameters from data without running segmentation.
+     *
+     * This allows computing parameters once from all chromosomes' data,
+     * then using them for per-chromosome segmentation (matching R behavior).
+     *
+     * @param data_matrix Matrix of log2 ratios
+     * @return PreEstimatedParams containing mi, smu, sepsilon, muk
+     */
+    PreEstimatedParams estimate_params(
+        const std::vector<std::vector<double>>& data_matrix
+    );
+
+    /**
+     * Run segmentation with pre-estimated parameters.
+     *
+     * This matches the original R behavior where parameters are estimated
+     * globally from all data, then used for per-chromosome segmentation.
+     *
+     * @param log2_ratios Vector of log2 ratio values
+     * @param positions   Genomic positions
+     * @param params      Pre-estimated parameters from estimate_params()
+     * @return HSLMResult containing breakpoints
+     */
+    HSLMResult segment_with_params(
+        const std::vector<double>& log2_ratios,
+        const std::vector<int64_t>& positions,
+        const PreEstimatedParams& params
     );
 
     // Getters/setters for parameters

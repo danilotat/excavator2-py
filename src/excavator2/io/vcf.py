@@ -11,6 +11,8 @@ from pathlib import Path
 from typing import List, Optional, Union, TextIO
 import logging
 
+import numpy as np
+
 from excavator2.analyze.pipeline import CNVSegment, AnalysisResult
 from excavator2.analyze.call import CopyNumberState
 
@@ -267,17 +269,19 @@ def write_segments_tsv(
     result: AnalysisResult,
     output_path: Union[str, Path]
 ) -> None:
-    """Write all segments to TSV format (HSLM output format).
+    """Write per-window results to TSV format (HSLM output format).
 
-    This format includes all segments with full details, matching
-    the original EXCAVATOR2 output format.
+    This format includes one row per window, matching the original
+    EXCAVATOR2 output format where each exon/window has:
+    - Log2R: The raw log2 ratio for that specific window
+    - SegMean: The mean log2 ratio of the segment the window belongs to
 
     Columns:
     - Chromosome, Position, Start, End, Log2R, SegMean, Class,
       CN, AbsoluteCN, Probability
 
     Args:
-        result: AnalysisResult containing segments
+        result: AnalysisResult containing window_results
         output_path: Path to output TSV file
     """
     output_path = Path(output_path)
@@ -289,30 +293,55 @@ def write_segments_tsv(
         # Write header
         headers = [
             "Chromosome", "Position", "Start", "End", "Log2R", "SegMean",
-            "Class", "NProbes", "CN", "AbsoluteCN", "Probability"
+            "Class", "CN", "AbsoluteCN", "Probability"
         ]
         f.write("\t".join(headers) + "\n")
 
-        for segment in result.segments:
-            # Position is midpoint
-            position = (segment.start + segment.end) // 2
+        # Use window_results if available, otherwise fall back to segments
+        if result.window_results:
+            for wr in result.window_results:
+                # Format segment_mean - use "NA" if NaN (segmentation failed)
+                if np.isnan(wr.segment_mean):
+                    seg_mean_str = "NA"
+                else:
+                    seg_mean_str = f"{wr.segment_mean:.6f}"
 
-            values = [
-                segment.chrom,
-                str(position),
-                str(segment.start),
-                str(segment.end),
-                f"{segment.segment_mean:.6f}",
-                f"{segment.segment_mean:.6f}",  # SegMean same as Log2R
-                segment.region_class,
-                str(segment.n_probes),
-                str(segment.cn_call),
-                str(segment.absolute_cn),
-                f"{segment.probability:.6f}"
-            ]
-            f.write("\t".join(values) + "\n")
+                values = [
+                    wr.chrom,
+                    str(wr.position),
+                    str(wr.start),
+                    str(wr.end),
+                    f"{wr.log2_ratio:.6f}",
+                    seg_mean_str,
+                    wr.region_class,
+                    str(wr.cn_call),
+                    str(wr.absolute_cn),
+                    f"{wr.probability:.6f}"
+                ]
+                f.write("\t".join(values) + "\n")
 
-    logger.info(f"Wrote {len(result.segments)} segments to TSV")
+            logger.info(f"Wrote {len(result.window_results)} window records to TSV")
+        else:
+            # Fallback: write segment-level data (legacy behavior)
+            logger.warning("No window_results available, falling back to segment-level output")
+            for segment in result.segments:
+                position = (segment.start + segment.end) // 2
+
+                values = [
+                    segment.chrom,
+                    str(position),
+                    str(segment.start),
+                    str(segment.end),
+                    f"{segment.segment_mean:.6f}",
+                    f"{segment.segment_mean:.6f}",
+                    segment.region_class,
+                    str(segment.cn_call),
+                    str(segment.absolute_cn),
+                    f"{segment.probability:.6f}"
+                ]
+                f.write("\t".join(values) + "\n")
+
+            logger.info(f"Wrote {len(result.segments)} segment records to TSV")
 
 
 def write_fastcall_bed(

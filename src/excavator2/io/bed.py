@@ -120,7 +120,7 @@ def load_target_bed(
 
     with open(bed_path) as f:
         for i, line in enumerate(f):
-            if skip_header and i == 0:
+            if skip_header:
                 continue
 
             line = line.strip()
