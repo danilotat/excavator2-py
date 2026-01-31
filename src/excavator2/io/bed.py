@@ -120,7 +120,7 @@ def load_target_bed(
 
     with open(bed_path) as f:
         for i, line in enumerate(f):
-            if skip_header and i == 0:
+            if skip_header:
                 continue
 
             line = line.strip()
@@ -164,13 +164,13 @@ def load_target_bed(
 
 def load_chromosome_coordinates(
     coord_path: Union[str, Path],
-    skip_header: bool = True
+    skip_header: bool = False
 ) -> Dict[str, ChromosomeInfo]:
     """Load chromosome coordinate information.
 
     Args:
         coord_path: Path to chromosome coordinates file
-        skip_header: Skip first line (default: True)
+        skip_header: Skip first line (default: False)
 
     Returns:
         Dictionary mapping chromosome name to ChromosomeInfo
