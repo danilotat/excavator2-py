@@ -2,10 +2,9 @@
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
-[![Build](https://github.com/ctglab/excavator2-py/actions/workflows/build.yml/badge.svg)](https://github.com/ctglab/excavator2-py/actions/workflows/build.yml)
-[![Test](https://github.com/ctglab/excavator2-py/actions/workflows/test.yml/badge.svg)](https://github.com/ctglab/excavator2-py/actions/workflows/test.yml)
-[![Format](https://github.com/ctglab/excavator2-py/actions/workflows/format.yml/badge.svg)](https://github.com/ctglab/excavator2-py/actions/workflows/format.yml)
-[![Lint](https://github.com/ctglab/excavator2-py/actions/workflows/lint.yml/badge.svg)](https://github.com/ctglab/excavator2-py/actions/workflows/lint.yml)
+[![Build](https://github.com/danilotat/excavator2-py/actions/workflows/build.yml/badge.svg)](https://github.com/danilotat/excavator2-py/actions/workflows/build.yml)
+[![Test](https://github.com/danilotat/excavator2-py/actions/workflows/test.yml/badge.svg)](https://github.com/danilotat/excavator2-py/actions/workflows/test.yml)
+[![Lint](https://github.com/danilotat/excavator2-py/actions/workflows/lint.yml/badge.svg)](https://github.com/danilotat/excavator2-py/actions/workflows/lint.yml)
 
 ## About
 
