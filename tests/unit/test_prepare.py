@@ -12,10 +12,10 @@ import numpy as np
 import pytest
 import h5py
 
-
 # =============================================================================
 # Tests for io/bam.py - GenomicRegion and ReadCountResult
 # =============================================================================
+
 
 class TestGenomicRegion:
     """Tests for GenomicRegion dataclass."""
@@ -73,10 +73,7 @@ class TestReadCountResult:
         counts = np.array([100, 200], dtype=np.int32)
 
         result = ReadCountResult(
-            counts=counts,
-            regions=regions,
-            total_reads=1000,
-            filtered_reads=50
+            counts=counts, regions=regions, total_reads=1000, filtered_reads=50
         )
 
         assert result.n_regions == 2
@@ -99,10 +96,7 @@ class TestReadCountResult:
         from excavator2.io.bam import ReadCountResult
 
         result = ReadCountResult(
-            counts=np.array([], dtype=np.int32),
-            regions=[],
-            total_reads=0,
-            filtered_reads=0
+            counts=np.array([], dtype=np.int32), regions=[], total_reads=0, filtered_reads=0
         )
 
         assert result.n_regions == 0
@@ -116,7 +110,7 @@ class TestLoadRegionsFromBed:
         """Test loading a simple BED file."""
         from excavator2.io.bam import load_regions_from_bed
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.bed', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".bed", delete=False) as f:
             f.write("chr1\t1000\t2000\tgene1\n")
             f.write("chr1\t3000\t4000\tgene2\n")
             f.write("chr2\t1000\t2000\tgene3\n")
@@ -137,7 +131,7 @@ class TestLoadRegionsFromBed:
         """Test loading BED with comments and track lines."""
         from excavator2.io.bam import load_regions_from_bed
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.bed', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".bed", delete=False) as f:
             f.write("# This is a comment\n")
             f.write("track name=test\n")
             f.write("chr1\t1000\t2000\n")
@@ -155,7 +149,7 @@ class TestLoadRegionsFromBed:
         """Test loading BED with only 3 columns."""
         from excavator2.io.bam import load_regions_from_bed
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.bed', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".bed", delete=False) as f:
             f.write("chr1\t1000\t2000\n")
             bed_path = f.name
 
@@ -170,6 +164,7 @@ class TestLoadRegionsFromBed:
 # =============================================================================
 # Tests for prepare/readcount.py - WindowData and SampleReadCounts
 # =============================================================================
+
 
 class TestWindowData:
     """Tests for WindowData dataclass."""
@@ -186,7 +181,7 @@ class TestWindowData:
             gc_content=0.45,
             mappability=0.95,
             region_class="IN",
-            name="exon1"
+            name="exon1",
         )
 
         assert window.chrom == "chr1"
@@ -203,8 +198,13 @@ class TestWindowData:
         from excavator2.prepare.readcount import WindowData
 
         window = WindowData(
-            chrom="chr1", start=1000, end=2000, position=1500,
-            gc_content=0.5, mappability=1.0, region_class="IN"
+            chrom="chr1",
+            start=1000,
+            end=2000,
+            position=1500,
+            gc_content=0.5,
+            mappability=1.0,
+            region_class="IN",
         )
 
         assert window.length == 1000
@@ -224,11 +224,7 @@ class TestSampleReadCounts:
         ]
         counts = np.array([100, 200, 150], dtype=np.int32)
 
-        sample = SampleReadCounts(
-            sample_name="test_sample",
-            raw_counts=counts,
-            windows=windows
-        )
+        sample = SampleReadCounts(sample_name="test_sample", raw_counts=counts, windows=windows)
 
         assert sample.sample_name == "test_sample"
         assert sample.n_windows == 3
@@ -296,6 +292,7 @@ class TestSampleReadCounts:
 # Tests for prepare/normalize.py - Normalization algorithms
 # =============================================================================
 
+
 class TestMedianNormalize:
     """Tests for the median normalization function."""
 
@@ -310,8 +307,8 @@ class TestMedianNormalize:
         normalized, stats = _median_normalize(counts, gc, bin_size=20, min_bin_count=1)
 
         # After normalization, all bins should have similar median
-        assert stats['n_bins'] > 0
-        assert stats['master_median'] > 0
+        assert stats["n_bins"] > 0
+        assert stats["master_median"] > 0
         # The variance should be reduced
         assert np.std(normalized) < np.std(counts)
 
@@ -325,7 +322,7 @@ class TestMedianNormalize:
         normalized, stats = _median_normalize(counts, feature, bin_size=5)
 
         assert len(normalized) == 0
-        assert stats.get('n_bins', 0) == 0
+        assert stats.get("n_bins", 0) == 0
 
     def test_all_zeros(self):
         """Test normalization when all counts are zero."""
@@ -337,7 +334,7 @@ class TestMedianNormalize:
         normalized, stats = _median_normalize(counts, feature, bin_size=5)
 
         assert np.all(normalized == 0)
-        assert stats['master_median'] == 0.0
+        assert stats["master_median"] == 0.0
 
     def test_uniform_data(self):
         """Test normalization with uniform data (no bias)."""
@@ -351,7 +348,9 @@ class TestMedianNormalize:
         normalized, stats = _median_normalize(counts, feature, bin_size=10, min_bin_count=5)
 
         # Should be relatively unchanged
-        assert np.isclose(np.median(counts[counts > 0]), np.median(normalized[normalized > 0]), rtol=0.2)
+        assert np.isclose(
+            np.median(counts[counts > 0]), np.median(normalized[normalized > 0]), rtol=0.2
+        )
 
 
 class TestReadCountNormalizer:
@@ -372,10 +371,7 @@ class TestReadCountNormalizer:
         from excavator2.prepare.normalize import ReadCountNormalizer
 
         normalizer = ReadCountNormalizer(
-            size_bin=10.0,
-            mappability_bin=10.0,
-            gc_bin=10.0,
-            min_bin_count=5
+            size_bin=10.0, mappability_bin=10.0, gc_bin=10.0, min_bin_count=5
         )
 
         assert normalizer.size_bin == 10.0
@@ -403,7 +399,7 @@ class TestReadCountNormalizer:
                 position=i * 1000 + 500,
                 gc_content=gc_values[i],
                 mappability=1.0,
-                region_class="IN"
+                region_class="IN",
             )
             for i in range(n_windows)
         ]
@@ -443,8 +439,8 @@ class TestReadCountNormalizer:
         result = normalizer.normalize(sample)
 
         # Should have stats for both IN and OUT
-        assert 'in_target' in result.normalization_stats
-        assert 'off_target' in result.normalization_stats
+        assert "in_target" in result.normalization_stats
+        assert "off_target" in result.normalization_stats
 
     def test_zero_replacement(self):
         """Test that zeros are replaced with minimum non-zero value."""
@@ -474,7 +470,7 @@ class TestNormalizationIO:
         from excavator2.prepare.normalize import (
             NormalizationResult,
             save_normalized_counts,
-            load_normalized_counts
+            load_normalized_counts,
         )
 
         windows = [
@@ -489,7 +485,7 @@ class TestNormalizationIO:
             normalized_counts=counts,
             windows=windows,
             chromosomes=["chr1", "chr2"],
-            normalization_stats={'test': 1.0}
+            normalization_stats={"test": 1.0},
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -519,7 +515,7 @@ class TestReadCountIO:
             WindowData,
             SampleReadCounts,
             save_read_counts,
-            load_read_counts
+            load_read_counts,
         )
 
         windows = [
@@ -528,11 +524,7 @@ class TestReadCountIO:
         ]
         counts = np.array([100, 200], dtype=np.int32)
 
-        sample = SampleReadCounts(
-            sample_name="test_sample",
-            raw_counts=counts,
-            windows=windows
-        )
+        sample = SampleReadCounts(sample_name="test_sample", raw_counts=counts, windows=windows)
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = Path(tmpdir) / "test.RC.h5"
@@ -552,6 +544,7 @@ class TestReadCountIO:
 # =============================================================================
 # Tests for convenience functions
 # =============================================================================
+
 
 class TestConvenienceFunctions:
     """Tests for module-level convenience functions."""
@@ -578,6 +571,7 @@ class TestConvenienceFunctions:
 # =============================================================================
 # Tests for module imports
 # =============================================================================
+
 
 class TestModuleImports:
     """Tests for module import structure."""

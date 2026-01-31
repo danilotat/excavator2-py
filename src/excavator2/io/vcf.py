@@ -16,7 +16,6 @@ import numpy as np
 from excavator2.analyze.pipeline import CNVSegment, AnalysisResult
 from excavator2.analyze.call import CopyNumberState
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -63,11 +62,7 @@ def _get_alt_allele(segment: CNVSegment) -> str:
         return "<CNV>"
 
 
-def _segment_to_vcf_line(
-    segment: CNVSegment,
-    variant_id: str,
-    sample_name: str
-) -> str:
+def _segment_to_vcf_line(segment: CNVSegment, variant_id: str, sample_name: str) -> str:
     """Convert a CNV segment to a VCF line.
 
     Args:
@@ -100,7 +95,7 @@ def _segment_to_vcf_line(
         f"LOG2R={segment.segment_mean:.4f}",
         f"NPROBES={segment.n_probes}",
         f"PROB={segment.probability:.4f}",
-        f"CLASS={segment.region_class}"
+        f"CLASS={segment.region_class}",
     ]
     info = ";".join(info_parts)
 
@@ -121,14 +116,16 @@ def _segment_to_vcf_line(
 
     sample_data = f"{gt}:{segment.absolute_cn}:{segment.probability:.4f}"
 
-    return f"{chrom}\t{pos}\t{variant_id}\t{ref}\t{alt}\t{qual}\t{filt}\t{info}\t{fmt}\t{sample_data}"
+    return (
+        f"{chrom}\t{pos}\t{variant_id}\t{ref}\t{alt}\t{qual}\t{filt}\t{info}\t{fmt}\t{sample_data}"
+    )
 
 
 def write_vcf(
     result: AnalysisResult,
     output_path: Union[str, Path],
     reference: str = "unknown",
-    cnv_only: bool = True
+    cnv_only: bool = True,
 ) -> None:
     """Write CNV calls to VCF file.
 
@@ -143,12 +140,10 @@ def write_vcf(
 
     logger.info(f"Writing VCF to {output_path}")
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         # Write header
         header = VCF_HEADER_TEMPLATE.format(
-            date=datetime.now().strftime("%Y%m%d"),
-            reference=reference,
-            sample=result.test_sample
+            date=datetime.now().strftime("%Y%m%d"), reference=reference, sample=result.test_sample
         )
         f.write(header + "\n")
 
@@ -167,9 +162,7 @@ def write_vcf(
 
 
 def write_vcf_regions(
-    result: AnalysisResult,
-    output_path: Union[str, Path],
-    reference: str = "unknown"
+    result: AnalysisResult, output_path: Union[str, Path], reference: str = "unknown"
 ) -> None:
     """Write region-level CNV calls to VCF (CNVs only).
 
@@ -185,9 +178,7 @@ def write_vcf_regions(
 
 
 def write_vcf_windows(
-    result: AnalysisResult,
-    output_path: Union[str, Path],
-    reference: str = "unknown"
+    result: AnalysisResult, output_path: Union[str, Path], reference: str = "unknown"
 ) -> None:
     """Write window-level calls to VCF (all segments).
 
@@ -205,6 +196,7 @@ def write_vcf_windows(
 @dataclass
 class BEDRecord:
     """BED format record for CNV output."""
+
     chrom: str
     start: int
     end: int
@@ -217,11 +209,7 @@ class BEDRecord:
         return f"{self.chrom}\t{self.start}\t{self.end}\t{self.name}\t{self.score}\t{self.strand}"
 
 
-def write_bed(
-    result: AnalysisResult,
-    output_path: Union[str, Path],
-    cnv_only: bool = True
-) -> None:
+def write_bed(result: AnalysisResult, output_path: Union[str, Path], cnv_only: bool = True) -> None:
     """Write CNV calls to BED format.
 
     The BED format includes:
@@ -239,7 +227,7 @@ def write_bed(
 
     logger.info(f"Writing BED to {output_path}")
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         # Write header
         f.write("#chrom\tstart\tend\tname\tscore\tstrand\n")
 
@@ -253,11 +241,7 @@ def write_bed(
             score = int(segment.probability * 1000)
 
             record = BEDRecord(
-                chrom=segment.chrom,
-                start=segment.start,
-                end=segment.end,
-                name=name,
-                score=score
+                chrom=segment.chrom, start=segment.start, end=segment.end, name=name, score=score
             )
             f.write(record.to_line() + "\n")
             count += 1
@@ -265,10 +249,7 @@ def write_bed(
     logger.info(f"Wrote {count} records to BED")
 
 
-def write_segments_tsv(
-    result: AnalysisResult,
-    output_path: Union[str, Path]
-) -> None:
+def write_segments_tsv(result: AnalysisResult, output_path: Union[str, Path]) -> None:
     """Write per-window results to TSV format (HSLM output format).
 
     This format includes one row per window, matching the original
@@ -289,11 +270,19 @@ def write_segments_tsv(
 
     logger.info(f"Writing segments TSV to {output_path}")
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         # Write header
         headers = [
-            "Chromosome", "Position", "Start", "End", "Log2R", "SegMean",
-            "Class", "CN", "AbsoluteCN", "Probability"
+            "Chromosome",
+            "Position",
+            "Start",
+            "End",
+            "Log2R",
+            "SegMean",
+            "Class",
+            "CN",
+            "AbsoluteCN",
+            "Probability",
         ]
         f.write("\t".join(headers) + "\n")
 
@@ -316,7 +305,7 @@ def write_segments_tsv(
                     wr.region_class,
                     str(wr.cn_call),
                     str(wr.absolute_cn),
-                    f"{wr.probability:.6f}"
+                    f"{wr.probability:.6f}",
                 ]
                 f.write("\t".join(values) + "\n")
 
@@ -337,17 +326,14 @@ def write_segments_tsv(
                     segment.region_class,
                     str(segment.cn_call),
                     str(segment.absolute_cn),
-                    f"{segment.probability:.6f}"
+                    f"{segment.probability:.6f}",
                 ]
                 f.write("\t".join(values) + "\n")
 
             logger.info(f"Wrote {len(result.segments)} segment records to TSV")
 
 
-def write_fastcall_bed(
-    result: AnalysisResult,
-    output_path: Union[str, Path]
-) -> None:
+def write_fastcall_bed(result: AnalysisResult, output_path: Union[str, Path]) -> None:
     """Write FastCall results in extended BED format.
 
     This format matches the original EXCAVATOR2 FastCall output:
@@ -362,11 +348,9 @@ def write_fastcall_bed(
 
     logger.info(f"Writing FastCall BED to {output_path}")
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         # Write header
-        headers = [
-            "Chromosome", "Start", "End", "Segment", "CNF", "CN", "Call", "ProbCall"
-        ]
+        headers = ["Chromosome", "Start", "End", "Segment", "CNF", "CN", "Call", "ProbCall"]
         f.write("\t".join(headers) + "\n")
 
         for segment in result.segments:
@@ -382,7 +366,7 @@ def write_fastcall_bed(
                 str(cnf),
                 str(segment.absolute_cn),
                 str(segment.cn_call),
-                f"{segment.probability:.6f}"
+                f"{segment.probability:.6f}",
             ]
             f.write("\t".join(values) + "\n")
 

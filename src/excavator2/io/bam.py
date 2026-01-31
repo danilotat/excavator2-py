@@ -22,6 +22,7 @@ class GenomicRegion:
         end: End position (0-based, exclusive)
         name: Optional region name (e.g., gene name)
     """
+
     chrom: str
     start: int
     end: int
@@ -48,6 +49,7 @@ class ReadCountResult:
         total_reads: Total reads processed
         filtered_reads: Reads filtered out (low MAPQ, duplicates, etc.)
     """
+
     counts: np.ndarray
     regions: List[GenomicRegion]
     total_reads: int
@@ -94,7 +96,7 @@ class BAMReader:
         self,
         bam_path: Union[str, Path],
         min_mapq: int = 20,
-        reference: Optional[Union[str, Path]] = None
+        reference: Optional[Union[str, Path]] = None,
     ):
         self.bam_path = Path(bam_path)
         self.min_mapq = min_mapq
@@ -104,7 +106,7 @@ class BAMReader:
             raise FileNotFoundError(f"BAM file not found: {self.bam_path}")
 
         # Check for index
-        index_extensions = ['.bai', '.csi']
+        index_extensions = [".bai", ".csi"]
         has_index = any(
             self.bam_path.with_suffix(self.bam_path.suffix + ext).exists()
             or Path(str(self.bam_path) + ext).exists()
@@ -112,8 +114,7 @@ class BAMReader:
         )
         if not has_index:
             raise FileNotFoundError(
-                f"BAM index not found for: {self.bam_path}. "
-                "Please index with 'samtools index'."
+                f"BAM index not found for: {self.bam_path}. " "Please index with 'samtools index'."
             )
 
         # Open file to check it's readable
@@ -138,9 +139,7 @@ class BAMReader:
             return dict(bam.header)
 
     def count_reads(
-        self,
-        regions: List[GenomicRegion],
-        count_method: str = "overlap"
+        self, regions: List[GenomicRegion], count_method: str = "overlap"
     ) -> ReadCountResult:
         """Count reads in a list of genomic regions.
 
@@ -159,10 +158,7 @@ class BAMReader:
         """
         if not regions:
             return ReadCountResult(
-                counts=np.array([], dtype=np.int32),
-                regions=[],
-                total_reads=0,
-                filtered_reads=0
+                counts=np.array([], dtype=np.int32), regions=[], total_reads=0, filtered_reads=0
             )
 
         if count_method not in ("overlap", "start", "midpoint"):
@@ -209,16 +205,11 @@ class BAMReader:
                 counts[i] = count
 
         return ReadCountResult(
-            counts=counts,
-            regions=regions,
-            total_reads=total_reads,
-            filtered_reads=filtered_reads
+            counts=counts, regions=regions, total_reads=total_reads, filtered_reads=filtered_reads
         )
 
     def count_reads_by_chromosome(
-        self,
-        regions: List[GenomicRegion],
-        count_method: str = "overlap"
+        self, regions: List[GenomicRegion], count_method: str = "overlap"
     ) -> Iterator[Tuple[str, ReadCountResult]]:
         """Count reads in regions, grouped by chromosome.
 
@@ -246,9 +237,7 @@ class BAMReader:
             yield chrom, result
 
     def count_reads_streaming(
-        self,
-        regions: List[GenomicRegion],
-        chunk_size: int = 10000
+        self, regions: List[GenomicRegion], chunk_size: int = 10000
     ) -> Iterator[Tuple[int, int, np.ndarray]]:
         """Count reads in chunks for memory efficiency.
 
@@ -274,7 +263,7 @@ def count_reads_in_regions(
     regions: List[GenomicRegion],
     min_mapq: int = 20,
     reference: Optional[Union[str, Path]] = None,
-    count_method: str = "overlap"
+    count_method: str = "overlap",
 ) -> ReadCountResult:
     """Convenience function for one-off read counting.
 
@@ -298,8 +287,7 @@ def count_reads_in_regions(
 
 
 def load_regions_from_bed(
-    bed_path: Union[str, Path],
-    skip_header: bool = False
+    bed_path: Union[str, Path], skip_header: bool = False
 ) -> List[GenomicRegion]:
     """Load genomic regions from a BED file.
 
@@ -322,10 +310,10 @@ def load_regions_from_bed(
                 continue
 
             line = line.strip()
-            if not line or line.startswith('#') or line.startswith('track'):
+            if not line or line.startswith("#") or line.startswith("track"):
                 continue
 
-            fields = line.split('\t')
+            fields = line.split("\t")
             if len(fields) < 3:
                 continue
 

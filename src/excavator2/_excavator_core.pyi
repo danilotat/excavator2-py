@@ -45,7 +45,6 @@ def logsumexp(v: List[float]) -> float:
     """
     ...
 
-
 class hslm:
     """HSLM (Heterogeneous Shifting Level Model) segmentation algorithm module."""
 
@@ -61,6 +60,7 @@ class hslm:
             n_states: Number of hidden states. Default: 21
             min_segment_size: Minimum segment size to keep. Default: 1
         """
+
         omega: float
         theta: float
         d_norm: float
@@ -83,6 +83,7 @@ class hslm:
             success: Whether the algorithm succeeded
             error_message: Error message if failed
         """
+
         breakpoints: List[int]
         segment_means: List[float]
         state_path: List[int]
@@ -107,12 +108,7 @@ class hslm:
         params: HSLMParameters
 
         def __init__(self, params: HSLMParameters = ...) -> None: ...
-
-        def segment(
-            self,
-            log2_ratios: List[float],
-            positions: List[int]
-        ) -> HSLMResult:
+        def segment(self, log2_ratios: List[float], positions: List[int]) -> HSLMResult:
             """
             Run segmentation on a single chromosome.
 
@@ -125,11 +121,7 @@ class hslm:
             """
             ...
 
-        def segment_multi(
-            self,
-            data_matrix: List[List[float]],
-            positions: List[int]
-        ) -> HSLMResult:
+        def segment_multi(self, data_matrix: List[List[float]], positions: List[int]) -> HSLMResult:
             """
             Run segmentation on multiple sequences (multi-sample mode).
 
@@ -150,7 +142,7 @@ class hslm:
         theta: float = 1e-5,
         step_eta: float = 200000.0,
         n_states: int = 21,
-        min_segment_size: int = 1
+        min_segment_size: int = 1,
     ) -> HSLMResult:
         """
         Convenience function for single-call HSLM segmentation.
@@ -169,7 +161,6 @@ class hslm:
         """
         ...
 
-
 class fastcall:
     """FastCall CNV classification algorithm module."""
 
@@ -185,6 +176,7 @@ class fastcall:
             max_iterations: Maximum EM iterations. Default: 1000
             convergence: Convergence threshold. Default: 1e-5
         """
+
         cellularity: float
         thrd: float
         thru: float
@@ -205,6 +197,7 @@ class fastcall:
             state_index: Index of the most likely state (0-4)
             segment_mean: Mean log2 ratio of the segment
         """
+
         cn_call: int
         absolute_cn: int
         probability: float
@@ -227,6 +220,7 @@ class fastcall:
             success: Whether the algorithm succeeded
             error_message: Error message if failed
         """
+
         calls: List[SegmentCall]
         state_means: List[float]
         state_sds: List[float]
@@ -252,12 +246,7 @@ class fastcall:
         params: FastCallParameters
 
         def __init__(self, params: FastCallParameters = ...) -> None: ...
-
-        def call(
-            self,
-            segment_means: List[float],
-            segment_sds: List[float] = []
-        ) -> FastCallResult:
+        def call(self, segment_means: List[float], segment_sds: List[float] = []) -> FastCallResult:
             """
             Call copy number states for segments.
 
@@ -276,7 +265,7 @@ class fastcall:
         cellularity: float = 1.0,
         thrd: float = 0.5,
         thru: float = 0.35,
-        max_iterations: int = 1000
+        max_iterations: int = 1000,
     ) -> FastCallResult:
         """
         Convenience function for single-call FastCall classification.

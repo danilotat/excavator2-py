@@ -43,10 +43,10 @@ from excavator2.target.init import (
     load_target_data,
 )
 
-
 # =============================================================================
 # Tests for io/bed.py
 # =============================================================================
+
 
 class TestTargetRegion:
     """Tests for TargetRegion dataclass."""
@@ -159,9 +159,11 @@ class TestLoadGapFile:
 
     def test_load_gaps(self, tmp_path):
         gap_file = tmp_path / "gaps.txt"
-        gap_file.write_text("bin\tchrom\tchromStart\tchromEnd\tix\tn\tsize\ttype\tbridge\n"
-                           "1\tchr1\t0\t10000\t1\tN\t10000\ttelomere\tno\n"
-                           "2\tchr1\t121535434\t124535434\t2\tN\t3000000\tcentromere\tno\n")
+        gap_file.write_text(
+            "bin\tchrom\tchromStart\tchromEnd\tix\tn\tsize\ttype\tbridge\n"
+            "1\tchr1\t0\t10000\t1\tN\t10000\ttelomere\tno\n"
+            "2\tchr1\t121535434\t124535434\t2\tN\t3000000\tcentromere\tno\n"
+        )
 
         gaps = load_gap_file(gap_file)
         assert len(gaps) == 2
@@ -170,9 +172,11 @@ class TestLoadGapFile:
 
     def test_exclude_alt_chromosomes(self, tmp_path):
         gap_file = tmp_path / "gaps.txt"
-        gap_file.write_text("bin\tchrom\tchromStart\tchromEnd\tix\tn\tsize\ttype\tbridge\n"
-                           "1\tchr1\t0\t10000\t1\tN\t10000\ttelomere\tno\n"
-                           "2\tchr1_random\t0\t5000\t2\tN\t5000\tother\tno\n")
+        gap_file.write_text(
+            "bin\tchrom\tchromStart\tchromEnd\tix\tn\tsize\ttype\tbridge\n"
+            "1\tchr1\t0\t10000\t1\tN\t10000\ttelomere\tno\n"
+            "2\tchr1_random\t0\t5000\t2\tN\t5000\tother\tno\n"
+        )
 
         gaps = load_gap_file(gap_file, exclude_alt=True)
         assert len(gaps) == 1
@@ -246,6 +250,7 @@ class TestNormalizeChromosomeName:
 # Tests for target/filter.py
 # =============================================================================
 
+
 class TestAnalysisWindow:
     """Tests for AnalysisWindow dataclass."""
 
@@ -278,7 +283,7 @@ class TestFilteredTargetResult:
             n_in_target=1,
             n_out_target=1,
             n_filtered=0,
-            target_name="test"
+            target_name="test",
         )
         assert result.n_windows == 2
 
@@ -293,7 +298,7 @@ class TestFilteredTargetResult:
             n_in_target=2,
             n_out_target=0,
             n_filtered=0,
-            target_name="test"
+            target_name="test",
         )
 
         chr1_windows = result.get_chromosome_windows("chr1")
@@ -375,28 +380,28 @@ class TestRenumberWindows:
 # Tests for target/gc_content.py
 # =============================================================================
 
+
 class TestGetWindowGCStats:
     """Tests for get_window_gc_stats function."""
 
     def test_basic_stats(self):
         gc_content = np.array([0.4, 0.5, 0.6, 0.45, 0.55])
         windows = [
-            AnalysisWindow("chr1", i*1000, (i+1)*1000, f"a{i}", "IN")
-            for i in range(5)
+            AnalysisWindow("chr1", i * 1000, (i + 1) * 1000, f"a{i}", "IN") for i in range(5)
         ]
 
         stats = get_window_gc_stats(gc_content, windows)
-        assert 'mean' in stats
-        assert 'median' in stats
-        assert 'std' in stats
-        assert 0.4 <= stats['mean'] <= 0.6
+        assert "mean" in stats
+        assert "median" in stats
+        assert "std" in stats
+        assert 0.4 <= stats["mean"] <= 0.6
 
     def test_empty_gc(self):
         gc_content = np.array([])
         windows = []
 
         stats = get_window_gc_stats(gc_content, windows)
-        assert stats['mean'] == 0.0
+        assert stats["mean"] == 0.0
 
     def test_in_out_target_stats(self):
         gc_content = np.array([0.3, 0.4, 0.5, 0.6])
@@ -408,13 +413,14 @@ class TestGetWindowGCStats:
         ]
 
         stats = get_window_gc_stats(gc_content, windows)
-        assert stats['in_target_mean'] == 0.35
-        assert stats['out_target_mean'] == 0.55
+        assert stats["in_target_mean"] == 0.35
+        assert stats["out_target_mean"] == 0.55
 
 
 # =============================================================================
 # Tests for target/mappability.py
 # =============================================================================
+
 
 class TestGetMappabilityStats:
     """Tests for get_mappability_stats function."""
@@ -422,23 +428,21 @@ class TestGetMappabilityStats:
     def test_basic_stats(self):
         mappability = np.array([0.8, 0.9, 1.0, 0.95, 0.85])
         windows = [
-            AnalysisWindow("chr1", i*1000, (i+1)*1000, f"a{i}", "IN")
-            for i in range(5)
+            AnalysisWindow("chr1", i * 1000, (i + 1) * 1000, f"a{i}", "IN") for i in range(5)
         ]
 
         stats = get_mappability_stats(mappability, windows)
-        assert 'mean' in stats
-        assert 'low_mappability_count' in stats
+        assert "mean" in stats
+        assert "low_mappability_count" in stats
 
     def test_low_mappability_count(self):
         mappability = np.array([0.3, 0.4, 0.9, 1.0])
         windows = [
-            AnalysisWindow("chr1", i*1000, (i+1)*1000, f"a{i}", "IN")
-            for i in range(4)
+            AnalysisWindow("chr1", i * 1000, (i + 1) * 1000, f"a{i}", "IN") for i in range(4)
         ]
 
         stats = get_mappability_stats(mappability, windows)
-        assert stats['low_mappability_count'] == 2  # < 0.5 threshold
+        assert stats["low_mappability_count"] == 2  # < 0.5 threshold
 
 
 class TestFilterLowMappabilityWindows:
@@ -463,6 +467,7 @@ class TestFilterLowMappabilityWindows:
 # Tests for target/init.py
 # =============================================================================
 
+
 class TestTargetData:
     """Tests for TargetData dataclass."""
 
@@ -482,7 +487,7 @@ class TestTargetData:
             chromosomes=["chr1", "chr2"],
             target_name="test",
             assembly="hg38",
-            window_size=1000
+            window_size=1000,
         )
 
         assert target.n_windows == 3
@@ -504,12 +509,12 @@ class TestTargetData:
             chromosomes=["chr1", "chr2"],
             target_name="test",
             assembly="hg38",
-            window_size=1000
+            window_size=1000,
         )
 
         chr1_data = target.get_chromosome_data("chr1")
-        assert chr1_data['n_windows'] == 1
-        assert chr1_data['gc_content'][0] == 0.4
+        assert chr1_data["n_windows"] == 1
+        assert chr1_data["gc_content"][0] == 0.4
 
 
 class TestTargetDataHDF5:
@@ -531,7 +536,7 @@ class TestTargetDataHDF5:
             target_name="test",
             assembly="hg38",
             window_size=1000,
-            metadata={'creation_date': '2024-01-01'}
+            metadata={"creation_date": "2024-01-01"},
         )
 
         # Save
@@ -558,7 +563,7 @@ class TestTargetDataHDF5:
             chromosomes=[],
             target_name="empty",
             assembly="hg38",
-            window_size=1000
+            window_size=1000,
         )
 
         output_file = tmp_path / "empty.h5"

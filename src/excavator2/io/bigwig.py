@@ -14,6 +14,7 @@ import numpy as np
 
 try:
     import pyBigWig
+
     HAS_PYBIGWIG = True
 except ImportError:
     HAS_PYBIGWIG = False
@@ -33,6 +34,7 @@ class MappabilityResult:
         ends: End positions for each region
         valid_mask: Boolean mask of regions with valid values
     """
+
     values: np.ndarray
     chromosomes: List[str]
     starts: np.ndarray
@@ -75,8 +77,7 @@ class BigWigReader:
     def __init__(self, bigwig_path: Union[str, Path]):
         if not HAS_PYBIGWIG:
             raise ImportError(
-                "pyBigWig is required for BigWig reading. "
-                "Install with: pip install pyBigWig"
+                "pyBigWig is required for BigWig reading. " "Install with: pip install pyBigWig"
             )
 
         self.bigwig_path = Path(bigwig_path)
@@ -103,11 +104,7 @@ class BigWigReader:
         return dict(self._chroms)
 
     def get_mappability(
-        self,
-        chromosomes: List[str],
-        starts: List[int],
-        ends: List[int],
-        stat: str = "mean"
+        self, chromosomes: List[str], starts: List[int], ends: List[int], stat: str = "mean"
     ) -> MappabilityResult:
         """Get mappability values for a list of regions.
 
@@ -163,15 +160,10 @@ class BigWigReader:
             chromosomes=chromosomes,
             starts=np.array(starts, dtype=np.int64),
             ends=np.array(ends, dtype=np.int64),
-            valid_mask=valid_mask
+            valid_mask=valid_mask,
         )
 
-    def get_values(
-        self,
-        chromosome: str,
-        start: int,
-        end: int
-    ) -> Optional[np.ndarray]:
+    def get_values(self, chromosome: str, start: int, end: int) -> Optional[np.ndarray]:
         """Get base-level mappability values for a region.
 
         Args:
@@ -211,10 +203,10 @@ class BigWigReader:
             return chrom
 
         # Try alternate naming conventions
-        if chrom.startswith('chr'):
+        if chrom.startswith("chr"):
             alt_chrom = chrom[3:]
         else:
-            alt_chrom = f'chr{chrom}'
+            alt_chrom = f"chr{chrom}"
 
         if alt_chrom in self._chroms:
             return alt_chrom
@@ -227,7 +219,7 @@ def get_mappability_for_regions(
     chromosomes: List[str],
     starts: List[int],
     ends: List[int],
-    stat: str = "mean"
+    stat: str = "mean",
 ) -> np.ndarray:
     """Convenience function to get mappability values for regions.
 
@@ -247,11 +239,7 @@ def get_mappability_for_regions(
 
 
 def check_bigwig_coverage(
-    bigwig_path: Union[str, Path],
-    chromosome: str,
-    start: int,
-    end: int,
-    min_coverage: float = 0.5
+    bigwig_path: Union[str, Path], chromosome: str, start: int, end: int, min_coverage: float = 0.5
 ) -> bool:
     """Check if a region has sufficient BigWig coverage.
 

@@ -38,6 +38,7 @@ class AnalysisWindow:
         region_class: 'IN' for target regions, 'OUT' for inter-target
         position: Center position of the window
     """
+
     chrom: str
     start: int
     end: int
@@ -67,6 +68,7 @@ class FilteredTargetResult:
         n_filtered: Number of windows filtered out (gap overlap)
         target_name: Name of the target
     """
+
     windows: List[AnalysisWindow]
     chromosomes: List[str]
     n_in_target: int
@@ -83,10 +85,10 @@ class FilteredTargetResult:
         """Get windows for a specific chromosome."""
         # Handle both chr-prefixed and non-prefixed naming
         chrom_variants = {chromosome}
-        if chromosome.startswith('chr'):
+        if chromosome.startswith("chr"):
             chrom_variants.add(chromosome[3:])
         else:
-            chrom_variants.add(f'chr{chromosome}')
+            chrom_variants.add(f"chr{chromosome}")
 
         return [w for w in self.windows if w.chrom in chrom_variants]
 
@@ -95,7 +97,7 @@ def create_analysis_windows(
     target_regions: List[TargetRegion],
     chromosome_info: Dict[str, ChromosomeInfo],
     window_size: int,
-    flank: int = 200
+    flank: int = 200,
 ) -> List[AnalysisWindow]:
     """Create analysis windows from target regions.
 
@@ -126,7 +128,7 @@ def create_analysis_windows(
         # Skip chromosomes not in chromosome_info
         if chrom not in chromosome_info:
             # Try alternate naming
-            alt_chrom = f'chr{chrom}' if not chrom.startswith('chr') else chrom[3:]
+            alt_chrom = f"chr{chrom}" if not chrom.startswith("chr") else chrom[3:]
             if alt_chrom not in chromosome_info:
                 logger.warning(f"Chromosome {chrom} not in chromosome info, skipping")
                 continue
@@ -148,23 +150,27 @@ def create_analysis_windows(
                     out_start = prev_end + flank + j * window_size
                     out_end = out_start + window_size
 
-                    windows.append(AnalysisWindow(
-                        chrom=chrom,
-                        start=out_start,
-                        end=out_end,
-                        window_id=f"a{window_counter}",
-                        region_class="OUT"
-                    ))
+                    windows.append(
+                        AnalysisWindow(
+                            chrom=chrom,
+                            start=out_start,
+                            end=out_end,
+                            window_id=f"a{window_counter}",
+                            region_class="OUT",
+                        )
+                    )
                     window_counter += 1
 
             # Create IN-target window for the exon
-            windows.append(AnalysisWindow(
-                chrom=chrom,
-                start=region.start,
-                end=region.end,
-                window_id=f"a{window_counter}",
-                region_class="IN"
-            ))
+            windows.append(
+                AnalysisWindow(
+                    chrom=chrom,
+                    start=region.start,
+                    end=region.end,
+                    window_id=f"a{window_counter}",
+                    region_class="IN",
+                )
+            )
             window_counter += 1
 
             prev_end = region.end
@@ -174,8 +180,7 @@ def create_analysis_windows(
 
 
 def filter_gap_overlapping_windows(
-    windows: List[AnalysisWindow],
-    gaps: List[GapRegion]
+    windows: List[AnalysisWindow], gaps: List[GapRegion]
 ) -> Tuple[List[AnalysisWindow], int]:
     """Filter windows that overlap genomic gaps.
 
@@ -208,7 +213,9 @@ def filter_gap_overlapping_windows(
         chrom_gaps = gaps_by_chrom.get(window.chrom, [])
         if not chrom_gaps:
             # Try alternate naming
-            alt_chrom = f'chr{window.chrom}' if not window.chrom.startswith('chr') else window.chrom[3:]
+            alt_chrom = (
+                f"chr{window.chrom}" if not window.chrom.startswith("chr") else window.chrom[3:]
+            )
             chrom_gaps = gaps_by_chrom.get(alt_chrom, [])
 
         # Check overlap with any gap
@@ -224,7 +231,9 @@ def filter_gap_overlapping_windows(
         else:
             filtered_windows.append(window)
 
-    logger.info(f"Filtered {n_filtered} windows overlapping gaps, {len(filtered_windows)} remaining")
+    logger.info(
+        f"Filtered {n_filtered} windows overlapping gaps, {len(filtered_windows)} remaining"
+    )
     return filtered_windows, n_filtered
 
 
@@ -236,7 +245,7 @@ def create_filtered_target(
     target_name: str,
     flank: int = 200,
     min_region_length: int = 0,
-    chromosomes: Optional[List[str]] = None
+    chromosomes: Optional[List[str]] = None,
 ) -> FilteredTargetResult:
     """Create filtered analysis windows from target BED file.
 
@@ -264,9 +273,7 @@ def create_filtered_target(
 
     # Load target regions
     target_regions = load_target_bed(
-        bed_path,
-        min_length=min_region_length,
-        chromosomes=chromosomes
+        bed_path, min_length=min_region_length, chromosomes=chromosomes
     )
     logger.info(f"Loaded {len(target_regions)} target regions")
 
@@ -279,12 +286,7 @@ def create_filtered_target(
     logger.info(f"Loaded {len(gaps)} gap regions")
 
     # Create analysis windows
-    windows = create_analysis_windows(
-        target_regions,
-        chromosome_info,
-        window_size,
-        flank
-    )
+    windows = create_analysis_windows(target_regions, chromosome_info, window_size, flank)
 
     # Count IN/OUT before filtering
     n_in_before = sum(1 for w in windows if w.region_class == "IN")
@@ -309,7 +311,7 @@ def create_filtered_target(
         n_in_target=n_in_target,
         n_out_target=n_out_target,
         n_filtered=n_filtered,
-        target_name=target_name
+        target_name=target_name,
     )
 
 
@@ -324,12 +326,14 @@ def renumber_windows(windows: List[AnalysisWindow]) -> List[AnalysisWindow]:
     """
     renumbered = []
     for i, window in enumerate(windows, start=1):
-        renumbered.append(AnalysisWindow(
-            chrom=window.chrom,
-            start=window.start,
-            end=window.end,
-            window_id=f"a{i}",
-            region_class=window.region_class,
-            position=window.position
-        ))
+        renumbered.append(
+            AnalysisWindow(
+                chrom=window.chrom,
+                start=window.start,
+                end=window.end,
+                window_id=f"a{i}",
+                region_class=window.region_class,
+                position=window.position,
+            )
+        )
     return renumbered

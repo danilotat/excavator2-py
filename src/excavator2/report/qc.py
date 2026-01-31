@@ -25,7 +25,6 @@ from excavator2.report.utils import (
     compute_bin_statistics,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -33,7 +32,7 @@ def create_qc_plots(
     raw_data: SampleReadCounts,
     norm_result: NormalizationResult,
     output_dir: Union[str, Path],
-    format: str = "pdf"
+    format: str = "pdf",
 ) -> None:
     """Generate all QC plots for a sample.
 
@@ -67,45 +66,55 @@ def create_qc_plots(
     # 1. Size bias (IN-target only)
     if np.any(in_mask):
         plot_size_bias(
-            lengths[in_mask], raw_counts[in_mask], norm_counts[in_mask],
+            lengths[in_mask],
+            raw_counts[in_mask],
+            norm_counts[in_mask],
             output_path=output_dir / f"InSizeBias.{format}",
-            title=f"{sample_name} - In-Target Size Bias"
+            title=f"{sample_name} - In-Target Size Bias",
         )
         logger.info(f"  Created InSizeBias.{format}")
 
     # 2. Mappability bias (IN-target)
     if np.any(in_mask):
         plot_mappability_bias(
-            mappability[in_mask], raw_counts[in_mask], norm_counts[in_mask],
+            mappability[in_mask],
+            raw_counts[in_mask],
+            norm_counts[in_mask],
             output_path=output_dir / f"InMAPBias.{format}",
-            title=f"{sample_name} - In-Target Mappability Bias"
+            title=f"{sample_name} - In-Target Mappability Bias",
         )
         logger.info(f"  Created InMAPBias.{format}")
 
     # 3. Mappability bias (OUT-target)
     if np.any(out_mask):
         plot_mappability_bias(
-            mappability[out_mask], raw_counts[out_mask], norm_counts[out_mask],
+            mappability[out_mask],
+            raw_counts[out_mask],
+            norm_counts[out_mask],
             output_path=output_dir / f"OutMAPBias.{format}",
-            title=f"{sample_name} - Off-Target Mappability Bias"
+            title=f"{sample_name} - Off-Target Mappability Bias",
         )
         logger.info(f"  Created OutMAPBias.{format}")
 
     # 4. GC bias (IN-target)
     if np.any(in_mask):
         plot_gc_bias(
-            gc_content[in_mask], raw_counts[in_mask], norm_counts[in_mask],
+            gc_content[in_mask],
+            raw_counts[in_mask],
+            norm_counts[in_mask],
             output_path=output_dir / f"InGCBias.{format}",
-            title=f"{sample_name} - In-Target GC Content Bias"
+            title=f"{sample_name} - In-Target GC Content Bias",
         )
         logger.info(f"  Created InGCBias.{format}")
 
     # 5. GC bias (OUT-target)
     if np.any(out_mask):
         plot_gc_bias(
-            gc_content[out_mask], raw_counts[out_mask], norm_counts[out_mask],
+            gc_content[out_mask],
+            raw_counts[out_mask],
+            norm_counts[out_mask],
             output_path=output_dir / f"OutGCBias.{format}",
-            title=f"{sample_name} - Off-Target GC Content Bias"
+            title=f"{sample_name} - Off-Target GC Content Bias",
         )
         logger.info(f"  Created OutGCBias.{format}")
 
@@ -118,7 +127,7 @@ def plot_size_bias(
     norm_counts: np.ndarray,
     output_path: Optional[Union[str, Path]] = None,
     title: str = "Size Bias",
-    bin_size: float = 5.0
+    bin_size: float = 5.0,
 ) -> plt.Figure:
     """Plot size/length bias showing raw vs normalized counts.
 
@@ -139,26 +148,32 @@ def plot_size_bias(
 
     # Raw counts
     _plot_bias_panel(
-        axes[0], lengths, raw_counts, bin_size,
+        axes[0],
+        lengths,
+        raw_counts,
+        bin_size,
         xlabel="Exon Length (bp)",
         ylabel="Raw WMRC",
         title=f"{title} - Raw",
-        color="#1f77b4"
+        color="#1f77b4",
     )
 
     # Normalized counts
     _plot_bias_panel(
-        axes[1], lengths, norm_counts, bin_size,
+        axes[1],
+        lengths,
+        norm_counts,
+        bin_size,
         xlabel="Exon Length (bp)",
         ylabel="Normalized WMRC",
         title=f"{title} - Normalized",
-        color="#2ca02c"
+        color="#2ca02c",
     )
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig
@@ -170,7 +185,7 @@ def plot_mappability_bias(
     norm_counts: np.ndarray,
     output_path: Optional[Union[str, Path]] = None,
     title: str = "Mappability Bias",
-    bin_size: float = 5.0
+    bin_size: float = 5.0,
 ) -> plt.Figure:
     """Plot mappability bias showing raw vs normalized counts.
 
@@ -191,26 +206,32 @@ def plot_mappability_bias(
 
     # Raw counts
     _plot_bias_panel(
-        axes[0], mappability, raw_counts, bin_size,
+        axes[0],
+        mappability,
+        raw_counts,
+        bin_size,
         xlabel="Mappability (%)",
         ylabel="Raw WMRC",
         title=f"{title} - Raw",
-        color="#1f77b4"
+        color="#1f77b4",
     )
 
     # Normalized counts
     _plot_bias_panel(
-        axes[1], mappability, norm_counts, bin_size,
+        axes[1],
+        mappability,
+        norm_counts,
+        bin_size,
         xlabel="Mappability (%)",
         ylabel="Normalized WMRC",
         title=f"{title} - Normalized",
-        color="#2ca02c"
+        color="#2ca02c",
     )
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig
@@ -222,7 +243,7 @@ def plot_gc_bias(
     norm_counts: np.ndarray,
     output_path: Optional[Union[str, Path]] = None,
     title: str = "GC Content Bias",
-    bin_size: float = 5.0
+    bin_size: float = 5.0,
 ) -> plt.Figure:
     """Plot GC content bias showing raw vs normalized counts.
 
@@ -243,26 +264,32 @@ def plot_gc_bias(
 
     # Raw counts
     _plot_bias_panel(
-        axes[0], gc_content, raw_counts, bin_size,
+        axes[0],
+        gc_content,
+        raw_counts,
+        bin_size,
         xlabel="GC Content (%)",
         ylabel="Raw WMRC",
         title=f"{title} - Raw",
-        color="#1f77b4"
+        color="#1f77b4",
     )
 
     # Normalized counts
     _plot_bias_panel(
-        axes[1], gc_content, norm_counts, bin_size,
+        axes[1],
+        gc_content,
+        norm_counts,
+        bin_size,
         xlabel="GC Content (%)",
         ylabel="Normalized WMRC",
         title=f"{title} - Normalized",
-        color="#2ca02c"
+        color="#2ca02c",
     )
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig
@@ -276,7 +303,7 @@ def _plot_bias_panel(
     xlabel: str,
     ylabel: str,
     title: str,
-    color: str = "#1f77b4"
+    color: str = "#1f77b4",
 ) -> None:
     """Plot a single bias panel with error bars.
 
@@ -291,46 +318,56 @@ def _plot_bias_panel(
         color: Plot color
     """
     # Compute binned statistics
-    bin_centers, medians, q1, q3 = compute_bin_statistics(
-        feature, counts, bin_size
-    )
+    bin_centers, medians, q1, q3 = compute_bin_statistics(feature, counts, bin_size)
 
     if len(bin_centers) == 0:
-        ax.text(0.5, 0.5, "Insufficient data", transform=ax.transAxes,
-                ha='center', va='center', fontsize=14)
+        ax.text(
+            0.5,
+            0.5,
+            "Insufficient data",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            fontsize=14,
+        )
         ax.set_xlabel(xlabel, fontsize=12)
         ax.set_ylabel(ylabel, fontsize=12)
-        ax.set_title(title, fontsize=14, fontweight='bold')
+        ax.set_title(title, fontsize=14, fontweight="bold")
         return
 
     # Plot error bars (quartile range)
     errors = np.array([medians - q1, q3 - medians])
     ax.errorbar(
-        bin_centers, medians,
+        bin_centers,
+        medians,
         yerr=errors,
-        fmt='o',
+        fmt="o",
         color=color,
         ecolor=color,
         capsize=3,
         capthick=1.5,
         markersize=6,
-        linewidth=1.5
+        linewidth=1.5,
     )
 
     # Connect medians with line
-    ax.plot(bin_centers, medians, '-', color=color, alpha=0.5, linewidth=1)
+    ax.plot(bin_centers, medians, "-", color=color, alpha=0.5, linewidth=1)
 
     # Add reference line at overall median
     overall_median = np.median(medians)
     ax.axhline(
-        overall_median, color='grey', linestyle='--',
-        alpha=0.7, linewidth=1, label=f'Median: {overall_median:.1f}'
+        overall_median,
+        color="grey",
+        linestyle="--",
+        alpha=0.7,
+        linewidth=1,
+        label=f"Median: {overall_median:.1f}",
     )
 
     ax.set_xlabel(xlabel, fontsize=12)
     ax.set_ylabel(ylabel, fontsize=12)
-    ax.set_title(title, fontsize=14, fontweight='bold')
-    ax.legend(loc='upper right', fontsize=10)
+    ax.set_title(title, fontsize=14, fontweight="bold")
+    ax.legend(loc="upper right", fontsize=10)
     ax.grid(True, alpha=0.3)
 
     # Set reasonable y-limits
@@ -342,7 +379,7 @@ def _plot_bias_panel(
 def create_combined_qc_plot(
     raw_data: SampleReadCounts,
     norm_result: NormalizationResult,
-    output_path: Optional[Union[str, Path]] = None
+    output_path: Optional[Union[str, Path]] = None,
 ) -> plt.Figure:
     """Create a combined 2x3 QC plot showing all biases.
 
@@ -377,26 +414,74 @@ def create_combined_qc_plot(
         norm_counts = norm_counts[in_mask]
 
     # Row 1: Raw data
-    _plot_bias_panel(axes[0, 0], lengths, raw_counts, 5.0,
-                     "Exon Length (bp)", "Raw WMRC", "Size Bias - Raw", "#1f77b4")
-    _plot_bias_panel(axes[0, 1], mappability, raw_counts, 5.0,
-                     "Mappability (%)", "Raw WMRC", "Mappability Bias - Raw", "#1f77b4")
-    _plot_bias_panel(axes[0, 2], gc_content, raw_counts, 5.0,
-                     "GC Content (%)", "Raw WMRC", "GC Bias - Raw", "#1f77b4")
+    _plot_bias_panel(
+        axes[0, 0],
+        lengths,
+        raw_counts,
+        5.0,
+        "Exon Length (bp)",
+        "Raw WMRC",
+        "Size Bias - Raw",
+        "#1f77b4",
+    )
+    _plot_bias_panel(
+        axes[0, 1],
+        mappability,
+        raw_counts,
+        5.0,
+        "Mappability (%)",
+        "Raw WMRC",
+        "Mappability Bias - Raw",
+        "#1f77b4",
+    )
+    _plot_bias_panel(
+        axes[0, 2],
+        gc_content,
+        raw_counts,
+        5.0,
+        "GC Content (%)",
+        "Raw WMRC",
+        "GC Bias - Raw",
+        "#1f77b4",
+    )
 
     # Row 2: Normalized data
-    _plot_bias_panel(axes[1, 0], lengths, norm_counts, 5.0,
-                     "Exon Length (bp)", "Norm WMRC", "Size Bias - Normalized", "#2ca02c")
-    _plot_bias_panel(axes[1, 1], mappability, norm_counts, 5.0,
-                     "Mappability (%)", "Norm WMRC", "Mappability Bias - Normalized", "#2ca02c")
-    _plot_bias_panel(axes[1, 2], gc_content, norm_counts, 5.0,
-                     "GC Content (%)", "Norm WMRC", "GC Bias - Normalized", "#2ca02c")
+    _plot_bias_panel(
+        axes[1, 0],
+        lengths,
+        norm_counts,
+        5.0,
+        "Exon Length (bp)",
+        "Norm WMRC",
+        "Size Bias - Normalized",
+        "#2ca02c",
+    )
+    _plot_bias_panel(
+        axes[1, 1],
+        mappability,
+        norm_counts,
+        5.0,
+        "Mappability (%)",
+        "Norm WMRC",
+        "Mappability Bias - Normalized",
+        "#2ca02c",
+    )
+    _plot_bias_panel(
+        axes[1, 2],
+        gc_content,
+        norm_counts,
+        5.0,
+        "GC Content (%)",
+        "Norm WMRC",
+        "GC Bias - Normalized",
+        "#2ca02c",
+    )
 
-    fig.suptitle(f"QC Summary - {raw_data.sample_name}", fontsize=16, fontweight='bold')
+    fig.suptitle(f"QC Summary - {raw_data.sample_name}", fontsize=16, fontweight="bold")
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig

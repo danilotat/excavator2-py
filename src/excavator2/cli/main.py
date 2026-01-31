@@ -8,7 +8,7 @@ from excavator2 import __version__
 
 @click.group()
 @click.version_option(version=__version__)
-@click.option('--verbose', '-v', count=True, help='Increase verbosity')
+@click.option("--verbose", "-v", count=True, help="Increase verbosity")
 @click.pass_context
 def cli(ctx, verbose):
     """
@@ -17,12 +17,13 @@ def cli(ctx, verbose):
     This is a modern Python/C++ rewrite of the original EXCAVATOR2 tool.
     """
     ctx.ensure_object(dict)
-    ctx.obj['verbose'] = verbose
+    ctx.obj["verbose"] = verbose
 
     # Test that C++ module loads
     if verbose > 0:
         try:
             from excavator2._excavator_core import hello, has_openmp, __version__ as cpp_version
+
             click.echo(f"Python version: {__version__}")
             click.echo(f"C++ version: {cpp_version}")
             click.echo(f"OpenMP support: {has_openmp()}")
@@ -32,11 +33,15 @@ def cli(ctx, verbose):
 
 
 @cli.command()
-@click.option('--config', '-c', required=True, type=click.Path(exists=True),
-              help='Path to configuration YAML file')
-@click.option('--output', '-o', required=True, type=click.Path(),
-              help='Output directory')
-@click.option('--force', '-f', is_flag=True, help='Overwrite existing output')
+@click.option(
+    "--config",
+    "-c",
+    required=True,
+    type=click.Path(exists=True),
+    help="Path to configuration YAML file",
+)
+@click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
+@click.option("--force", "-f", is_flag=True, help="Overwrite existing output")
 @click.pass_context
 def target(ctx, config, output, force):
     """
@@ -80,13 +85,12 @@ def target(ctx, config, output, force):
     )
 
     # Setup logging
-    verbose = ctx.obj.get('verbose', 0)
+    verbose = ctx.obj.get("verbose", 0)
     log_level = logging.DEBUG if verbose > 1 else logging.INFO if verbose else logging.WARNING
     logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    logger = logging.getLogger('excavator2.target')
+    logger = logging.getLogger("excavator2.target")
 
     # Parse output path
     output_dir = Path(output)
@@ -97,44 +101,48 @@ def target(ctx, config, output, force):
         cfg = yaml.safe_load(f)
 
     # Validate configuration sections
-    if 'Reference' not in cfg:
+    if "Reference" not in cfg:
         raise click.ClickException("Configuration missing 'Reference' section")
-    if 'Target' not in cfg:
+    if "Target" not in cfg:
         raise click.ClickException("Configuration missing 'Target' section")
 
-    ref_cfg = cfg['Reference']
-    target_cfg = cfg['Target']
+    ref_cfg = cfg["Reference"]
+    target_cfg = cfg["Target"]
 
     # Validate required Reference fields
-    required_ref = ['Assembly', 'FASTA', 'BigWig', 'Chromosomes', 'Gaps']
+    required_ref = ["Assembly", "FASTA", "BigWig", "Chromosomes", "Gaps"]
     for field in required_ref:
         if field not in ref_cfg:
             raise click.ClickException(f"Reference section missing '{field}' field")
 
     # Validate required Target fields
-    required_target = ['Name', 'BED', 'Window']
+    required_target = ["Name", "BED", "Window"]
     for field in required_target:
         if field not in target_cfg:
             raise click.ClickException(f"Target section missing '{field}' field")
 
     # Extract configuration values
-    assembly = ref_cfg['Assembly']
-    fasta_path = Path(ref_cfg['FASTA'])
-    bigwig_path = Path(ref_cfg['BigWig'])
-    chromosome_path = Path(ref_cfg['Chromosomes'])
-    gap_path = Path(ref_cfg['Gaps'])
-    target_name = target_cfg['Name']
-    bed_path = Path(target_cfg['BED'])
-    window_size = int(target_cfg['Window'])
+    assembly = ref_cfg["Assembly"]
+    fasta_path = Path(ref_cfg["FASTA"])
+    bigwig_path = Path(ref_cfg["BigWig"])
+    chromosome_path = Path(ref_cfg["Chromosomes"])
+    gap_path = Path(ref_cfg["Gaps"])
+    target_name = target_cfg["Name"]
+    bed_path = Path(target_cfg["BED"])
+    window_size = int(target_cfg["Window"])
 
     # Validate window size
     if window_size < 10:
         raise click.ClickException(f"Window size must be at least 10bp, got {window_size}")
 
     # Validate input files exist
-    for path, name in [(fasta_path, 'FASTA'), (bigwig_path, 'BigWig'),
-                       (chromosome_path, 'Chromosomes'), (gap_path, 'Gaps'),
-                       (bed_path, 'BED')]:
+    for path, name in [
+        (fasta_path, "FASTA"),
+        (bigwig_path, "BigWig"),
+        (chromosome_path, "Chromosomes"),
+        (gap_path, "Gaps"),
+        (bed_path, "BED"),
+    ]:
         if not path.exists():
             raise click.ClickException(f"{name} file not found: {path}")
 
@@ -142,7 +150,7 @@ def target(ctx, config, output, force):
     target_output_dir = output_dir / assembly / target_name / f"w_{window_size}"
 
     if target_output_dir.exists() and not force:
-        existing_files = list(target_output_dir.glob('*.h5'))
+        existing_files = list(target_output_dir.glob("*.h5"))
         if existing_files:
             raise click.ClickException(
                 f"Output directory {target_output_dir} contains existing files. "
@@ -171,7 +179,7 @@ def target(ctx, config, output, force):
             gap_path=gap_path,
             target_name=target_name,
             assembly=assembly,
-            window_size=window_size
+            window_size=window_size,
         )
 
         click.echo(f"\nTarget statistics:")
@@ -188,26 +196,22 @@ def target(ctx, config, output, force):
         # Also save a settings file for reference
         settings_file = target_output_dir / "settings.yaml"
         settings = {
-            'Reference': {
-                'Assembly': assembly,
-                'FASTA': str(fasta_path),
-                'BigWig': str(bigwig_path),
-                'Chromosomes': str(chromosome_path),
-                'Gaps': str(gap_path)
+            "Reference": {
+                "Assembly": assembly,
+                "FASTA": str(fasta_path),
+                "BigWig": str(bigwig_path),
+                "Chromosomes": str(chromosome_path),
+                "Gaps": str(gap_path),
             },
-            'Target': {
-                'Name': target_name,
-                'BED': str(bed_path),
-                'Window': window_size
+            "Target": {"Name": target_name, "BED": str(bed_path), "Window": window_size},
+            "Output": {
+                "n_windows": target_data.n_windows,
+                "n_in_target": target_data.n_in_target,
+                "n_out_target": target_data.n_out_target,
+                "n_chromosomes": len(target_data.chromosomes),
             },
-            'Output': {
-                'n_windows': target_data.n_windows,
-                'n_in_target': target_data.n_in_target,
-                'n_out_target': target_data.n_out_target,
-                'n_chromosomes': len(target_data.chromosomes)
-            }
         }
-        with open(settings_file, 'w') as f:
+        with open(settings_file, "w") as f:
             yaml.dump(settings, f, default_flow_style=False)
         click.echo(f"Saved settings to: {settings_file}")
 
@@ -217,6 +221,7 @@ def target(ctx, config, output, force):
         logger.error(f"Target initialization failed: {e}")
         if verbose > 0:
             import traceback
+
             traceback.print_exc()
         raise click.ClickException(str(e))
 
@@ -226,7 +231,9 @@ def _process_single_sample(args):
 
     This is a module-level function so it can be pickled for multiprocessing.
     """
-    sample_name, bam_path, target_path, output_dir, mapq, reference, n_threads, generate_plots = args
+    sample_name, bam_path, target_path, output_dir, mapq, reference, n_threads, generate_plots = (
+        args
+    )
 
     from pathlib import Path
     from excavator2.prepare import (
@@ -241,11 +248,7 @@ def _process_single_sample(args):
     target_path = Path(target_path)
 
     # Create processor and normalizer in this process
-    processor = ReadCountProcessor(
-        target_path=target_path,
-        min_mapq=mapq,
-        reference=reference
-    )
+    processor = ReadCountProcessor(target_path=target_path, min_mapq=mapq, reference=reference)
     normalizer = ReadCountNormalizer()
 
     # Count reads (with chromosome-level parallelization)
@@ -267,6 +270,7 @@ def _process_single_sample(args):
     if generate_plots:
         try:
             from excavator2.report.qc import create_qc_plots
+
             qc_plot_dir = output_dir / "plots" / sample_name
             create_qc_plots(sample_data, norm_result, qc_plot_dir, format="pdf")
         except Exception as e:
@@ -274,29 +278,38 @@ def _process_single_sample(args):
             qc_plot_dir = f"ERROR: {e}"
 
     return {
-        'sample_name': sample_name,
-        'total_reads': sample_data.total_reads,
-        'mean_raw': float(sample_data.raw_counts.mean()),
-        'mean_norm': float(norm_result.normalized_counts.mean()),
-        'raw_output': str(raw_output),
-        'norm_output': str(norm_output),
-        'qc_plots': str(qc_plot_dir) if qc_plot_dir else None,
+        "sample_name": sample_name,
+        "total_reads": sample_data.total_reads,
+        "mean_raw": float(sample_data.raw_counts.mean()),
+        "mean_norm": float(norm_result.normalized_counts.mean()),
+        "raw_output": str(raw_output),
+        "norm_output": str(norm_output),
+        "qc_plots": str(qc_plot_dir) if qc_plot_dir else None,
     }
 
 
 @cli.command()
-@click.option('--samples', '-s', required=True, type=click.Path(exists=True),
-              help='Sample sheet YAML file')
-@click.option('--target', '-t', required=True, type=click.Path(exists=True),
-              help='Target HDF5 file (from target command)')
-@click.option('--output', '-o', required=True, type=click.Path(),
-              help='Output directory')
-@click.option('--threads', '-@', default=1, type=int, help='Number of parallel workers')
-@click.option('--mapq', '-q', default=20, type=int, help='Minimum mapping quality')
-@click.option('--reference', '-r', type=click.Path(exists=True),
-              help='Reference FASTA (required for CRAM files)')
-@click.option('--no-plots', is_flag=True, help='Skip QC plot generation')
-@click.option('--force', '-f', is_flag=True, help='Overwrite existing output')
+@click.option(
+    "--samples", "-s", required=True, type=click.Path(exists=True), help="Sample sheet YAML file"
+)
+@click.option(
+    "--target",
+    "-t",
+    required=True,
+    type=click.Path(exists=True),
+    help="Target HDF5 file (from target command)",
+)
+@click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
+@click.option("--threads", "-@", default=1, type=int, help="Number of parallel workers")
+@click.option("--mapq", "-q", default=20, type=int, help="Minimum mapping quality")
+@click.option(
+    "--reference",
+    "-r",
+    type=click.Path(exists=True),
+    help="Reference FASTA (required for CRAM files)",
+)
+@click.option("--no-plots", is_flag=True, help="Skip QC plot generation")
+@click.option("--force", "-f", is_flag=True, help="Overwrite existing output")
 @click.pass_context
 def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, force):
     """
@@ -326,13 +339,12 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, fo
     )
 
     # Setup logging
-    verbose = ctx.obj.get('verbose', 0)
+    verbose = ctx.obj.get("verbose", 0)
     log_level = logging.DEBUG if verbose > 1 else logging.INFO if verbose else logging.WARNING
     logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    logger = logging.getLogger('excavator2.prepare')
+    logger = logging.getLogger("excavator2.prepare")
 
     # Parse paths
     output_dir = Path(output)
@@ -340,7 +352,7 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, fo
 
     # Check/create output directory
     if output_dir.exists() and not force:
-        existing_files = list(output_dir.glob('*.h5'))
+        existing_files = list(output_dir.glob("*.h5"))
         if existing_files:
             raise click.ClickException(
                 f"Output directory {output_dir} contains existing files. "
@@ -380,11 +392,7 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, fo
 
     # Verify target file is readable and get info
     try:
-        processor = ReadCountProcessor(
-            target_path=target_path,
-            min_mapq=mapq,
-            reference=reference
-        )
+        processor = ReadCountProcessor(target_path=target_path, min_mapq=mapq, reference=reference)
         n_windows = len(processor.windows)
         n_chromosomes = len(processor.chromosomes)
         del processor  # Don't keep it, each worker will create its own
@@ -398,7 +406,16 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, fo
     # Prepare arguments for workers (each sample uses all threads for chromosome parallelization)
     generate_plots = not no_plots
     worker_args = [
-        (sample_name, bam_path, str(target_path), str(output_dir), mapq, reference, threads, generate_plots)
+        (
+            sample_name,
+            bam_path,
+            str(target_path),
+            str(output_dir),
+            mapq,
+            reference,
+            threads,
+            generate_plots,
+        )
         for sample_name, bam_path in valid_samples.items()
     ]
 
@@ -415,8 +432,8 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, fo
             click.echo(f"  Mean raw count: {result['mean_raw']:.2f}")
             click.echo(f"  Mean normalized: {result['mean_norm']:.2f}")
             click.echo(f"  Saved: {result['norm_output']}")
-            if result.get('qc_plots'):
-                if result['qc_plots'].startswith('ERROR'):
+            if result.get("qc_plots"):
+                if result["qc_plots"].startswith("ERROR"):
                     click.echo(f"  QC plots: {result['qc_plots']}", err=True)
                 else:
                     click.echo(f"  QC plots: {result['qc_plots']}")
@@ -424,29 +441,53 @@ def prepare(ctx, samples, target, output, threads, mapq, reference, no_plots, fo
             click.echo(f"  ERROR: {e}", err=True)
             if verbose > 0:
                 import traceback
+
                 traceback.print_exc()
 
     click.echo("\nData preparation complete.")
 
 
 @cli.command()
-@click.option('--samples', '-s', required=True, type=click.Path(exists=True),
-              help='Sample file list YAML (experimental design)')
-@click.option('--input', '-i', required=True, type=click.Path(exists=True),
-              help='Input directory (from prepare command)')
-@click.option('--target', '-t', required=True, type=click.Path(exists=True),
-              help='Target HDF5 file or directory')
-@click.option('--output', '-o', required=True, type=click.Path(),
-              help='Output directory')
-@click.option('--experiment', '-e', required=True,
-              type=click.Choice(['paired', 'pooled']),
-              help='Experimental design (paired: T1/C1, pooled: T vs pooled C)')
-@click.option('--parameters', '-p', type=click.Path(exists=True),
-              help='Parameters YAML (optional, uses defaults if not specified)')
-@click.option('--threads', '-@', default=1, type=int,
-              help='Number of threads (for future parallel support)')
-@click.option('--no-plots', is_flag=True, help='Skip CNV plot generation')
-@click.option('--force', '-f', is_flag=True, help='Overwrite existing output')
+@click.option(
+    "--samples",
+    "-s",
+    required=True,
+    type=click.Path(exists=True),
+    help="Sample file list YAML (experimental design)",
+)
+@click.option(
+    "--input",
+    "-i",
+    required=True,
+    type=click.Path(exists=True),
+    help="Input directory (from prepare command)",
+)
+@click.option(
+    "--target",
+    "-t",
+    required=True,
+    type=click.Path(exists=True),
+    help="Target HDF5 file or directory",
+)
+@click.option("--output", "-o", required=True, type=click.Path(), help="Output directory")
+@click.option(
+    "--experiment",
+    "-e",
+    required=True,
+    type=click.Choice(["paired", "pooled"]),
+    help="Experimental design (paired: T1/C1, pooled: T vs pooled C)",
+)
+@click.option(
+    "--parameters",
+    "-p",
+    type=click.Path(exists=True),
+    help="Parameters YAML (optional, uses defaults if not specified)",
+)
+@click.option(
+    "--threads", "-@", default=1, type=int, help="Number of threads (for future parallel support)"
+)
+@click.option("--no-plots", is_flag=True, help="Skip CNV plot generation")
+@click.option("--force", "-f", is_flag=True, help="Overwrite existing output")
 @click.pass_context
 def analyze(ctx, samples, input, target, output, experiment, parameters, threads, no_plots, force):
     """
@@ -510,13 +551,12 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
     generate_plots = not no_plots
 
     # Setup logging
-    verbose = ctx.obj.get('verbose', 0)
+    verbose = ctx.obj.get("verbose", 0)
     log_level = logging.DEBUG if verbose > 1 else logging.INFO if verbose else logging.WARNING
     logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        level=log_level, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
     )
-    logger = logging.getLogger('excavator2.analyze')
+    logger = logging.getLogger("excavator2.analyze")
 
     # Parse paths
     input_dir = Path(input)
@@ -525,7 +565,7 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
 
     # Check/create output directory
     if output_dir.exists() and not force:
-        existing_files = list(output_dir.glob('**/*.vcf')) + list(output_dir.glob('**/*.tsv'))
+        existing_files = list(output_dir.glob("**/*.vcf")) + list(output_dir.glob("**/*.tsv"))
         if existing_files:
             raise click.ClickException(
                 f"Output directory {output_dir} contains existing files. "
@@ -548,9 +588,9 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
     control_samples = {}
 
     for label, sample_name in sample_list.items():
-        if label.startswith('T'):
+        if label.startswith("T"):
             test_samples[label] = sample_name
-        elif label.startswith('C'):
+        elif label.startswith("C"):
             control_samples[label] = sample_name
         else:
             logger.warning(f"Unknown label prefix '{label}', skipping")
@@ -574,29 +614,31 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
         with open(parameters) as f:
             param_cfg = yaml.safe_load(f)
 
-        if 'HSLM' in param_cfg:
-            hslm_cfg = param_cfg['HSLM']
-            if 'Omega' in hslm_cfg:
-                params.omega = float(hslm_cfg['Omega'])
-            if 'Theta' in hslm_cfg:
-                params.theta = float(hslm_cfg['Theta'])
-            if 'D_norm' in hslm_cfg:
-                params.step_eta = float(hslm_cfg['D_norm'])
+        if "HSLM" in param_cfg:
+            hslm_cfg = param_cfg["HSLM"]
+            if "Omega" in hslm_cfg:
+                params.omega = float(hslm_cfg["Omega"])
+            if "Theta" in hslm_cfg:
+                params.theta = float(hslm_cfg["Theta"])
+            if "D_norm" in hslm_cfg:
+                params.step_eta = float(hslm_cfg["D_norm"])
 
-        if 'FastCall' in param_cfg:
-            fc_cfg = param_cfg['FastCall']
-            if 'Cellularity' in fc_cfg:
-                params.cellularity = float(fc_cfg['Cellularity'])
-            if 'd' in fc_cfg:
-                params.thrd = float(fc_cfg['d'])
-            if 'u' in fc_cfg:
-                params.thru = float(fc_cfg['u'])
-            if 'minExons' in fc_cfg:
-                params.min_exons = int(fc_cfg['minExons'])
+        if "FastCall" in param_cfg:
+            fc_cfg = param_cfg["FastCall"]
+            if "Cellularity" in fc_cfg:
+                params.cellularity = float(fc_cfg["Cellularity"])
+            if "d" in fc_cfg:
+                params.thrd = float(fc_cfg["d"])
+            if "u" in fc_cfg:
+                params.thru = float(fc_cfg["u"])
+            if "minExons" in fc_cfg:
+                params.min_exons = int(fc_cfg["minExons"])
 
     click.echo(f"\nParameters:")
     click.echo(f"  HSLM: omega={params.omega}, theta={params.theta}, step_eta={params.step_eta}")
-    click.echo(f"  FastCall: cellularity={params.cellularity}, thrd={params.thrd}, thru={params.thru}, min_exons={params.min_exons}")
+    click.echo(
+        f"  FastCall: cellularity={params.cellularity}, thrd={params.thrd}, thru={params.thru}, min_exons={params.min_exons}"
+    )
 
     # Initialize analyzer
     analyzer = CNVAnalyzer(params)
@@ -616,6 +658,7 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
             click.echo(f"  ERROR loading {label}: {e}", err=True)
             if verbose > 0:
                 import traceback
+
                 traceback.print_exc()
 
     if not control_data:
@@ -643,16 +686,19 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
 
         # Run analysis based on experiment type
         try:
-            if experiment == 'paired':
+            if experiment == "paired":
                 # Find matching control (T1 -> C1, T2 -> C2, etc.)
-                test_num = re.search(r'\d+', test_label)
+                test_num = re.search(r"\d+", test_label)
                 if test_num:
                     control_label = f"C{test_num.group()}"
                 else:
-                    control_label = test_label.replace('T', 'C')
+                    control_label = test_label.replace("T", "C")
 
                 if control_label not in control_data:
-                    click.echo(f"  WARNING: No matching control for {test_label} (expected {control_label})", err=True)
+                    click.echo(
+                        f"  WARNING: No matching control for {test_label} (expected {control_label})",
+                        err=True,
+                    )
                     continue
 
                 click.echo(f"  Using paired control: {control_label}")
@@ -699,18 +745,18 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
             # Save settings for this analysis
             settings_path = sample_output / "analysis_settings.yaml"
             settings = {
-                'test_sample': test_name,
-                'control': control_label if experiment == 'paired' else 'pooled',
-                'experiment': experiment,
-                'parameters': result.parameters,
-                'results': {
-                    'n_segments': result.n_segments,
-                    'n_cnvs': result.n_cnvs,
-                    'n_deletions': result.n_deletions,
-                    'n_gains': result.n_gains
-                }
+                "test_sample": test_name,
+                "control": control_label if experiment == "paired" else "pooled",
+                "experiment": experiment,
+                "parameters": result.parameters,
+                "results": {
+                    "n_segments": result.n_segments,
+                    "n_cnvs": result.n_cnvs,
+                    "n_deletions": result.n_deletions,
+                    "n_gains": result.n_gains,
+                },
             }
-            with open(settings_path, 'w') as f:
+            with open(settings_path, "w") as f:
                 yaml.dump(settings, f, default_flow_style=False)
 
             # Generate CNV plots if requested
@@ -723,10 +769,12 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
                     )
 
                     # Compute ratio result for plotting
-                    if experiment == 'paired':
+                    if experiment == "paired":
                         ratio_result = compute_log2_ratio(test_data, control_data[control_label])
                     else:
-                        ratio_result = compute_log2_ratio_pooled(test_data, list(control_data.values()))
+                        ratio_result = compute_log2_ratio_pooled(
+                            test_data, list(control_data.values())
+                        )
 
                     # Create plots directory
                     plots_dir = sample_output / "plots"
@@ -752,12 +800,14 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
                     click.echo(f"  WARNING: Plot generation failed: {e}", err=True)
                     if verbose > 0:
                         import traceback
+
                         traceback.print_exc()
 
         except Exception as e:
             click.echo(f"  ERROR analyzing {test_name}: {e}", err=True)
             if verbose > 0:
                 import traceback
+
                 traceback.print_exc()
             continue
 
@@ -765,5 +815,5 @@ def analyze(ctx, samples, input, target, output, experiment, parameters, threads
     click.echo("Analysis complete.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

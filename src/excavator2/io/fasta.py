@@ -26,6 +26,7 @@ class SequenceResult:
         starts: Start positions for each sequence
         ends: End positions for each sequence
     """
+
     sequences: List[str]
     chromosomes: List[str]
     starts: np.ndarray
@@ -48,6 +49,7 @@ class GCResult:
         ends: End positions for each region
         n_bases: Number of bases in each region (excluding N)
     """
+
     gc_content: np.ndarray
     chromosomes: List[str]
     starts: np.ndarray
@@ -89,7 +91,7 @@ class FastaReader:
             raise FileNotFoundError(f"FASTA file not found: {self.fasta_path}")
 
         # Check for FASTA index
-        fai_path = Path(str(self.fasta_path) + '.fai')
+        fai_path = Path(str(self.fasta_path) + ".fai")
         if not fai_path.exists():
             logger.warning(
                 f"FASTA index not found: {fai_path}. "
@@ -106,7 +108,7 @@ class FastaReader:
 
     def close(self) -> None:
         """Close the FASTA file."""
-        if hasattr(self, '_fasta') and self._fasta:
+        if hasattr(self, "_fasta") and self._fasta:
             self._fasta.close()
 
     def __enter__(self):
@@ -126,12 +128,7 @@ class FastaReader:
         """Dictionary of chromosome sizes."""
         return dict(self._chroms)
 
-    def get_sequence(
-        self,
-        chromosome: str,
-        start: int,
-        end: int
-    ) -> Optional[str]:
+    def get_sequence(self, chromosome: str, start: int, end: int) -> Optional[str]:
         """Get the sequence for a genomic region.
 
         Args:
@@ -156,10 +153,7 @@ class FastaReader:
             return None
 
     def get_sequences(
-        self,
-        chromosomes: List[str],
-        starts: List[int],
-        ends: List[int]
+        self, chromosomes: List[str], starts: List[int], ends: List[int]
     ) -> SequenceResult:
         """Get sequences for multiple regions.
 
@@ -183,14 +177,11 @@ class FastaReader:
             sequences=sequences,
             chromosomes=chromosomes,
             starts=np.array(starts, dtype=np.int64),
-            ends=np.array(ends, dtype=np.int64)
+            ends=np.array(ends, dtype=np.int64),
         )
 
     def get_gc_content(
-        self,
-        chromosomes: List[str],
-        starts: List[int],
-        ends: List[int]
+        self, chromosomes: List[str], starts: List[int], ends: List[int]
     ) -> GCResult:
         """Calculate GC content for multiple regions.
 
@@ -224,14 +215,10 @@ class FastaReader:
             chromosomes=chromosomes,
             starts=np.array(starts, dtype=np.int64),
             ends=np.array(ends, dtype=np.int64),
-            n_bases=n_bases
+            n_bases=n_bases,
         )
 
-    def get_base_at_position(
-        self,
-        chromosome: str,
-        position: int
-    ) -> Optional[str]:
+    def get_base_at_position(self, chromosome: str, position: int) -> Optional[str]:
         """Get the reference base at a specific position.
 
         Args:
@@ -252,11 +239,7 @@ class FastaReader:
         except Exception:
             return None
 
-    def get_bases_at_positions(
-        self,
-        chromosomes: List[str],
-        positions: List[int]
-    ) -> List[str]:
+    def get_bases_at_positions(self, chromosomes: List[str], positions: List[int]) -> List[str]:
         """Get reference bases at multiple positions.
 
         Args:
@@ -289,10 +272,10 @@ class FastaReader:
             return chrom
 
         # Try alternate naming conventions
-        if chrom.startswith('chr'):
+        if chrom.startswith("chr"):
             alt_chrom = chrom[3:]
         else:
-            alt_chrom = f'chr{chrom}'
+            alt_chrom = f"chr{chrom}"
 
         if alt_chrom in self._chroms:
             return alt_chrom
@@ -311,10 +294,10 @@ class FastaReader:
             GC fraction is 0.0 if no valid bases
         """
         # Count bases (excluding N and other ambiguous bases)
-        g_count = sequence.count('G')
-        c_count = sequence.count('C')
-        a_count = sequence.count('A')
-        t_count = sequence.count('T')
+        g_count = sequence.count("G")
+        c_count = sequence.count("C")
+        a_count = sequence.count("A")
+        t_count = sequence.count("T")
 
         total = g_count + c_count + a_count + t_count
 
@@ -326,10 +309,7 @@ class FastaReader:
 
 
 def get_gc_content_for_regions(
-    fasta_path: Union[str, Path],
-    chromosomes: List[str],
-    starts: List[int],
-    ends: List[int]
+    fasta_path: Union[str, Path], chromosomes: List[str], starts: List[int], ends: List[int]
 ) -> np.ndarray:
     """Convenience function to get GC content for regions.
 
@@ -348,10 +328,7 @@ def get_gc_content_for_regions(
 
 
 def get_sequence_for_region(
-    fasta_path: Union[str, Path],
-    chromosome: str,
-    start: int,
-    end: int
+    fasta_path: Union[str, Path], chromosome: str, start: int, end: int
 ) -> Optional[str]:
     """Convenience function to get sequence for a single region.
 

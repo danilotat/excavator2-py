@@ -17,10 +17,7 @@ from excavator2.target.filter import AnalysisWindow
 logger = logging.getLogger(__name__)
 
 
-def extract_mappability(
-    windows: List[AnalysisWindow],
-    bigwig_path: Union[str, Path]
-) -> np.ndarray:
+def extract_mappability(windows: List[AnalysisWindow], bigwig_path: Union[str, Path]) -> np.ndarray:
     """Extract mappability values for analysis windows.
 
     Args:
@@ -54,8 +51,7 @@ def extract_mappability(
 
 
 def extract_mappability_by_chromosome(
-    windows: List[AnalysisWindow],
-    bigwig_path: Union[str, Path]
+    windows: List[AnalysisWindow], bigwig_path: Union[str, Path]
 ) -> dict:
     """Extract mappability values grouped by chromosome.
 
@@ -91,16 +87,17 @@ def extract_mappability_by_chromosome(
         map_result = reader.get_mappability(chromosomes, starts, ends, stat="mean")
         result[chrom] = map_result.values
 
-        mean_map = float(np.mean(map_result.values[map_result.valid_mask])) if map_result.n_valid > 0 else 0.0
+        mean_map = (
+            float(np.mean(map_result.values[map_result.valid_mask]))
+            if map_result.n_valid > 0
+            else 0.0
+        )
         logger.info(f"  {chrom}: {len(chrom_windows)} windows, mean MAP={mean_map:.3f}")
 
     return result
 
 
-def get_mappability_stats(
-    mappability: np.ndarray,
-    windows: List[AnalysisWindow]
-) -> dict:
+def get_mappability_stats(mappability: np.ndarray, windows: List[AnalysisWindow]) -> dict:
     """Calculate mappability statistics.
 
     Args:
@@ -112,53 +109,51 @@ def get_mappability_stats(
     """
     if len(mappability) == 0:
         return {
-            'mean': 0.0,
-            'median': 0.0,
-            'std': 0.0,
-            'min': 0.0,
-            'max': 0.0,
-            'in_target_mean': 0.0,
-            'out_target_mean': 0.0,
-            'low_mappability_count': 0,
-            'low_mappability_fraction': 0.0
+            "mean": 0.0,
+            "median": 0.0,
+            "std": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "in_target_mean": 0.0,
+            "out_target_mean": 0.0,
+            "low_mappability_count": 0,
+            "low_mappability_fraction": 0.0,
         }
 
     # Overall stats
     stats = {
-        'mean': float(np.mean(mappability)),
-        'median': float(np.median(mappability)),
-        'std': float(np.std(mappability)),
-        'min': float(np.min(mappability)),
-        'max': float(np.max(mappability))
+        "mean": float(np.mean(mappability)),
+        "median": float(np.median(mappability)),
+        "std": float(np.std(mappability)),
+        "min": float(np.min(mappability)),
+        "max": float(np.max(mappability)),
     }
 
     # Stats by region class
-    in_mask = np.array([w.region_class == 'IN' for w in windows])
+    in_mask = np.array([w.region_class == "IN" for w in windows])
     out_mask = ~in_mask
 
     if np.any(in_mask):
-        stats['in_target_mean'] = float(np.mean(mappability[in_mask]))
+        stats["in_target_mean"] = float(np.mean(mappability[in_mask]))
     else:
-        stats['in_target_mean'] = 0.0
+        stats["in_target_mean"] = 0.0
 
     if np.any(out_mask):
-        stats['out_target_mean'] = float(np.mean(mappability[out_mask]))
+        stats["out_target_mean"] = float(np.mean(mappability[out_mask]))
     else:
-        stats['out_target_mean'] = 0.0
+        stats["out_target_mean"] = 0.0
 
     # Count low mappability regions (< 0.5)
     low_map_threshold = 0.5
     low_map_count = int(np.sum(mappability < low_map_threshold))
-    stats['low_mappability_count'] = low_map_count
-    stats['low_mappability_fraction'] = low_map_count / len(mappability)
+    stats["low_mappability_count"] = low_map_count
+    stats["low_mappability_fraction"] = low_map_count / len(mappability)
 
     return stats
 
 
 def filter_low_mappability_windows(
-    windows: List[AnalysisWindow],
-    mappability: np.ndarray,
-    min_mappability: float = 0.1
+    windows: List[AnalysisWindow], mappability: np.ndarray, min_mappability: float = 0.1
 ) -> tuple:
     """Filter windows with very low mappability.
 

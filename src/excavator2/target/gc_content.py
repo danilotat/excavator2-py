@@ -17,10 +17,7 @@ from excavator2.target.filter import AnalysisWindow
 logger = logging.getLogger(__name__)
 
 
-def calculate_gc_content(
-    windows: List[AnalysisWindow],
-    fasta_path: Union[str, Path]
-) -> np.ndarray:
+def calculate_gc_content(windows: List[AnalysisWindow], fasta_path: Union[str, Path]) -> np.ndarray:
     """Calculate GC content for analysis windows.
 
     Args:
@@ -49,8 +46,7 @@ def calculate_gc_content(
 
 
 def calculate_gc_content_by_chromosome(
-    windows: List[AnalysisWindow],
-    fasta_path: Union[str, Path]
+    windows: List[AnalysisWindow], fasta_path: Union[str, Path]
 ) -> dict:
     """Calculate GC content grouped by chromosome.
 
@@ -88,15 +84,14 @@ def calculate_gc_content_by_chromosome(
             gc_result = reader.get_gc_content(chromosomes, starts, ends)
             result[chrom] = gc_result.gc_content
 
-            logger.info(f"  {chrom}: {len(chrom_windows)} windows, mean GC={np.mean(gc_result.gc_content):.2%}")
+            logger.info(
+                f"  {chrom}: {len(chrom_windows)} windows, mean GC={np.mean(gc_result.gc_content):.2%}"
+            )
 
     return result
 
 
-def get_window_gc_stats(
-    gc_content: np.ndarray,
-    windows: List[AnalysisWindow]
-) -> dict:
+def get_window_gc_stats(gc_content: np.ndarray, windows: List[AnalysisWindow]) -> dict:
     """Calculate GC content statistics.
 
     Args:
@@ -108,36 +103,36 @@ def get_window_gc_stats(
     """
     if len(gc_content) == 0:
         return {
-            'mean': 0.0,
-            'median': 0.0,
-            'std': 0.0,
-            'min': 0.0,
-            'max': 0.0,
-            'in_target_mean': 0.0,
-            'out_target_mean': 0.0
+            "mean": 0.0,
+            "median": 0.0,
+            "std": 0.0,
+            "min": 0.0,
+            "max": 0.0,
+            "in_target_mean": 0.0,
+            "out_target_mean": 0.0,
         }
 
     # Overall stats
     stats = {
-        'mean': float(np.mean(gc_content)),
-        'median': float(np.median(gc_content)),
-        'std': float(np.std(gc_content)),
-        'min': float(np.min(gc_content)),
-        'max': float(np.max(gc_content))
+        "mean": float(np.mean(gc_content)),
+        "median": float(np.median(gc_content)),
+        "std": float(np.std(gc_content)),
+        "min": float(np.min(gc_content)),
+        "max": float(np.max(gc_content)),
     }
 
     # Stats by region class
-    in_mask = np.array([w.region_class == 'IN' for w in windows])
+    in_mask = np.array([w.region_class == "IN" for w in windows])
     out_mask = ~in_mask
 
     if np.any(in_mask):
-        stats['in_target_mean'] = float(np.mean(gc_content[in_mask]))
+        stats["in_target_mean"] = float(np.mean(gc_content[in_mask]))
     else:
-        stats['in_target_mean'] = 0.0
+        stats["in_target_mean"] = 0.0
 
     if np.any(out_mask):
-        stats['out_target_mean'] = float(np.mean(gc_content[out_mask]))
+        stats["out_target_mean"] = float(np.mean(gc_content[out_mask]))
     else:
-        stats['out_target_mean'] = 0.0
+        stats["out_target_mean"] = 0.0
 
     return stats

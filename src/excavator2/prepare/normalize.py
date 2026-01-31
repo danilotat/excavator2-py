@@ -20,7 +20,6 @@ import h5py
 
 from excavator2.prepare.readcount import SampleReadCounts, WindowData
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,6 +34,7 @@ class NormalizationResult:
         chromosomes: List of unique chromosomes
         normalization_stats: Statistics from normalization steps
     """
+
     sample_name: str
     normalized_counts: np.ndarray
     windows: List[WindowData]
@@ -48,10 +48,7 @@ class NormalizationResult:
 
 
 def _median_normalize(
-    counts: np.ndarray,
-    feature: np.ndarray,
-    bin_size: float,
-    min_bin_count: int = 1
+    counts: np.ndarray, feature: np.ndarray, bin_size: float, min_bin_count: int = 1
 ) -> Tuple[np.ndarray, dict]:
     """Apply median-based normalization within feature bins.
 
@@ -86,7 +83,7 @@ def _median_normalize(
 
     # If master median is 0, no normalization is possible
     if master_median == 0:
-        return normalized, {'master_median': 0.0, 'n_bins': 0}
+        return normalized, {"master_median": 0.0, "n_bins": 0}
 
     # Create bins
     feature_min = np.floor(np.min(feature) / bin_size) * bin_size
@@ -129,10 +126,10 @@ def _median_normalize(
             n_bins_corrected += 1
 
     stats = {
-        'master_median': float(master_median),
-        'n_bins': n_bins_corrected,
-        'bin_size': bin_size,
-        'bin_medians': bin_medians
+        "master_median": float(master_median),
+        "n_bins": n_bins_corrected,
+        "bin_size": bin_size,
+        "bin_medians": bin_medians,
     }
 
     return normalized, stats
@@ -166,7 +163,7 @@ class ReadCountNormalizer:
         size_bin: float = 5.0,
         mappability_bin: float = 5.0,
         gc_bin: float = 5.0,
-        min_bin_count: int = 1
+        min_bin_count: int = 1,
     ):
         self.size_bin = size_bin
         self.mappability_bin = mappability_bin
@@ -178,7 +175,7 @@ class ReadCountNormalizer:
         sample_data: SampleReadCounts,
         normalize_size: bool = True,
         normalize_mappability: bool = True,
-        normalize_gc: bool = True
+        normalize_gc: bool = True,
     ) -> NormalizationResult:
         """Apply full normalization pipeline.
 
@@ -228,9 +225,9 @@ class ReadCountNormalizer:
                 normalize_size=normalize_size,
                 normalize_mappability=normalize_mappability,
                 normalize_gc=normalize_gc,
-                label="IN"
+                label="IN",
             )
-            stats['in_target'] = in_stats
+            stats["in_target"] = in_stats
 
         # Process OFF-target regions (skip size normalization)
         if np.any(out_mask):
@@ -242,23 +239,23 @@ class ReadCountNormalizer:
                 normalize_size=False,  # OFF-target doesn't use size normalization
                 normalize_mappability=normalize_mappability,
                 normalize_gc=normalize_gc,
-                label="OUT"
+                label="OUT",
             )
-            stats['off_target'] = out_stats
+            stats["off_target"] = out_stats
 
         # Replace zeros with minimum non-zero value
         nonzero = normalized[normalized > 0]
         if len(nonzero) > 0:
             min_nonzero = np.min(nonzero)
             normalized[normalized == 0] = min_nonzero
-            stats['min_value_replacement'] = float(min_nonzero)
+            stats["min_value_replacement"] = float(min_nonzero)
 
         return NormalizationResult(
             sample_name=sample_data.sample_name,
             normalized_counts=normalized,
             windows=sample_data.windows,
             chromosomes=sample_data.chromosomes,
-            normalization_stats=stats
+            normalization_stats=stats,
         )
 
     def _normalize_subset(
@@ -270,7 +267,7 @@ class ReadCountNormalizer:
         normalize_size: bool,
         normalize_mappability: bool,
         normalize_gc: bool,
-        label: str
+        label: str,
     ) -> Tuple[np.ndarray, dict]:
         """Normalize a subset of windows (IN or OUT target).
 
@@ -296,17 +293,23 @@ class ReadCountNormalizer:
             normalized, size_stats = _median_normalize(
                 normalized, lengths, self.size_bin, self.min_bin_count
             )
-            stats['size'] = size_stats
-            logger.info(f"    Corrected {size_stats['n_bins']} bins, master median={size_stats['master_median']:.2f}")
+            stats["size"] = size_stats
+            logger.info(
+                f"    Corrected {size_stats['n_bins']} bins, master median={size_stats['master_median']:.2f}"
+            )
 
         # Step 2: Mappability normalization
         if normalize_mappability:
-            logger.info(f"  {label}: Applying mappability normalization (bin={self.mappability_bin}%)")
+            logger.info(
+                f"  {label}: Applying mappability normalization (bin={self.mappability_bin}%)"
+            )
             normalized, map_stats = _median_normalize(
                 normalized, mappability, self.mappability_bin, self.min_bin_count
             )
-            stats['mappability'] = map_stats
-            logger.info(f"    Corrected {map_stats['n_bins']} bins, master median={map_stats['master_median']:.2f}")
+            stats["mappability"] = map_stats
+            logger.info(
+                f"    Corrected {map_stats['n_bins']} bins, master median={map_stats['master_median']:.2f}"
+            )
 
         # Step 3: GC-content normalization
         if normalize_gc:
@@ -314,8 +317,10 @@ class ReadCountNormalizer:
             normalized, gc_stats = _median_normalize(
                 normalized, gc_content, self.gc_bin, self.min_bin_count
             )
-            stats['gc'] = gc_stats
-            logger.info(f"    Corrected {gc_stats['n_bins']} bins, master median={gc_stats['master_median']:.2f}")
+            stats["gc"] = gc_stats
+            logger.info(
+                f"    Corrected {gc_stats['n_bins']} bins, master median={gc_stats['master_median']:.2f}"
+            )
 
         return normalized, stats
 
@@ -324,7 +329,7 @@ def normalize_read_counts(
     sample_data: SampleReadCounts,
     size_bin: float = 5.0,
     mappability_bin: float = 5.0,
-    gc_bin: float = 5.0
+    gc_bin: float = 5.0,
 ) -> NormalizationResult:
     """Convenience function for normalizing read counts.
 
@@ -342,17 +347,13 @@ def normalize_read_counts(
         >>> print(f"Normalized mean: {np.mean(result.normalized_counts):.2f}")
     """
     normalizer = ReadCountNormalizer(
-        size_bin=size_bin,
-        mappability_bin=mappability_bin,
-        gc_bin=gc_bin
+        size_bin=size_bin, mappability_bin=mappability_bin, gc_bin=gc_bin
     )
     return normalizer.normalize(sample_data)
 
 
 def save_normalized_counts(
-    result: NormalizationResult,
-    output_path: Union[str, Path],
-    compression: str = "gzip"
+    result: NormalizationResult, output_path: Union[str, Path], compression: str = "gzip"
 ) -> None:
     """Save normalized counts to HDF5 file.
 
@@ -364,13 +365,13 @@ def save_normalized_counts(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with h5py.File(output_path, 'w') as f:
+    with h5py.File(output_path, "w") as f:
         # Metadata
-        f.attrs['sample_name'] = result.sample_name
-        f.attrs['n_windows'] = result.n_windows
+        f.attrs["sample_name"] = result.sample_name
+        f.attrs["n_windows"] = result.n_windows
 
         # Create chromosomes group
-        chrom_grp = f.create_group('chromosomes')
+        chrom_grp = f.create_group("chromosomes")
 
         for chrom in result.chromosomes:
             # Get data for this chromosome
@@ -381,22 +382,30 @@ def save_normalized_counts(
             chr_grp = chrom_grp.create_group(chrom)
 
             # Store arrays
-            chr_grp.create_dataset('normalized_counts', data=counts, compression=compression)
-            chr_grp.create_dataset('start', data=[w.start for w in windows], compression=compression)
-            chr_grp.create_dataset('end', data=[w.end for w in windows], compression=compression)
-            chr_grp.create_dataset('position', data=[w.position for w in windows], compression=compression)
-            chr_grp.create_dataset('gc_content', data=[w.gc_content for w in windows], compression=compression)
-            chr_grp.create_dataset('mappability', data=[w.mappability for w in windows], compression=compression)
+            chr_grp.create_dataset("normalized_counts", data=counts, compression=compression)
+            chr_grp.create_dataset(
+                "start", data=[w.start for w in windows], compression=compression
+            )
+            chr_grp.create_dataset("end", data=[w.end for w in windows], compression=compression)
+            chr_grp.create_dataset(
+                "position", data=[w.position for w in windows], compression=compression
+            )
+            chr_grp.create_dataset(
+                "gc_content", data=[w.gc_content for w in windows], compression=compression
+            )
+            chr_grp.create_dataset(
+                "mappability", data=[w.mappability for w in windows], compression=compression
+            )
 
             # String arrays
-            region_class = np.array([w.region_class for w in windows], dtype='S10')
-            chr_grp.create_dataset('class', data=region_class, compression=compression)
+            region_class = np.array([w.region_class for w in windows], dtype="S10")
+            chr_grp.create_dataset("class", data=region_class, compression=compression)
 
             names = np.array([w.name for w in windows], dtype=h5py.special_dtype(vlen=str))
-            chr_grp.create_dataset('name', data=names, compression=compression)
+            chr_grp.create_dataset("name", data=names, compression=compression)
 
         # Store normalization stats
-        stats_grp = f.create_group('normalization_stats')
+        stats_grp = f.create_group("normalization_stats")
         _save_nested_dict(stats_grp, result.normalization_stats)
 
 
@@ -429,57 +438,59 @@ def load_normalized_counts(input_path: Union[str, Path]) -> NormalizationResult:
     """
     input_path = Path(input_path)
 
-    with h5py.File(input_path, 'r') as f:
-        sample_name = f.attrs['sample_name']
+    with h5py.File(input_path, "r") as f:
+        sample_name = f.attrs["sample_name"]
 
         windows = []
         all_counts = []
         chromosomes = []
 
-        for chrom in f['chromosomes']:
+        for chrom in f["chromosomes"]:
             chromosomes.append(chrom)
-            chr_grp = f['chromosomes'][chrom]
+            chr_grp = f["chromosomes"][chrom]
 
-            counts = chr_grp['normalized_counts'][:]
-            starts = chr_grp['start'][:]
-            ends = chr_grp['end'][:]
-            positions = chr_grp['position'][:]
-            gc_content = chr_grp['gc_content'][:]
-            mappability = chr_grp['mappability'][:]
+            counts = chr_grp["normalized_counts"][:]
+            starts = chr_grp["start"][:]
+            ends = chr_grp["end"][:]
+            positions = chr_grp["position"][:]
+            gc_content = chr_grp["gc_content"][:]
+            mappability = chr_grp["mappability"][:]
 
-            region_class = chr_grp['class'][:]
-            if region_class.dtype.kind == 'S':
-                region_class = [c.decode('utf-8') for c in region_class]
+            region_class = chr_grp["class"][:]
+            if region_class.dtype.kind == "S":
+                region_class = [c.decode("utf-8") for c in region_class]
 
-            names = chr_grp['name'][:]
-            if hasattr(names, 'astype'):
+            names = chr_grp["name"][:]
+            if hasattr(names, "astype"):
                 names = [str(n) for n in names]
 
             all_counts.extend(counts)
 
             for i in range(len(counts)):
-                windows.append(WindowData(
-                    chrom=chrom,
-                    start=int(starts[i]),
-                    end=int(ends[i]),
-                    position=int(positions[i]),
-                    gc_content=float(gc_content[i]),
-                    mappability=float(mappability[i]),
-                    region_class=region_class[i],
-                    name=names[i] if i < len(names) else ""
-                ))
+                windows.append(
+                    WindowData(
+                        chrom=chrom,
+                        start=int(starts[i]),
+                        end=int(ends[i]),
+                        position=int(positions[i]),
+                        gc_content=float(gc_content[i]),
+                        mappability=float(mappability[i]),
+                        region_class=region_class[i],
+                        name=names[i] if i < len(names) else "",
+                    )
+                )
 
         # Load normalization stats (simplified)
         stats = {}
-        if 'normalization_stats' in f:
-            stats = _load_nested_dict(f['normalization_stats'])
+        if "normalization_stats" in f:
+            stats = _load_nested_dict(f["normalization_stats"])
 
         return NormalizationResult(
             sample_name=sample_name,
             normalized_counts=np.array(all_counts),
             windows=windows,
             chromosomes=sorted(chromosomes),
-            normalization_stats=stats
+            normalization_stats=stats,
         )
 
 

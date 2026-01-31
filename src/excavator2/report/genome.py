@@ -28,7 +28,6 @@ from excavator2.report.utils import (
     normalize_chromosome_name,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -37,7 +36,7 @@ def create_genome_plot(
     output_path: Optional[Union[str, Path]] = None,
     assembly: str = "hg38",
     show_normal: bool = False,
-    title: Optional[str] = None
+    title: Optional[str] = None,
 ) -> plt.Figure:
     """Create a genome-wide CNV plot.
 
@@ -71,17 +70,17 @@ def create_genome_plot(
         # Check both prefixed and unprefixed versions
         if chrom in analysis_result.chromosome_results:
             available_chroms.append(chrom)
-        elif chrom.replace('chr', '') in analysis_result.chromosome_results:
-            available_chroms.append(chrom.replace('chr', ''))
+        elif chrom.replace("chr", "") in analysis_result.chromosome_results:
+            available_chroms.append(chrom.replace("chr", ""))
         elif norm_chrom in analysis_result.chromosome_results:
             available_chroms.append(norm_chrom)
 
     if not available_chroms:
         logger.warning("No chromosome data available for genome-wide plot")
         fig, ax = plt.subplots(figsize=(15, 4))
-        ax.text(0.5, 0.5, "No data available", ha='center', va='center', fontsize=14)
+        ax.text(0.5, 0.5, "No data available", ha="center", va="center", fontsize=14)
         if output_path:
-            fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+            fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         return fig
 
     # Create figure
@@ -95,7 +94,7 @@ def create_genome_plot(
         if norm_chrom in chrom_lengths:
             genome_offset[chrom] = current_offset
             genome_offset[norm_chrom] = current_offset
-            genome_offset[chrom.replace('chr', '')] = current_offset
+            genome_offset[chrom.replace("chr", "")] = current_offset
             current_offset += chrom_lengths[norm_chrom]
 
     total_genome_length = current_offset
@@ -113,13 +112,16 @@ def create_genome_plot(
         chrom_len = chrom_lengths[norm_chrom]
 
         # Alternating colors for chromosomes
-        color = '#e0e0e0' if i % 2 == 0 else '#c0c0c0'
+        color = "#e0e0e0" if i % 2 == 0 else "#c0c0c0"
 
         rect = FancyBboxPatch(
             (chrom_start, ideogram_y - ideogram_height / 2),
-            chrom_len, ideogram_height,
+            chrom_len,
+            ideogram_height,
             boxstyle="round,pad=0,rounding_size=0",
-            facecolor=color, edgecolor='black', linewidth=0.5
+            facecolor=color,
+            edgecolor="black",
+            linewidth=0.5,
         )
         ax.add_patch(rect)
 
@@ -127,8 +129,11 @@ def create_genome_plot(
         ax.text(
             chrom_start + chrom_len / 2,
             ideogram_y - ideogram_height / 2 - 0.15,
-            chrom.replace('chr', ''),
-            ha='center', va='top', fontsize=8, rotation=45
+            chrom.replace("chr", ""),
+            ha="center",
+            va="top",
+            fontsize=8,
+            rotation=45,
         )
 
     # Draw CNV calls
@@ -144,7 +149,7 @@ def create_genome_plot(
     for chrom, chrom_result in analysis_result.chromosome_results.items():
         # Find offset for this chromosome
         offset = None
-        for key in [chrom, normalize_chromosome_name(chrom), f'chr{chrom}']:
+        for key in [chrom, normalize_chromosome_name(chrom), f"chr{chrom}"]:
             if key in genome_offset:
                 offset = genome_offset[key]
                 break
@@ -161,33 +166,25 @@ def create_genome_plot(
 
             if seg.cn_call < 0:  # Deletion
                 y_pos = del_y + (0.2 if seg.cn_call == -2 else 0)
-                rect = Rectangle(
-                    (genome_start, y_pos),
-                    width, cnv_bar_height
-                )
+                rect = Rectangle((genome_start, y_pos), width, cnv_bar_height)
                 del_patches.append(rect)
                 del_colors.append(get_cnv_color(seg.cn_call))
             elif seg.cn_call > 0:  # Gain
                 y_pos = amp_y - (0.2 if seg.cn_call == 2 else 0)
-                rect = Rectangle(
-                    (genome_start, y_pos),
-                    width, cnv_bar_height
-                )
+                rect = Rectangle((genome_start, y_pos), width, cnv_bar_height)
                 amp_patches.append(rect)
                 amp_colors.append(get_cnv_color(seg.cn_call))
 
     # Add collections
     if del_patches:
         del_collection = PatchCollection(
-            del_patches, facecolor=del_colors,
-            edgecolor='none', alpha=0.8
+            del_patches, facecolor=del_colors, edgecolor="none", alpha=0.8
         )
         ax.add_collection(del_collection)
 
     if amp_patches:
         amp_collection = PatchCollection(
-            amp_patches, facecolor=amp_colors,
-            edgecolor='none', alpha=0.8
+            amp_patches, facecolor=amp_colors, edgecolor="none", alpha=0.8
         )
         ax.add_collection(amp_collection)
 
@@ -195,27 +192,42 @@ def create_genome_plot(
     ax.set_xlim(-total_genome_length * 0.02, total_genome_length * 1.02)
     ax.set_ylim(-0.8, 1.2)
 
-    ax.set_xlabel('Genome Position', fontsize=12)
-    ax.set_title(title, fontsize=14, fontweight='bold', pad=20)
+    ax.set_xlabel("Genome Position", fontsize=12)
+    ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
 
     # Hide y-axis
     ax.set_yticks([])
-    ax.spines['left'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
+    ax.spines["left"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["top"].set_visible(False)
 
     # Format x-axis (Gb)
     def format_gb(x, p):
         return f"{x / 1e9:.1f} Gb"
+
     ax.xaxis.set_major_formatter(plt.FuncFormatter(format_gb))
 
     # Add labels for gain/loss regions
-    ax.text(-total_genome_length * 0.015, del_y + cnv_bar_height / 2,
-            'DEL', ha='right', va='center', fontsize=10, fontweight='bold',
-            color=CNV_COLORS[-1])
-    ax.text(-total_genome_length * 0.015, amp_y + cnv_bar_height / 2,
-            'AMP', ha='right', va='center', fontsize=10, fontweight='bold',
-            color=CNV_COLORS[1])
+    ax.text(
+        -total_genome_length * 0.015,
+        del_y + cnv_bar_height / 2,
+        "DEL",
+        ha="right",
+        va="center",
+        fontsize=10,
+        fontweight="bold",
+        color=CNV_COLORS[-1],
+    )
+    ax.text(
+        -total_genome_length * 0.015,
+        amp_y + cnv_bar_height / 2,
+        "AMP",
+        ha="right",
+        va="center",
+        fontsize=10,
+        fontweight="bold",
+        color=CNV_COLORS[1],
+    )
 
     # Legend
     handles = []
@@ -224,15 +236,12 @@ def create_genome_plot(
         label = CNV_SHORT_LABELS.get(cn_call, str(cn_call))
         handles.append(mpatches.Patch(color=color, alpha=0.8, label=label))
 
-    ax.legend(
-        handles=handles, loc='upper right',
-        ncol=4, fontsize=10, framealpha=0.9
-    )
+    ax.legend(handles=handles, loc="upper right", ncol=4, fontsize=10, framealpha=0.9)
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
         logger.info(f"Genome-wide plot saved to {output_path}")
 
@@ -242,7 +251,7 @@ def create_genome_plot(
 def create_genome_heatmap(
     analysis_results: List[AnalysisResult],
     output_path: Optional[Union[str, Path]] = None,
-    title: str = "CNV Heatmap"
+    title: str = "CNV Heatmap",
 ) -> plt.Figure:
     """Create a heatmap showing CNVs across multiple samples.
 
@@ -259,7 +268,7 @@ def create_genome_heatmap(
     """
     if not analysis_results:
         fig, ax = plt.subplots(figsize=(15, 4))
-        ax.text(0.5, 0.5, "No data available", ha='center', va='center')
+        ax.text(0.5, 0.5, "No data available", ha="center", va="center")
         return fig
 
     logger.info(f"Creating CNV heatmap for {len(analysis_results)} samples")
@@ -300,7 +309,7 @@ def create_genome_heatmap(
             for seg in chrom_result.segments:
                 start_bin = offset + seg.start // bin_size
                 end_bin = offset + seg.end // bin_size
-                data[i, start_bin:end_bin + 1] = seg.cn_call
+                data[i, start_bin : end_bin + 1] = seg.cn_call
 
     # Create figure
     fig, ax = plt.subplots(figsize=(18, max(4, n_samples * 0.5)), dpi=FIGURE_DPI)
@@ -312,18 +321,15 @@ def create_genome_heatmap(
         CNV_COLORS[-2],  # 2-copy DEL
         CNV_COLORS[-1],  # 1-copy DEL
         (0.95, 0.95, 0.95),  # Normal
-        CNV_COLORS[1],   # 1-copy AMP
-        CNV_COLORS[2],   # N-copy AMP
+        CNV_COLORS[1],  # 1-copy AMP
+        CNV_COLORS[2],  # N-copy AMP
     ]
     cmap = ListedColormap(colors_list)
     bounds = [-2.5, -1.5, -0.5, 0.5, 1.5, 2.5]
     norm = BoundaryNorm(bounds, cmap.N)
 
     # Plot heatmap
-    im = ax.imshow(
-        data, aspect='auto', cmap=cmap, norm=norm,
-        interpolation='nearest'
-    )
+    im = ax.imshow(data, aspect="auto", cmap=cmap, norm=norm, interpolation="nearest")
 
     # Y-axis labels (sample names)
     ax.set_yticks(range(n_samples))
@@ -336,27 +342,34 @@ def create_genome_heatmap(
             norm_chrom = normalize_chromosome_name(chrom)
             n_bins = CHROMOSOME_LENGTHS_HG38.get(norm_chrom, 0) // bin_size + 1
             offset = chrom_offsets[chrom] + n_bins
-            ax.axvline(offset, color='grey', linewidth=0.5, alpha=0.5)
+            ax.axvline(offset, color="grey", linewidth=0.5, alpha=0.5)
 
             # Chromosome label
             mid_x = prev_offset + n_bins / 2
-            ax.text(mid_x, -0.7, chrom.replace('chr', ''),
-                    ha='center', va='top', fontsize=7, rotation=45)
+            ax.text(
+                mid_x,
+                -0.7,
+                chrom.replace("chr", ""),
+                ha="center",
+                va="top",
+                fontsize=7,
+                rotation=45,
+            )
             prev_offset = offset
 
-    ax.set_xlabel('Genome Position', fontsize=12)
-    ax.set_ylabel('Sample', fontsize=12)
-    ax.set_title(title, fontsize=14, fontweight='bold')
+    ax.set_xlabel("Genome Position", fontsize=12)
+    ax.set_ylabel("Sample", fontsize=12)
+    ax.set_title(title, fontsize=14, fontweight="bold")
 
     # Colorbar
     cbar = plt.colorbar(im, ax=ax, shrink=0.6, pad=0.02)
     cbar.set_ticks([-2, -1, 0, 1, 2])
-    cbar.set_ticklabels(['2-DEL', 'DEL', 'Normal', 'AMP', '2-AMP'])
+    cbar.set_ticklabels(["2-DEL", "DEL", "Normal", "AMP", "2-AMP"])
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
         logger.info(f"CNV heatmap saved to {output_path}")
 
@@ -364,8 +377,7 @@ def create_genome_heatmap(
 
 
 def create_cnv_summary_table(
-    analysis_result: AnalysisResult,
-    output_path: Optional[Union[str, Path]] = None
+    analysis_result: AnalysisResult, output_path: Optional[Union[str, Path]] = None
 ) -> plt.Figure:
     """Create a visual summary table of CNV calls.
 
@@ -394,74 +406,79 @@ def create_cnv_summary_table(
         del_length = sum(s.length for s in chrom_result.segments if s.cn_call < 0)
         amp_length = sum(s.length for s in chrom_result.segments if s.cn_call > 0)
 
-        stats.append({
-            'Chromosome': chrom,
-            'Segments': n_segments,
-            'CNVs': n_cnvs,
-            'Deletions': n_del,
-            'Del Length (Mb)': del_length / 1e6,
-            'Gains': n_amp,
-            'Gain Length (Mb)': amp_length / 1e6
-        })
+        stats.append(
+            {
+                "Chromosome": chrom,
+                "Segments": n_segments,
+                "CNVs": n_cnvs,
+                "Deletions": n_del,
+                "Del Length (Mb)": del_length / 1e6,
+                "Gains": n_amp,
+                "Gain Length (Mb)": amp_length / 1e6,
+            }
+        )
 
     # Create figure with table
     fig, ax = plt.subplots(figsize=(12, max(4, len(stats) * 0.3 + 2)), dpi=FIGURE_DPI)
-    ax.axis('off')
+    ax.axis("off")
 
     # Create table
-    columns = ['Chromosome', 'Segments', 'CNVs', 'Deletions', 'Del (Mb)', 'Gains', 'Gain (Mb)']
+    columns = ["Chromosome", "Segments", "CNVs", "Deletions", "Del (Mb)", "Gains", "Gain (Mb)"]
     cell_text = []
     for s in stats:
-        cell_text.append([
-            s['Chromosome'],
-            str(s['Segments']),
-            str(s['CNVs']),
-            str(s['Deletions']),
-            f"{s['Del Length (Mb)']:.2f}",
-            str(s['Gains']),
-            f"{s['Gain Length (Mb)']:.2f}"
-        ])
+        cell_text.append(
+            [
+                s["Chromosome"],
+                str(s["Segments"]),
+                str(s["CNVs"]),
+                str(s["Deletions"]),
+                f"{s['Del Length (Mb)']:.2f}",
+                str(s["Gains"]),
+                f"{s['Gain Length (Mb)']:.2f}",
+            ]
+        )
 
     # Add totals row
-    total_segs = sum(s['Segments'] for s in stats)
-    total_cnvs = sum(s['CNVs'] for s in stats)
-    total_del = sum(s['Deletions'] for s in stats)
-    total_del_len = sum(s['Del Length (Mb)'] for s in stats)
-    total_amp = sum(s['Gains'] for s in stats)
-    total_amp_len = sum(s['Gain Length (Mb)'] for s in stats)
+    total_segs = sum(s["Segments"] for s in stats)
+    total_cnvs = sum(s["CNVs"] for s in stats)
+    total_del = sum(s["Deletions"] for s in stats)
+    total_del_len = sum(s["Del Length (Mb)"] for s in stats)
+    total_amp = sum(s["Gains"] for s in stats)
+    total_amp_len = sum(s["Gain Length (Mb)"] for s in stats)
 
-    cell_text.append([
-        'TOTAL', str(total_segs), str(total_cnvs),
-        str(total_del), f"{total_del_len:.2f}",
-        str(total_amp), f"{total_amp_len:.2f}"
-    ])
-
-    table = ax.table(
-        cellText=cell_text,
-        colLabels=columns,
-        loc='center',
-        cellLoc='center'
+    cell_text.append(
+        [
+            "TOTAL",
+            str(total_segs),
+            str(total_cnvs),
+            str(total_del),
+            f"{total_del_len:.2f}",
+            str(total_amp),
+            f"{total_amp_len:.2f}",
+        ]
     )
+
+    table = ax.table(cellText=cell_text, colLabels=columns, loc="center", cellLoc="center")
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     table.scale(1.2, 1.5)
 
     # Style header
     for j, col in enumerate(columns):
-        table[(0, j)].set_facecolor('#4a7ebb')
-        table[(0, j)].set_text_props(color='white', fontweight='bold')
+        table[(0, j)].set_facecolor("#4a7ebb")
+        table[(0, j)].set_text_props(color="white", fontweight="bold")
 
     # Style totals row
     for j in range(len(columns)):
-        table[(len(cell_text), j)].set_facecolor('#e0e0e0')
-        table[(len(cell_text), j)].set_text_props(fontweight='bold')
+        table[(len(cell_text), j)].set_facecolor("#e0e0e0")
+        table[(len(cell_text), j)].set_text_props(fontweight="bold")
 
-    ax.set_title(f"CNV Summary - {sample_name}", fontsize=14, fontweight='bold', pad=20)
+    ax.set_title(f"CNV Summary - {sample_name}", fontsize=14, fontweight="bold", pad=20)
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig

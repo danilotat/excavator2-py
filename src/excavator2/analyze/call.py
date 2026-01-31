@@ -23,6 +23,7 @@ class CopyNumberState(IntEnum):
     - SINGLE_COPY_GAIN: CN=3 (one copy gained)
     - AMPLIFICATION: CN=4+ (high-level amplification)
     """
+
     HOMOZYGOUS_DELETION = -2
     HETEROZYGOUS_DELETION = -1
     NORMAL = 0
@@ -47,7 +48,7 @@ class CopyNumberState(IntEnum):
             -1: "Heterozygous Deletion (CN=1)",
             0: "Normal (CN=2)",
             1: "Single Copy Gain (CN=3)",
-            2: "Amplification (CN=4+)"
+            2: "Amplification (CN=4+)",
         }
         return labels[self.value]
 
@@ -63,6 +64,7 @@ class CNVCall:
         probability: Posterior probability of the call
         segment_mean: Mean log2 ratio of the segment
     """
+
     cn_call: int
     absolute_cn: int
     state: CopyNumberState
@@ -99,6 +101,7 @@ class ClassificationResult:
         success: Whether classification succeeded
         error_message: Error message if failed
     """
+
     calls: List[CNVCall]
     state_means: List[float]
     state_sds: List[float]
@@ -178,7 +181,7 @@ class FastCallCaller:
         thru: float = 0.35,
         min_exons: int = 4,
         max_iterations: int = 1000,
-        convergence: float = 1e-5
+        convergence: float = 1e-5,
     ):
         if not 0 < cellularity <= 1:
             raise ValueError(f"cellularity must be in (0, 1], got {cellularity}")
@@ -223,7 +226,7 @@ class FastCallCaller:
     def call(
         self,
         segment_means: Union[np.ndarray, List[float]],
-        segment_sds: Optional[Union[np.ndarray, List[float]]] = None
+        segment_sds: Optional[Union[np.ndarray, List[float]]] = None,
     ) -> ClassificationResult:
         """Call copy number states for segments.
 
@@ -253,8 +256,7 @@ class FastCallCaller:
             sds = np.asarray(segment_sds, dtype=np.float64)
             if len(sds) != len(means):
                 raise ValueError(
-                    f"Length mismatch: segment_means ({len(means)}) vs "
-                    f"segment_sds ({len(sds)})"
+                    f"Length mismatch: segment_means ({len(means)}) vs " f"segment_sds ({len(sds)})"
                 )
             sds_list = sds.tolist()
 
@@ -270,19 +272,21 @@ class FastCallCaller:
                 iterations=0,
                 converged=False,
                 success=False,
-                error_message=result.error_message
+                error_message=result.error_message,
             )
 
         # Convert C++ SegmentCall objects to Python CNVCall objects
         calls = []
         for c in result.calls:
-            calls.append(CNVCall(
-                cn_call=c.cn_call,
-                absolute_cn=c.absolute_cn,
-                state=CopyNumberState(c.cn_call),
-                probability=c.probability,
-                segment_mean=c.segment_mean
-            ))
+            calls.append(
+                CNVCall(
+                    cn_call=c.cn_call,
+                    absolute_cn=c.absolute_cn,
+                    state=CopyNumberState(c.cn_call),
+                    probability=c.probability,
+                    segment_mean=c.segment_mean,
+                )
+            )
 
         return ClassificationResult(
             calls=calls,
@@ -291,7 +295,7 @@ class FastCallCaller:
             state_priors=list(result.state_priors),
             iterations=result.iterations,
             converged=result.converged,
-            success=True
+            success=True,
         )
 
 
@@ -300,7 +304,7 @@ def call(
     cellularity: float = 1.0,
     thrd: float = 0.5,
     thru: float = 0.35,
-    max_iterations: int = 1000
+    max_iterations: int = 1000,
 ) -> ClassificationResult:
     """Convenience function for single-call FastCall classification.
 
@@ -322,9 +326,6 @@ def call(
         >>> print(f"Found {result.n_cnvs} CNVs")
     """
     caller = FastCallCaller(
-        cellularity=cellularity,
-        thrd=thrd,
-        thru=thru,
-        max_iterations=max_iterations
+        cellularity=cellularity, thrd=thrd, thru=thru, max_iterations=max_iterations
     )
     return caller.call(segment_means)

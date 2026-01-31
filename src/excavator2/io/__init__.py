@@ -90,10 +90,15 @@ __all__ = [
 def __getattr__(name):
     """Lazy import for vcf module to avoid circular imports."""
     vcf_exports = {
-        'write_vcf', 'write_vcf_regions', 'write_vcf_windows',
-        'write_bed', 'write_segments_tsv', 'write_fastcall_bed'
+        "write_vcf",
+        "write_vcf_regions",
+        "write_vcf_windows",
+        "write_bed",
+        "write_segments_tsv",
+        "write_fastcall_bed",
     }
     if name in vcf_exports:
         from excavator2.io import vcf
+
         return getattr(vcf, name)
     raise AttributeError(f"module 'excavator2.io' has no attribute '{name}'")

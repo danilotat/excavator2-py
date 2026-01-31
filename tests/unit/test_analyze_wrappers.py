@@ -29,8 +29,9 @@ class TestAnalyzeImports:
     def test_import_from_excavator2(self):
         """Test importing analyze through excavator2."""
         from excavator2 import analyze
-        assert hasattr(analyze, 'HSLMSegmenter')
-        assert hasattr(analyze, 'FastCallCaller')
+
+        assert hasattr(analyze, "HSLMSegmenter")
+        assert hasattr(analyze, "FastCallCaller")
 
 
 class TestHSLMSegmenter:
@@ -40,6 +41,7 @@ class TestHSLMSegmenter:
     def segmenter(self):
         """Create default segmenter."""
         from excavator2.analyze import HSLMSegmenter
+
         return HSLMSegmenter()
 
     @pytest.fixture
@@ -47,11 +49,13 @@ class TestHSLMSegmenter:
         """Generate data with clear CNV event."""
         np.random.seed(42)
         n = 100
-        ratios = np.concatenate([
-            np.random.normal(0.0, 0.1, 40),    # Normal
-            np.random.normal(-0.8, 0.1, 20),   # Deletion
-            np.random.normal(0.0, 0.1, 40),    # Normal
-        ])
+        ratios = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 40),  # Normal
+                np.random.normal(-0.8, 0.1, 20),  # Deletion
+                np.random.normal(0.0, 0.1, 40),  # Normal
+            ]
+        )
         positions = np.arange(n) * 1000
         return ratios, positions
 
@@ -64,6 +68,7 @@ class TestHSLMSegmenter:
     def test_custom_parameters(self):
         """Test custom parameter values."""
         from excavator2.analyze import HSLMSegmenter
+
         seg = HSLMSegmenter(omega=0.2, theta=1e-4, n_states=31)
         assert seg.omega == 0.2
         assert seg.theta == 1e-4
@@ -94,6 +99,7 @@ class TestHSLMSegmenter:
     def test_segment_returns_result(self, segmenter, cnv_data):
         """Test that segment() returns SegmentationResult."""
         from excavator2.analyze import SegmentationResult
+
         ratios, positions = cnv_data
         result = segmenter.segment(ratios, positions)
 
@@ -117,6 +123,7 @@ class TestHSLMSegmenter:
     def test_segment_objects(self, segmenter, cnv_data):
         """Test Segment object attributes."""
         from excavator2.analyze import Segment
+
         ratios, positions = cnv_data
         result = segmenter.segment(ratios, positions)
 
@@ -193,14 +200,18 @@ class TestHSLMMultiSample:
 
         np.random.seed(42)
         # Two samples with shared breakpoint
-        sample1 = np.concatenate([
-            np.random.normal(0.0, 0.1, 30),
-            np.random.normal(-0.5, 0.1, 20),
-        ])
-        sample2 = np.concatenate([
-            np.random.normal(0.0, 0.1, 30),
-            np.random.normal(-0.6, 0.1, 20),
-        ])
+        sample1 = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 30),
+                np.random.normal(-0.5, 0.1, 20),
+            ]
+        )
+        sample2 = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 30),
+                np.random.normal(-0.6, 0.1, 20),
+            ]
+        )
         data_matrix = np.array([sample1, sample2])
         positions = np.arange(50) * 1000
 
@@ -226,17 +237,20 @@ class TestFastCallCaller:
     def caller(self):
         """Create default caller."""
         from excavator2.analyze import FastCallCaller
+
         return FastCallCaller()
 
     @pytest.fixture
     def mixed_segments(self):
         """Generate segments with mixed CN states."""
         np.random.seed(42)
-        return np.concatenate([
-            np.random.normal(0.0, 0.1, 20),    # Normal
-            np.random.normal(-0.6, 0.1, 10),   # Deletion
-            np.random.normal(0.58, 0.1, 10),   # Duplication
-        ])
+        return np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 20),  # Normal
+                np.random.normal(-0.6, 0.1, 10),  # Deletion
+                np.random.normal(0.58, 0.1, 10),  # Duplication
+            ]
+        )
 
     def test_default_parameters(self, caller):
         """Test default parameter values."""
@@ -246,6 +260,7 @@ class TestFastCallCaller:
     def test_custom_parameters(self):
         """Test custom parameter values."""
         from excavator2.analyze import FastCallCaller
+
         c = FastCallCaller(cellularity=0.8, thrd=0.6, max_iterations=500)
         assert c.cellularity == 0.8
         assert c.max_iterations == 500
@@ -274,6 +289,7 @@ class TestFastCallCaller:
     def test_call_returns_result(self, caller, mixed_segments):
         """Test that call() returns ClassificationResult."""
         from excavator2.analyze import ClassificationResult
+
         result = caller.call(mixed_segments)
 
         assert isinstance(result, ClassificationResult)
@@ -290,6 +306,7 @@ class TestFastCallCaller:
     def test_cnv_call_attributes(self, caller, mixed_segments):
         """Test CNVCall object attributes."""
         from excavator2.analyze import CNVCall, CopyNumberState
+
         result = caller.call(mixed_segments)
 
         for call in result.calls:
@@ -304,24 +321,37 @@ class TestFastCallCaller:
         from excavator2.analyze import CNVCall, CopyNumberState
 
         # Normal call
-        normal = CNVCall(cn_call=0, absolute_cn=2, state=CopyNumberState.NORMAL,
-                        probability=0.95, segment_mean=0.0)
+        normal = CNVCall(
+            cn_call=0,
+            absolute_cn=2,
+            state=CopyNumberState.NORMAL,
+            probability=0.95,
+            segment_mean=0.0,
+        )
         assert not normal.is_cnv
         assert not normal.is_deletion
         assert not normal.is_gain
 
         # Deletion
-        deletion = CNVCall(cn_call=-1, absolute_cn=1,
-                          state=CopyNumberState.HETEROZYGOUS_DELETION,
-                          probability=0.9, segment_mean=-0.5)
+        deletion = CNVCall(
+            cn_call=-1,
+            absolute_cn=1,
+            state=CopyNumberState.HETEROZYGOUS_DELETION,
+            probability=0.9,
+            segment_mean=-0.5,
+        )
         assert deletion.is_cnv
         assert deletion.is_deletion
         assert not deletion.is_gain
 
         # Gain
-        gain = CNVCall(cn_call=1, absolute_cn=3,
-                      state=CopyNumberState.SINGLE_COPY_GAIN,
-                      probability=0.85, segment_mean=0.5)
+        gain = CNVCall(
+            cn_call=1,
+            absolute_cn=3,
+            state=CopyNumberState.SINGLE_COPY_GAIN,
+            probability=0.85,
+            segment_mean=0.5,
+        )
         assert gain.is_cnv
         assert not gain.is_deletion
         assert gain.is_gain
@@ -466,11 +496,13 @@ class TestEndToEndPipeline:
 
         # Generate data with CNV event
         n = 100
-        ratios = np.concatenate([
-            np.random.normal(0.0, 0.08, 40),    # Normal
-            np.random.normal(-0.8, 0.08, 20),   # Deletion
-            np.random.normal(0.0, 0.08, 40),    # Normal
-        ])
+        ratios = np.concatenate(
+            [
+                np.random.normal(0.0, 0.08, 40),  # Normal
+                np.random.normal(-0.8, 0.08, 20),  # Deletion
+                np.random.normal(0.0, 0.08, 40),  # Normal
+            ]
+        )
         positions = np.arange(n) * 1000
 
         # Step 1: Segment

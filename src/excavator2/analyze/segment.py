@@ -24,6 +24,7 @@ class Segment:
         mean: Mean log2 ratio of the segment
         n_probes: Number of probes/windows in the segment
     """
+
     start_idx: int
     end_idx: int
     start_pos: int
@@ -46,6 +47,7 @@ class PreEstimatedParams:
         muk: State means matrix (n_sequences x n_states)
         valid: Whether parameters are valid
     """
+
     mi: List[float]
     smu: List[float]
     sepsilon: List[float]
@@ -65,6 +67,7 @@ class SegmentationResult:
         success: Whether segmentation succeeded
         error_message: Error message if failed
     """
+
     segments: List[Segment]
     breakpoints: List[int]
     state_path: List[int]
@@ -103,7 +106,7 @@ class HSLMSegmenter:
         theta: float = 1e-5,
         step_eta: float = 200000.0,
         n_states: int = 21,
-        min_segment_size: int = 1
+        min_segment_size: int = 1,
     ):
         self._params = hslm.HSLMParameters()
         self._params.omega = omega
@@ -148,9 +151,7 @@ class HSLMSegmenter:
         return self._params.min_segment_size
 
     def segment(
-        self,
-        log2_ratios: Union[np.ndarray, List[float]],
-        positions: Union[np.ndarray, List[int]]
+        self, log2_ratios: Union[np.ndarray, List[float]], positions: Union[np.ndarray, List[int]]
     ) -> SegmentationResult:
         """Run HSLM segmentation on a single chromosome/region.
 
@@ -190,15 +191,12 @@ class HSLMSegmenter:
                 state_path=[],
                 n_segments=0,
                 success=False,
-                error_message=result.error_message
+                error_message=result.error_message,
             )
 
         # Convert breakpoints to Segment objects
         segments = self._breakpoints_to_segments(
-            result.breakpoints,
-            result.segment_means,
-            ratios,
-            pos
+            result.breakpoints, result.segment_means, ratios, pos
         )
 
         return SegmentationResult(
@@ -206,13 +204,10 @@ class HSLMSegmenter:
             breakpoints=list(result.breakpoints),
             state_path=list(result.state_path),
             n_segments=result.n_segments,
-            success=True
+            success=True,
         )
 
-    def estimate_params(
-        self,
-        log2_ratios: Union[np.ndarray, List[float]]
-    ) -> PreEstimatedParams:
+    def estimate_params(self, log2_ratios: Union[np.ndarray, List[float]]) -> PreEstimatedParams:
         """Estimate HSLM parameters from data without running segmentation.
 
         This allows computing parameters once from all chromosomes' data,
@@ -238,14 +233,14 @@ class HSLMSegmenter:
             smu=list(result.smu),
             sepsilon=list(result.sepsilon),
             muk=[list(row) for row in result.muk],
-            valid=result.valid
+            valid=result.valid,
         )
 
     def segment_with_params(
         self,
         log2_ratios: Union[np.ndarray, List[float]],
         positions: Union[np.ndarray, List[int]],
-        params: PreEstimatedParams
+        params: PreEstimatedParams,
     ) -> SegmentationResult:
         """Run segmentation with pre-estimated parameters.
 
@@ -290,14 +285,11 @@ class HSLMSegmenter:
                 state_path=[],
                 n_segments=0,
                 success=False,
-                error_message=result.error_message
+                error_message=result.error_message,
             )
 
         segments = self._breakpoints_to_segments(
-            result.breakpoints,
-            result.segment_means,
-            ratios,
-            pos
+            result.breakpoints, result.segment_means, ratios, pos
         )
 
         return SegmentationResult(
@@ -305,13 +297,13 @@ class HSLMSegmenter:
             breakpoints=list(result.breakpoints),
             state_path=list(result.state_path),
             n_segments=result.n_segments,
-            success=True
+            success=True,
         )
 
     def segment_multi(
         self,
         data_matrix: Union[np.ndarray, List[List[float]]],
-        positions: Union[np.ndarray, List[int]]
+        positions: Union[np.ndarray, List[int]],
     ) -> SegmentationResult:
         """Run segmentation on multiple samples (multi-sample mode).
 
@@ -335,9 +327,7 @@ class HSLMSegmenter:
         if data.ndim != 2:
             raise ValueError(f"data_matrix must be 2D, got {data.ndim}D")
         if data.shape[1] != len(pos):
-            raise ValueError(
-                f"Column count ({data.shape[1]}) != positions length ({len(pos)})"
-            )
+            raise ValueError(f"Column count ({data.shape[1]}) != positions length ({len(pos)})")
 
         # Convert to list of lists for C++
         data_list = [row.tolist() for row in data]
@@ -351,16 +341,13 @@ class HSLMSegmenter:
                 state_path=[],
                 n_segments=0,
                 success=False,
-                error_message=result.error_message
+                error_message=result.error_message,
             )
 
         # For multi-sample, use mean across samples for segment means
         mean_ratios = np.mean(data, axis=0)
         segments = self._breakpoints_to_segments(
-            result.breakpoints,
-            result.segment_means,
-            mean_ratios,
-            pos
+            result.breakpoints, result.segment_means, mean_ratios, pos
         )
 
         return SegmentationResult(
@@ -368,7 +355,7 @@ class HSLMSegmenter:
             breakpoints=list(result.breakpoints),
             state_path=list(result.state_path),
             n_segments=result.n_segments,
-            success=True
+            success=True,
         )
 
     def _breakpoints_to_segments(
@@ -376,7 +363,7 @@ class HSLMSegmenter:
         breakpoints: List[int],
         segment_means: List[float],
         ratios: np.ndarray,
-        positions: np.ndarray
+        positions: np.ndarray,
     ) -> List[Segment]:
         """Convert breakpoint indices to Segment objects."""
         segments = []
@@ -398,14 +385,16 @@ class HSLMSegmenter:
             else:
                 mean = float(np.mean(ratios[start_idx:end_idx]))
 
-            segments.append(Segment(
-                start_idx=start_idx,
-                end_idx=end_idx,
-                start_pos=int(positions[start_idx]),
-                end_pos=int(positions[end_idx - 1]),
-                mean=mean,
-                n_probes=end_idx - start_idx
-            ))
+            segments.append(
+                Segment(
+                    start_idx=start_idx,
+                    end_idx=end_idx,
+                    start_pos=int(positions[start_idx]),
+                    end_pos=int(positions[end_idx - 1]),
+                    mean=mean,
+                    n_probes=end_idx - start_idx,
+                )
+            )
 
             start_idx = end_idx
 
@@ -419,7 +408,7 @@ def segment(
     theta: float = 1e-5,
     step_eta: float = 200000.0,
     n_states: int = 21,
-    min_segment_size: int = 1
+    min_segment_size: int = 1,
 ) -> SegmentationResult:
     """Convenience function for single-call HSLM segmentation.
 
@@ -447,6 +436,6 @@ def segment(
         theta=theta,
         step_eta=step_eta,
         n_states=n_states,
-        min_segment_size=min_segment_size
+        min_segment_size=min_segment_size,
     )
     return segmenter.segment(log2_ratios, positions)

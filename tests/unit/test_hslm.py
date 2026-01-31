@@ -97,11 +97,13 @@ class TestHSLMSegmentation:
         """Generate simple three-segment data: normal, deletion, normal."""
         np.random.seed(42)
         positions = np.arange(1000, 401000, 1000, dtype=np.int64)
-        log2_ratios = np.concatenate([
-            np.random.normal(0.0, 0.1, 150),    # Normal region
-            np.random.normal(-0.5, 0.1, 100),   # Deletion
-            np.random.normal(0.0, 0.1, 150),    # Normal region
-        ])
+        log2_ratios = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 150),  # Normal region
+                np.random.normal(-0.5, 0.1, 100),  # Deletion
+                np.random.normal(0.0, 0.1, 150),  # Normal region
+            ]
+        )
         return log2_ratios, positions
 
     @pytest.fixture
@@ -109,11 +111,13 @@ class TestHSLMSegmentation:
         """Generate data with a duplication segment."""
         np.random.seed(123)
         positions = np.arange(1000, 301000, 1000, dtype=np.int64)
-        log2_ratios = np.concatenate([
-            np.random.normal(0.0, 0.1, 100),    # Normal
-            np.random.normal(0.58, 0.1, 100),   # Duplication (log2(3/2))
-            np.random.normal(0.0, 0.1, 100),    # Normal
-        ])
+        log2_ratios = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 100),  # Normal
+                np.random.normal(0.58, 0.1, 100),  # Duplication (log2(3/2))
+                np.random.normal(0.0, 0.1, 100),  # Normal
+            ]
+        )
         return log2_ratios, positions
 
     def test_segment_returns_result(self):
@@ -276,12 +280,7 @@ class TestHSLMConvenienceFunction:
         positions = list(range(1000, 101000, 1000))
         log2_ratios = list(np.random.normal(0.0, 0.1, 100))
 
-        result = hslm.segment(
-            log2_ratios, positions,
-            omega=0.2,
-            theta=1e-4,
-            min_segment_size=5
-        )
+        result = hslm.segment(log2_ratios, positions, omega=0.2, theta=1e-4, min_segment_size=5)
 
         assert result.success
 
@@ -314,14 +313,18 @@ class TestHSLMMultiSample:
         positions = list(range(1000, 201000, 1000))
 
         # Create two samples with same breakpoint structure
-        sample1 = np.concatenate([
-            np.random.normal(0.0, 0.1, 100),
-            np.random.normal(-0.5, 0.1, 100),
-        ])
-        sample2 = np.concatenate([
-            np.random.normal(0.0, 0.1, 100),
-            np.random.normal(-0.5, 0.1, 100),
-        ])
+        sample1 = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 100),
+                np.random.normal(-0.5, 0.1, 100),
+            ]
+        )
+        sample2 = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 100),
+                np.random.normal(-0.5, 0.1, 100),
+            ]
+        )
 
         data_matrix = [sample1.tolist(), sample2.tolist()]
 

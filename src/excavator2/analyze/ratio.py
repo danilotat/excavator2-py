@@ -14,7 +14,6 @@ import numpy as np
 from excavator2.prepare.normalize import NormalizationResult, load_normalized_counts
 from excavator2.prepare.readcount import WindowData
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +30,7 @@ class Log2RatioResult:
         chromosomes: List of chromosomes
         in_target_mask: Boolean mask for IN-target windows
     """
+
     sample_name: str
     control_name: str
     log2_ratios: np.ndarray
@@ -55,19 +55,19 @@ class Log2RatioResult:
         """
         # Handle chr prefix variants
         chrom_variants = {chromosome}
-        if chromosome.startswith('chr'):
+        if chromosome.startswith("chr"):
             chrom_variants.add(chromosome[3:])
         else:
-            chrom_variants.add(f'chr{chromosome}')
+            chrom_variants.add(f"chr{chromosome}")
 
         mask = np.array([w.chrom in chrom_variants for w in self.windows])
 
         return {
-            'log2_ratios': self.log2_ratios[mask],
-            'positions': self.positions[mask],
-            'windows': [w for w, m in zip(self.windows, mask) if m],
-            'in_target_mask': self.in_target_mask[mask],
-            'n_windows': int(np.sum(mask))
+            "log2_ratios": self.log2_ratios[mask],
+            "positions": self.positions[mask],
+            "windows": [w for w, m in zip(self.windows, mask) if m],
+            "in_target_mask": self.in_target_mask[mask],
+            "n_windows": int(np.sum(mask)),
         }
 
     def get_in_target_data(self) -> dict:
@@ -78,10 +78,10 @@ class Log2RatioResult:
         """
         mask = self.in_target_mask
         return {
-            'log2_ratios': self.log2_ratios[mask],
-            'positions': self.positions[mask],
-            'windows': [w for w, m in zip(self.windows, mask) if m],
-            'n_windows': int(np.sum(mask))
+            "log2_ratios": self.log2_ratios[mask],
+            "positions": self.positions[mask],
+            "windows": [w for w, m in zip(self.windows, mask) if m],
+            "n_windows": int(np.sum(mask)),
         }
 
     def get_off_target_data(self) -> dict:
@@ -92,10 +92,10 @@ class Log2RatioResult:
         """
         mask = ~self.in_target_mask
         return {
-            'log2_ratios': self.log2_ratios[mask],
-            'positions': self.positions[mask],
-            'windows': [w for w, m in zip(self.windows, mask) if m],
-            'n_windows': int(np.sum(mask))
+            "log2_ratios": self.log2_ratios[mask],
+            "positions": self.positions[mask],
+            "windows": [w for w, m in zip(self.windows, mask) if m],
+            "n_windows": int(np.sum(mask)),
         }
 
 
@@ -104,7 +104,7 @@ def compute_log2_ratio(
     control_data: NormalizationResult,
     median_center: bool = True,
     separate_regions: bool = True,
-    pseudocount: float = 1e-10
+    pseudocount: float = 1e-10,
 ) -> Log2RatioResult:
     """Compute log2 ratios between test and control samples.
 
@@ -149,7 +149,7 @@ def compute_log2_ratio(
     log2_ratios = np.log2(test_safe / control_safe)
 
     # Build region mask
-    in_target_mask = np.array([w.region_class == 'IN' for w in test_data.windows])
+    in_target_mask = np.array([w.region_class == "IN" for w in test_data.windows])
 
     # Median centering
     if median_center:
@@ -181,7 +181,7 @@ def compute_log2_ratio(
         positions=positions,
         windows=test_data.windows,
         chromosomes=test_data.chromosomes,
-        in_target_mask=in_target_mask
+        in_target_mask=in_target_mask,
     )
 
 
@@ -190,7 +190,7 @@ def compute_log2_ratio_pooled(
     control_samples: List[NormalizationResult],
     median_center: bool = True,
     separate_regions: bool = True,
-    pseudocount: float = 1e-10
+    pseudocount: float = 1e-10,
 ) -> Log2RatioResult:
     """Compute log2 ratios against pooled control samples.
 
@@ -222,9 +222,7 @@ def compute_log2_ratio_pooled(
     n_windows = len(test_data.windows)
     for i, counts in enumerate(control_counts_list):
         if len(counts) != n_windows:
-            raise ValueError(
-                f"Control sample {i} has {len(counts)} windows, expected {n_windows}"
-            )
+            raise ValueError(f"Control sample {i} has {len(counts)} windows, expected {n_windows}")
 
     # Create pooled control (mean)
     pooled_counts = np.mean(np.array(control_counts_list), axis=0)
@@ -235,7 +233,7 @@ def compute_log2_ratio_pooled(
         normalized_counts=pooled_counts,
         windows=test_data.windows,  # Use test windows (should be identical)
         chromosomes=test_data.chromosomes,
-        normalization_stats={}
+        normalization_stats={},
     )
 
     return compute_log2_ratio(
@@ -243,14 +241,11 @@ def compute_log2_ratio_pooled(
         pooled_result,
         median_center=median_center,
         separate_regions=separate_regions,
-        pseudocount=pseudocount
+        pseudocount=pseudocount,
     )
 
 
-def apply_cellularity_correction(
-    log2_ratios: np.ndarray,
-    cellularity: float
-) -> np.ndarray:
+def apply_cellularity_correction(log2_ratios: np.ndarray, cellularity: float) -> np.ndarray:
     """Apply cellularity correction to log2 ratios.
 
     When tumor purity (cellularity) is less than 1.0, the observed
@@ -279,7 +274,7 @@ def apply_cellularity_correction(
     corrected_ratio = (ratio - (1 - cellularity)) / cellularity
 
     # Clamp to avoid log of non-positive values
-    min_ratio = 2**(-5)  # Minimum allowed ratio
+    min_ratio = 2 ** (-5)  # Minimum allowed ratio
     corrected_ratio = np.maximum(corrected_ratio, min_ratio)
 
     return np.log2(corrected_ratio)

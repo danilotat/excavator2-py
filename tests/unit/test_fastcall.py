@@ -54,12 +54,14 @@ class TestFastCallBasic:
     def mixed_segments(self):
         """Generate segments with mixed CN states."""
         np.random.seed(42)
-        return np.concatenate([
-            np.random.normal(0.0, 0.1, 50),    # Normal (CN=2)
-            np.random.normal(-0.5, 0.1, 20),   # Deletion (CN=1)
-            np.random.normal(0.58, 0.1, 15),   # Duplication (CN=3)
-            np.random.normal(-1.5, 0.1, 10),   # Deep deletion (CN=0-1)
-        ])
+        return np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 50),  # Normal (CN=2)
+                np.random.normal(-0.5, 0.1, 20),  # Deletion (CN=1)
+                np.random.normal(0.58, 0.1, 15),  # Duplication (CN=3)
+                np.random.normal(-1.5, 0.1, 10),  # Deep deletion (CN=0-1)
+            ]
+        )
 
     @pytest.fixture
     def normal_segments(self):
@@ -178,11 +180,11 @@ class TestSegmentCall:
         result = caller.call(segment_means)
 
         call = result.calls[0]
-        assert hasattr(call, 'cn_call')
-        assert hasattr(call, 'absolute_cn')
-        assert hasattr(call, 'probability')
-        assert hasattr(call, 'state_index')
-        assert hasattr(call, 'segment_mean')
+        assert hasattr(call, "cn_call")
+        assert hasattr(call, "absolute_cn")
+        assert hasattr(call, "probability")
+        assert hasattr(call, "state_index")
+        assert hasattr(call, "segment_mean")
 
     def test_segment_call_values(self):
         """Test that SegmentCall values are reasonable."""
@@ -232,11 +234,13 @@ class TestFastCallEM:
 
         np.random.seed(42)
         # Generate data from mixture of gaussians
-        segment_means = np.concatenate([
-            np.random.normal(0.0, 0.1, 40),
-            np.random.normal(-0.6, 0.1, 20),
-            np.random.normal(0.6, 0.1, 20),
-        ])
+        segment_means = np.concatenate(
+            [
+                np.random.normal(0.0, 0.1, 40),
+                np.random.normal(-0.6, 0.1, 20),
+                np.random.normal(0.6, 0.1, 20),
+            ]
+        )
 
         caller = FastCall()
         result = caller.call(segment_means.tolist())
@@ -312,12 +316,7 @@ class TestFastCallConvenienceFunction:
         np.random.seed(42)
         segment_means = list(np.random.normal(0.0, 0.1, 30))
 
-        result = fastcall.call(
-            segment_means,
-            cellularity=0.8,
-            thrd=0.6,
-            max_iterations=100
-        )
+        result = fastcall.call(segment_means, cellularity=0.8, thrd=0.6, max_iterations=100)
 
         assert result.success
 

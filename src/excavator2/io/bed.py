@@ -25,6 +25,7 @@ class TargetRegion:
         score: Optional score field
         strand: Optional strand (+/-)
     """
+
     chrom: str
     start: int
     end: int
@@ -52,6 +53,7 @@ class ChromosomeInfo:
         start: Start position (usually 0 or 1)
         end: End position (chromosome length)
     """
+
     name: str
     start: int
     end: int
@@ -72,6 +74,7 @@ class GapRegion:
         end: End position (0-based, exclusive)
         name: Gap type (e.g., "centromere", "telomere")
     """
+
     chrom: str
     start: int
     end: int
@@ -87,7 +90,7 @@ def load_target_bed(
     bed_path: Union[str, Path],
     skip_header: bool = False,
     min_length: int = 0,
-    chromosomes: Optional[List[str]] = None
+    chromosomes: Optional[List[str]] = None,
 ) -> List[TargetRegion]:
     """Load target regions from a BED file.
 
@@ -113,10 +116,10 @@ def load_target_bed(
         chrom_set = set(chromosomes)
         # Also add alternate naming conventions
         for chrom in chromosomes:
-            if chrom.startswith('chr'):
+            if chrom.startswith("chr"):
                 chrom_set.add(chrom[3:])
             else:
-                chrom_set.add(f'chr{chrom}')
+                chrom_set.add(f"chr{chrom}")
 
     with open(bed_path) as f:
         for i, line in enumerate(f):
@@ -124,10 +127,15 @@ def load_target_bed(
                 continue
 
             line = line.strip()
-            if not line or line.startswith('#') or line.startswith('track') or line.startswith('browser'):
+            if (
+                not line
+                or line.startswith("#")
+                or line.startswith("track")
+                or line.startswith("browser")
+            ):
                 continue
 
-            fields = line.split('\t')
+            fields = line.split("\t")
             if len(fields) < 3:
                 continue
 
@@ -163,8 +171,7 @@ def load_target_bed(
 
 
 def load_chromosome_coordinates(
-    coord_path: Union[str, Path],
-    skip_header: bool = False
+    coord_path: Union[str, Path], skip_header: bool = False
 ) -> Dict[str, ChromosomeInfo]:
     """Load chromosome coordinate information.
 
@@ -189,10 +196,10 @@ def load_chromosome_coordinates(
                 continue
 
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
-            fields = line.split('\t')
+            fields = line.split("\t")
             if len(fields) < 3:
                 continue
 
@@ -211,9 +218,7 @@ def load_chromosome_coordinates(
 
 
 def load_gap_file(
-    gap_path: Union[str, Path],
-    skip_header: bool = True,
-    exclude_alt: bool = True
+    gap_path: Union[str, Path], skip_header: bool = True, exclude_alt: bool = True
 ) -> List[GapRegion]:
     """Load genomic gap regions (centromeres, telomeres, etc.).
 
@@ -241,17 +246,17 @@ def load_gap_file(
                 continue
 
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
-            fields = line.split('\t')
+            fields = line.split("\t")
             if len(fields) < 4:
                 continue
 
             chrom = fields[1] if len(fields) > 1 else fields[0]
 
             # Exclude alt/random chromosomes (contain underscore)
-            if exclude_alt and '_' in chrom:
+            if exclude_alt and "_" in chrom:
                 continue
 
             try:
@@ -274,9 +279,7 @@ def load_gap_file(
 
 
 def regions_to_bed(
-    regions: List[TargetRegion],
-    output_path: Union[str, Path],
-    include_header: bool = False
+    regions: List[TargetRegion], output_path: Union[str, Path], include_header: bool = False
 ) -> None:
     """Write regions to a BED file.
 
@@ -287,7 +290,7 @@ def regions_to_bed(
     """
     output_path = Path(output_path)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         if include_header:
             f.write("#chrom\tstart\tend\tname\tscore\tstrand\n")
 
@@ -301,8 +304,7 @@ def regions_to_bed(
 
 
 def merge_overlapping_regions(
-    regions: List[TargetRegion],
-    merge_distance: int = 0
+    regions: List[TargetRegion], merge_distance: int = 0
 ) -> List[TargetRegion]:
     """Merge overlapping or adjacent target regions.
 
@@ -330,7 +332,7 @@ def merge_overlapping_regions(
                 chrom=current.chrom,
                 start=current.start,
                 end=max(current.end, region.end),
-                name=current.name or region.name
+                name=current.name or region.name,
             )
         else:
             merged.append(current)
@@ -342,10 +344,7 @@ def merge_overlapping_regions(
     return merged
 
 
-def get_chromosome_regions(
-    regions: List[TargetRegion],
-    chromosome: str
-) -> List[TargetRegion]:
+def get_chromosome_regions(regions: List[TargetRegion], chromosome: str) -> List[TargetRegion]:
     """Get regions for a specific chromosome.
 
     Args:
@@ -357,18 +356,15 @@ def get_chromosome_regions(
     """
     # Handle both chr-prefixed and non-prefixed naming
     chrom_variants = {chromosome}
-    if chromosome.startswith('chr'):
+    if chromosome.startswith("chr"):
         chrom_variants.add(chromosome[3:])
     else:
-        chrom_variants.add(f'chr{chromosome}')
+        chrom_variants.add(f"chr{chromosome}")
 
     return [r for r in regions if r.chrom in chrom_variants]
 
 
-def normalize_chromosome_name(
-    chrom: str,
-    use_chr_prefix: bool = True
-) -> str:
+def normalize_chromosome_name(chrom: str, use_chr_prefix: bool = True) -> str:
     """Normalize chromosome name to consistent format.
 
     Args:
@@ -379,6 +375,6 @@ def normalize_chromosome_name(
         Normalized chromosome name
     """
     if use_chr_prefix:
-        return chrom if chrom.startswith('chr') else f'chr{chrom}'
+        return chrom if chrom.startswith("chr") else f"chr{chrom}"
     else:
-        return chrom[3:] if chrom.startswith('chr') else chrom
+        return chrom[3:] if chrom.startswith("chr") else chrom

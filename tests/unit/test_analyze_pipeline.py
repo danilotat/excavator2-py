@@ -40,10 +40,10 @@ from excavator2.io.vcf import (
     write_fastcall_bed,
 )
 
-
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def sample_windows():
@@ -53,16 +53,18 @@ def sample_windows():
         chrom = "chr1" if i < 50 else "chr2"
         start = (i % 50) * 1000
         end = start + 500
-        windows.append(WindowData(
-            chrom=chrom,
-            start=start,
-            end=end,
-            position=(start + end) // 2,
-            gc_content=0.45,
-            mappability=0.95,
-            region_class="IN" if i % 3 != 0 else "OUT",
-            name=f"exon_{i}"
-        ))
+        windows.append(
+            WindowData(
+                chrom=chrom,
+                start=start,
+                end=end,
+                position=(start + end) // 2,
+                gc_content=0.45,
+                mappability=0.95,
+                region_class="IN" if i % 3 != 0 else "OUT",
+                name=f"exon_{i}",
+            )
+        )
     return windows
 
 
@@ -80,7 +82,7 @@ def test_normalization_result(sample_windows):
         normalized_counts=counts,
         windows=sample_windows,
         chromosomes=["chr1", "chr2"],
-        normalization_stats={}
+        normalization_stats={},
     )
 
 
@@ -94,7 +96,7 @@ def control_normalization_result(sample_windows):
         normalized_counts=counts,
         windows=sample_windows,
         chromosomes=["chr1", "chr2"],
-        normalization_stats={}
+        normalization_stats={},
     )
 
 
@@ -114,7 +116,7 @@ def cnv_analysis_result():
             absolute_cn=2,
             probability=0.95,
             state=CopyNumberState.NORMAL,
-            region_class="IN"
+            region_class="IN",
         ),
         CNVSegment(
             chrom="chr1",
@@ -128,7 +130,7 @@ def cnv_analysis_result():
             absolute_cn=1,
             probability=0.85,
             state=CopyNumberState.HETEROZYGOUS_DELETION,
-            region_class="IN"
+            region_class="IN",
         ),
         CNVSegment(
             chrom="chr1",
@@ -142,7 +144,7 @@ def cnv_analysis_result():
             absolute_cn=2,
             probability=0.92,
             state=CopyNumberState.NORMAL,
-            region_class="IN"
+            region_class="IN",
         ),
         CNVSegment(
             chrom="chr2",
@@ -156,7 +158,7 @@ def cnv_analysis_result():
             absolute_cn=2,
             probability=0.90,
             state=CopyNumberState.NORMAL,
-            region_class="IN"
+            region_class="IN",
         ),
         CNVSegment(
             chrom="chr2",
@@ -170,25 +172,17 @@ def cnv_analysis_result():
             absolute_cn=3,
             probability=0.88,
             state=CopyNumberState.SINGLE_COPY_GAIN,
-            region_class="IN"
+            region_class="IN",
         ),
     ]
 
     chromosome_results = {
         "chr1": ChromosomeResult(
-            chrom="chr1",
-            segments=segments[:3],
-            breakpoints=[0, 20, 30, 50],
-            n_segments=3,
-            n_cnvs=1
+            chrom="chr1", segments=segments[:3], breakpoints=[0, 20, 30, 50], n_segments=3, n_cnvs=1
         ),
         "chr2": ChromosomeResult(
-            chrom="chr2",
-            segments=segments[3:],
-            breakpoints=[0, 20, 30],
-            n_segments=2,
-            n_cnvs=1
-        )
+            chrom="chr2", segments=segments[3:], breakpoints=[0, 20, 30], n_segments=2, n_cnvs=1
+        ),
     }
 
     return AnalysisResult(
@@ -198,7 +192,7 @@ def cnv_analysis_result():
         chromosome_results=chromosome_results,
         n_segments=5,
         n_cnvs=2,
-        parameters={'hslm': {'omega': 0.1}, 'fastcall': {'cellularity': 1.0}}
+        parameters={"hslm": {"omega": 0.1}, "fastcall": {"cellularity": 1.0}},
     )
 
 
@@ -206,15 +200,16 @@ def cnv_analysis_result():
 # Log2 Ratio Tests
 # =============================================================================
 
+
 class TestLog2RatioComputation:
     """Tests for log2 ratio computation."""
 
-    def test_compute_log2_ratio_basic(self, test_normalization_result, control_normalization_result):
+    def test_compute_log2_ratio_basic(
+        self, test_normalization_result, control_normalization_result
+    ):
         """Test basic log2 ratio computation."""
         result = compute_log2_ratio(
-            test_normalization_result,
-            control_normalization_result,
-            median_center=False
+            test_normalization_result, control_normalization_result, median_center=False
         )
 
         assert isinstance(result, Log2RatioResult)
@@ -223,25 +218,29 @@ class TestLog2RatioComputation:
         assert len(result.log2_ratios) == 100
         assert len(result.positions) == 100
 
-    def test_compute_log2_ratio_with_centering(self, test_normalization_result, control_normalization_result):
+    def test_compute_log2_ratio_with_centering(
+        self, test_normalization_result, control_normalization_result
+    ):
         """Test log2 ratio computation with median centering."""
         result = compute_log2_ratio(
             test_normalization_result,
             control_normalization_result,
             median_center=True,
-            separate_regions=False
+            separate_regions=False,
         )
 
         # After centering, median should be close to 0
         assert abs(np.median(result.log2_ratios)) < 0.1
 
-    def test_compute_log2_ratio_separate_regions(self, test_normalization_result, control_normalization_result):
+    def test_compute_log2_ratio_separate_regions(
+        self, test_normalization_result, control_normalization_result
+    ):
         """Test log2 ratio computation with separate IN/OUT centering."""
         result = compute_log2_ratio(
             test_normalization_result,
             control_normalization_result,
             median_center=True,
-            separate_regions=True
+            separate_regions=True,
         )
 
         # Check IN and OUT regions are centered separately
@@ -255,12 +254,12 @@ class TestLog2RatioComputation:
         assert abs(in_median) < 0.1
         assert abs(out_median) < 0.1
 
-    def test_compute_log2_ratio_detects_cnv(self, test_normalization_result, control_normalization_result):
+    def test_compute_log2_ratio_detects_cnv(
+        self, test_normalization_result, control_normalization_result
+    ):
         """Test that log2 ratios reflect CNV regions."""
         result = compute_log2_ratio(
-            test_normalization_result,
-            control_normalization_result,
-            median_center=False
+            test_normalization_result, control_normalization_result, median_center=False
         )
 
         # Deletion region (indices 20-30) should have negative log2 ratios
@@ -274,15 +273,13 @@ class TestLog2RatioComputation:
     def test_get_chromosome_data(self, test_normalization_result, control_normalization_result):
         """Test getting data for a specific chromosome."""
         result = compute_log2_ratio(
-            test_normalization_result,
-            control_normalization_result,
-            median_center=False
+            test_normalization_result, control_normalization_result, median_center=False
         )
 
         chr1_data = result.get_chromosome_data("chr1")
-        assert chr1_data['n_windows'] == 50
-        assert len(chr1_data['log2_ratios']) == 50
-        assert len(chr1_data['positions']) == 50
+        assert chr1_data["n_windows"] == 50
+        assert len(chr1_data["log2_ratios"]) == 50
+        assert len(chr1_data["positions"]) == 50
 
     def test_length_mismatch_raises_error(self, test_normalization_result, sample_windows):
         """Test that mismatched lengths raise an error."""
@@ -292,7 +289,7 @@ class TestLog2RatioComputation:
             normalized_counts=np.ones(50) * 100.0,
             windows=sample_windows[:50],
             chromosomes=["chr1"],
-            normalization_stats={}
+            normalization_stats={},
         )
 
         with pytest.raises(ValueError, match="Window count mismatch"):
@@ -302,7 +299,9 @@ class TestLog2RatioComputation:
 class TestPooledLog2Ratio:
     """Tests for pooled control log2 ratio computation."""
 
-    def test_compute_pooled_ratio(self, test_normalization_result, control_normalization_result, sample_windows):
+    def test_compute_pooled_ratio(
+        self, test_normalization_result, control_normalization_result, sample_windows
+    ):
         """Test pooled control log2 ratio computation."""
         # Create second control
         control2 = NormalizationResult(
@@ -310,13 +309,11 @@ class TestPooledLog2Ratio:
             normalized_counts=np.ones(100) * 100.0,
             windows=sample_windows,
             chromosomes=["chr1", "chr2"],
-            normalization_stats={}
+            normalization_stats={},
         )
 
         result = compute_log2_ratio_pooled(
-            test_normalization_result,
-            [control_normalization_result, control2],
-            median_center=False
+            test_normalization_result, [control_normalization_result, control2], median_center=False
         )
 
         assert result.control_name == "PooledControl"
@@ -357,6 +354,7 @@ class TestCellularityCorrection:
 # Analysis Pipeline Tests
 # =============================================================================
 
+
 class TestAnalysisParameters:
     """Tests for AnalysisParameters dataclass."""
 
@@ -378,8 +376,8 @@ class TestAnalysisParameters:
         params = AnalysisParameters(omega=0.2, cellularity=0.8)
         d = params.to_dict()
 
-        assert d['hslm']['omega'] == 0.2
-        assert d['fastcall']['cellularity'] == 0.8
+        assert d["hslm"]["omega"] == 0.2
+        assert d["fastcall"]["cellularity"] == 0.8
 
 
 class TestCNVAnalyzer:
@@ -395,30 +393,28 @@ class TestCNVAnalyzer:
     def test_analyze_paired(self, test_normalization_result, control_normalization_result):
         """Test paired analysis."""
         analyzer = CNVAnalyzer()
-        result = analyzer.analyze_paired(
-            test_normalization_result,
-            control_normalization_result
-        )
+        result = analyzer.analyze_paired(test_normalization_result, control_normalization_result)
 
         assert isinstance(result, AnalysisResult)
         assert result.test_sample == "test_sample"
         assert result.control_sample == "control_sample"
         assert result.n_segments > 0
 
-    def test_analyze_pooled(self, test_normalization_result, control_normalization_result, sample_windows):
+    def test_analyze_pooled(
+        self, test_normalization_result, control_normalization_result, sample_windows
+    ):
         """Test pooled analysis."""
         control2 = NormalizationResult(
             sample_name="control2",
             normalized_counts=np.ones(100) * 100.0,
             windows=sample_windows,
             chromosomes=["chr1", "chr2"],
-            normalization_stats={}
+            normalization_stats={},
         )
 
         analyzer = CNVAnalyzer()
         result = analyzer.analyze_pooled(
-            test_normalization_result,
-            [control_normalization_result, control2]
+            test_normalization_result, [control_normalization_result, control2]
         )
 
         assert isinstance(result, AnalysisResult)
@@ -427,22 +423,19 @@ class TestCNVAnalyzer:
     def test_analyze_detects_cnvs(self, test_normalization_result, control_normalization_result):
         """Test that analyzer detects CNVs in synthetic data."""
         analyzer = CNVAnalyzer()
-        result = analyzer.analyze_paired(
-            test_normalization_result,
-            control_normalization_result
-        )
+        result = analyzer.analyze_paired(test_normalization_result, control_normalization_result)
 
         # Should detect at least some CNVs (we have deletion and amp regions)
         # Note: may not always detect depending on segmentation sensitivity
         assert result.n_segments > 0
 
-    def test_analyze_specific_chromosomes(self, test_normalization_result, control_normalization_result):
+    def test_analyze_specific_chromosomes(
+        self, test_normalization_result, control_normalization_result
+    ):
         """Test analysis of specific chromosomes."""
         analyzer = CNVAnalyzer()
         result = analyzer.analyze_paired(
-            test_normalization_result,
-            control_normalization_result,
-            chromosomes=["chr1"]
+            test_normalization_result, control_normalization_result, chromosomes=["chr1"]
         )
 
         # Should only have chr1 results
@@ -467,7 +460,7 @@ class TestCNVSegment:
             absolute_cn=1,
             probability=0.9,
             state=CopyNumberState.HETEROZYGOUS_DELETION,
-            region_class="IN"
+            region_class="IN",
         )
 
         assert deletion.length == 1000
@@ -487,7 +480,7 @@ class TestCNVSegment:
             absolute_cn=3,
             probability=0.85,
             state=CopyNumberState.SINGLE_COPY_GAIN,
-            region_class="IN"
+            region_class="IN",
         )
 
         assert gain.is_cnv is True
@@ -527,6 +520,7 @@ class TestAnalysisResult:
 # Output Writing Tests
 # =============================================================================
 
+
 class TestVCFOutput:
     """Tests for VCF output writing."""
 
@@ -551,7 +545,7 @@ class TestVCFOutput:
 
         content = vcf_path.read_text()
         # Count data lines (non-header)
-        data_lines = [l for l in content.split('\n') if l and not l.startswith('#')]
+        data_lines = [l for l in content.split("\n") if l and not l.startswith("#")]
         assert len(data_lines) == 5  # All 5 segments
 
 
@@ -566,7 +560,7 @@ class TestBEDOutput:
         assert bed_path.exists()
 
         content = bed_path.read_text()
-        lines = content.strip().split('\n')
+        lines = content.strip().split("\n")
         # Header + 2 CNVs
         assert len(lines) == 3
 
@@ -576,7 +570,7 @@ class TestBEDOutput:
         write_bed(cnv_analysis_result, bed_path, cnv_only=False)
 
         content = bed_path.read_text()
-        lines = content.strip().split('\n')
+        lines = content.strip().split("\n")
         # Header + 5 segments
         assert len(lines) == 6
 
@@ -592,12 +586,12 @@ class TestTSVOutput:
         assert tsv_path.exists()
 
         content = tsv_path.read_text()
-        lines = content.strip().split('\n')
+        lines = content.strip().split("\n")
         # Header + 5 segments
         assert len(lines) == 6
 
         # Check header
-        header = lines[0].split('\t')
+        header = lines[0].split("\t")
         assert "Chromosome" in header
         assert "CN" in header
         assert "Probability" in header
@@ -614,12 +608,12 @@ class TestFastCallBEDOutput:
         assert bed_path.exists()
 
         content = bed_path.read_text()
-        lines = content.strip().split('\n')
+        lines = content.strip().split("\n")
         # Header + 5 segments
         assert len(lines) == 6
 
         # Check header format
-        header = lines[0].split('\t')
+        header = lines[0].split("\t")
         assert "Call" in header
         assert "ProbCall" in header
 
@@ -628,18 +622,18 @@ class TestFastCallBEDOutput:
 # Integration Tests
 # =============================================================================
 
+
 class TestEndToEndIntegration:
     """End-to-end integration tests."""
 
-    def test_full_pipeline_paired(self, test_normalization_result, control_normalization_result, tmp_path):
+    def test_full_pipeline_paired(
+        self, test_normalization_result, control_normalization_result, tmp_path
+    ):
         """Test full pipeline in paired mode."""
         # Run analysis
         params = AnalysisParameters(min_exons=2)  # Lower threshold for test data
         analyzer = CNVAnalyzer(params)
-        result = analyzer.analyze_paired(
-            test_normalization_result,
-            control_normalization_result
-        )
+        result = analyzer.analyze_paired(test_normalization_result, control_normalization_result)
 
         # Write all outputs
         write_vcf(result, tmp_path / "test.vcf", cnv_only=True)
@@ -653,18 +647,22 @@ class TestEndToEndIntegration:
         assert (tmp_path / "segments.tsv").exists()
         assert (tmp_path / "fastcall.bed").exists()
 
-    def test_full_pipeline_pooled(self, test_normalization_result, control_normalization_result, sample_windows, tmp_path):
+    def test_full_pipeline_pooled(
+        self, test_normalization_result, control_normalization_result, sample_windows, tmp_path
+    ):
         """Test full pipeline in pooled mode."""
         # Create multiple controls
         controls = [control_normalization_result]
         for i in range(2):
-            controls.append(NormalizationResult(
-                sample_name=f"control_{i}",
-                normalized_counts=np.ones(100) * 100.0 + np.random.normal(0, 5, 100),
-                windows=sample_windows,
-                chromosomes=["chr1", "chr2"],
-                normalization_stats={}
-            ))
+            controls.append(
+                NormalizationResult(
+                    sample_name=f"control_{i}",
+                    normalized_counts=np.ones(100) * 100.0 + np.random.normal(0, 5, 100),
+                    windows=sample_windows,
+                    chromosomes=["chr1", "chr2"],
+                    normalization_stats={},
+                )
+            )
 
         # Run analysis
         params = AnalysisParameters(min_exons=2)

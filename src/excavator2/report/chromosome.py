@@ -37,7 +37,6 @@ from excavator2.report.utils import (
     sort_chromosomes,
 )
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -46,7 +45,7 @@ def create_chromosome_plots(
     ratio_result: Log2RatioResult,
     output_dir: Union[str, Path],
     format: str = "pdf",
-    chromosomes: Optional[List[str]] = None
+    chromosomes: Optional[List[str]] = None,
 ) -> None:
     """Generate per-chromosome CNV plots.
 
@@ -79,19 +78,19 @@ def create_chromosome_plots(
         chrom_result = analysis_result.chromosome_results[chrom]
         chrom_data = ratio_result.get_chromosome_data(chrom)
 
-        if chrom_data['n_windows'] == 0:
+        if chrom_data["n_windows"] == 0:
             logger.warning(f"No data for chromosome {chrom}, skipping")
             continue
 
         output_path = output_dir / f"PlotResults_{chrom}.{format}"
         plot_chromosome(
             chrom=chrom,
-            log2_ratios=chrom_data['log2_ratios'],
-            positions=chrom_data['positions'],
-            in_target_mask=chrom_data['in_target_mask'],
+            log2_ratios=chrom_data["log2_ratios"],
+            positions=chrom_data["positions"],
+            in_target_mask=chrom_data["in_target_mask"],
             segments=chrom_result.segments,
             sample_name=sample_name,
-            output_path=output_path
+            output_path=output_path,
         )
         logger.info(f"  Created PlotResults_{chrom}.{format}")
 
@@ -105,7 +104,7 @@ def plot_chromosome(
     in_target_mask: np.ndarray,
     segments: List[CNVSegment],
     sample_name: str = "",
-    output_path: Optional[Union[str, Path]] = None
+    output_path: Optional[Union[str, Path]] = None,
 ) -> plt.Figure:
     """Create a detailed plot for a single chromosome.
 
@@ -134,27 +133,19 @@ def plot_chromosome(
         positions=positions,
         log2_ratios=log2_ratios,
         in_target_mask=in_target_mask,
-        segments=segments
+        segments=segments,
     )
 
     # Panel 2: CNV calls
-    _plot_cnv_panel(
-        ax=axes[1],
-        positions=positions,
-        log2_ratios=log2_ratios,
-        segments=segments
-    )
+    _plot_cnv_panel(ax=axes[1], positions=positions, log2_ratios=log2_ratios, segments=segments)
 
     # Title
-    fig.suptitle(
-        f"{sample_name} - {chrom}",
-        fontsize=16, fontweight='bold'
-    )
+    fig.suptitle(f"{sample_name} - {chrom}", fontsize=16, fontweight="bold")
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig
@@ -165,7 +156,7 @@ def _plot_scatter_panel(
     positions: np.ndarray,
     log2_ratios: np.ndarray,
     in_target_mask: np.ndarray,
-    segments: List[CNVSegment]
+    segments: List[CNVSegment],
 ) -> None:
     """Plot scatter panel with log2 ratios and segmentation.
 
@@ -182,19 +173,25 @@ def _plot_scatter_panel(
     # Plot OFF-target first (lighter, in background)
     if np.any(out_mask):
         ax.scatter(
-            positions[out_mask], log2_ratios[out_mask],
-            s=SCATTER_SIZE, alpha=SCATTER_ALPHA * 0.7,
-            c=REGION_COLORS['OUT'], label='Off-target',
-            edgecolors='none'
+            positions[out_mask],
+            log2_ratios[out_mask],
+            s=SCATTER_SIZE,
+            alpha=SCATTER_ALPHA * 0.7,
+            c=REGION_COLORS["OUT"],
+            label="Off-target",
+            edgecolors="none",
         )
 
     # Plot IN-target (darker, in foreground)
     if np.any(in_target_mask):
         ax.scatter(
-            positions[in_target_mask], log2_ratios[in_target_mask],
-            s=SCATTER_SIZE, alpha=SCATTER_ALPHA,
-            c=REGION_COLORS['IN'], label='In-target',
-            edgecolors='none'
+            positions[in_target_mask],
+            log2_ratios[in_target_mask],
+            s=SCATTER_SIZE,
+            alpha=SCATTER_ALPHA,
+            c=REGION_COLORS["IN"],
+            label="In-target",
+            edgecolors="none",
         )
 
     # Plot segmentation line
@@ -202,44 +199,40 @@ def _plot_scatter_panel(
         # Draw horizontal line for segment mean
         ax.hlines(
             seg.segment_mean,
-            seg.start, seg.end,
+            seg.start,
+            seg.end,
             colors=SEGMENT_COLOR,
             linewidth=SEGMENT_LINE_WIDTH,
-            zorder=10
+            zorder=10,
         )
 
     # Reference line at y=0
-    ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.7)
+    ax.axhline(0, color="black", linestyle="--", linewidth=1, alpha=0.7)
 
     # Styling
     ax.set_xlim(positions.min() - 1e6, positions.max() + 1e6)
     ax.set_ylim(Y_LIM_LOG2)
-    ax.set_xlabel('Position (bp)', fontsize=12)
-    ax.set_ylabel('log2 ratio', fontsize=12)
-    ax.set_title('Segmentation', fontsize=14)
+    ax.set_xlabel("Position (bp)", fontsize=12)
+    ax.set_ylabel("log2 ratio", fontsize=12)
+    ax.set_title("Segmentation", fontsize=14)
 
     # Legend
     handles = [
-        mpatches.Patch(color=REGION_COLORS['IN'], label='In-target'),
-        mpatches.Patch(color=REGION_COLORS['OUT'], label='Off-target'),
-        plt.Line2D([0], [0], color=SEGMENT_COLOR, linewidth=2, label='Segment'),
+        mpatches.Patch(color=REGION_COLORS["IN"], label="In-target"),
+        mpatches.Patch(color=REGION_COLORS["OUT"], label="Off-target"),
+        plt.Line2D([0], [0], color=SEGMENT_COLOR, linewidth=2, label="Segment"),
     ]
-    ax.legend(handles=handles, loc='upper right', fontsize=10)
+    ax.legend(handles=handles, loc="upper right", fontsize=10)
 
     ax.grid(True, alpha=0.3)
 
     # Format x-axis with Mb labels
-    ax.xaxis.set_major_formatter(
-        plt.FuncFormatter(lambda x, p: f"{x/1e6:.0f}")
-    )
-    ax.set_xlabel('Position (Mb)', fontsize=12)
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1e6:.0f}"))
+    ax.set_xlabel("Position (Mb)", fontsize=12)
 
 
 def _plot_cnv_panel(
-    ax: plt.Axes,
-    positions: np.ndarray,
-    log2_ratios: np.ndarray,
-    segments: List[CNVSegment]
+    ax: plt.Axes, positions: np.ndarray, log2_ratios: np.ndarray, segments: List[CNVSegment]
 ) -> None:
     """Plot CNV calls as colored rectangles.
 
@@ -250,10 +243,10 @@ def _plot_cnv_panel(
         segments: CNV segments with calls
     """
     # Plot log2 ratio as grey line (background)
-    ax.plot(positions, log2_ratios, '-', color='grey', linewidth=0.5, alpha=0.5)
+    ax.plot(positions, log2_ratios, "-", color="grey", linewidth=0.5, alpha=0.5)
 
     # Reference line at y=0
-    ax.axhline(0, color='black', linestyle='-', linewidth=1)
+    ax.axhline(0, color="black", linestyle="-", linewidth=1)
 
     # Plot CNV call rectangles
     patches = []
@@ -269,21 +262,21 @@ def _plot_cnv_panel(
             (seg.start, Y_LIM_LOG2[0]),  # bottom-left corner
             seg.end - seg.start,  # width
             Y_LIM_LOG2[1] - Y_LIM_LOG2[0],  # height (full y range)
-            alpha=0.4
+            alpha=0.4,
         )
         patches.append(rect)
         colors.append(get_cnv_color(seg.cn_call))
 
     if patches:
-        collection = PatchCollection(patches, facecolor=colors, edgecolor='none', alpha=0.4)
+        collection = PatchCollection(patches, facecolor=colors, edgecolor="none", alpha=0.4)
         ax.add_collection(collection)
 
     # Styling
     ax.set_xlim(positions.min() - 1e6, positions.max() + 1e6)
     ax.set_ylim(Y_LIM_LOG2)
-    ax.set_xlabel('Position (Mb)', fontsize=12)
-    ax.set_ylabel('log2 ratio', fontsize=12)
-    ax.set_title('CNV Calls', fontsize=14)
+    ax.set_xlabel("Position (Mb)", fontsize=12)
+    ax.set_ylabel("log2 ratio", fontsize=12)
+    ax.set_title("CNV Calls", fontsize=14)
 
     # Create legend for CNV types (only show types that appear)
     present_calls = set(seg.cn_call for seg in segments if seg.cn_call != 0)
@@ -293,14 +286,12 @@ def _plot_cnv_panel(
             color = get_cnv_color(cn_call)
             label = CNV_SHORT_LABELS.get(cn_call, str(cn_call))
             handles.append(mpatches.Patch(color=color, alpha=0.6, label=label))
-        ax.legend(handles=handles, loc='upper right', fontsize=10)
+        ax.legend(handles=handles, loc="upper right", fontsize=10)
 
     ax.grid(True, alpha=0.3)
 
     # Format x-axis
-    ax.xaxis.set_major_formatter(
-        plt.FuncFormatter(lambda x, p: f"{x/1e6:.0f}")
-    )
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1e6:.0f}"))
 
 
 def plot_chromosome_simple(
@@ -308,7 +299,7 @@ def plot_chromosome_simple(
     log2_ratios: np.ndarray,
     positions: np.ndarray,
     segment_values: np.ndarray,
-    output_path: Optional[Union[str, Path]] = None
+    output_path: Optional[Union[str, Path]] = None,
 ) -> plt.Figure:
     """Create a simple single-panel chromosome plot.
 
@@ -328,35 +319,37 @@ def plot_chromosome_simple(
 
     # Scatter plot
     ax.scatter(
-        positions, log2_ratios,
-        s=SCATTER_SIZE, alpha=SCATTER_ALPHA,
-        c='#1f77b4', edgecolors='none'
+        positions, log2_ratios, s=SCATTER_SIZE, alpha=SCATTER_ALPHA, c="#1f77b4", edgecolors="none"
     )
 
     # Segment line
-    ax.plot(positions, segment_values, '-', color=SEGMENT_COLOR,
-            linewidth=SEGMENT_LINE_WIDTH, label='Segment')
+    ax.plot(
+        positions,
+        segment_values,
+        "-",
+        color=SEGMENT_COLOR,
+        linewidth=SEGMENT_LINE_WIDTH,
+        label="Segment",
+    )
 
     # Reference line
-    ax.axhline(0, color='black', linestyle='--', linewidth=1, alpha=0.7)
+    ax.axhline(0, color="black", linestyle="--", linewidth=1, alpha=0.7)
 
     ax.set_xlim(positions.min() - 1e6, positions.max() + 1e6)
     ax.set_ylim(Y_LIM_LOG2)
-    ax.set_xlabel('Position (Mb)', fontsize=12)
-    ax.set_ylabel('log2 ratio', fontsize=12)
-    ax.set_title(f'{chrom}', fontsize=14, fontweight='bold')
+    ax.set_xlabel("Position (Mb)", fontsize=12)
+    ax.set_ylabel("log2 ratio", fontsize=12)
+    ax.set_title(f"{chrom}", fontsize=14, fontweight="bold")
 
-    ax.xaxis.set_major_formatter(
-        plt.FuncFormatter(lambda x, p: f"{x/1e6:.0f}")
-    )
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, p: f"{x/1e6:.0f}"))
 
-    ax.legend(loc='upper right')
+    ax.legend(loc="upper right")
     ax.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
     if output_path:
-        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches='tight')
+        fig.savefig(output_path, dpi=FIGURE_DPI, bbox_inches="tight")
         plt.close(fig)
 
     return fig

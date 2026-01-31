@@ -15,7 +15,6 @@ import h5py
 
 from excavator2.io.bam import BAMReader, GenomicRegion, ReadCountResult
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -38,8 +37,7 @@ def _count_chromosome_reads(args):
 
     # Convert to GenomicRegion objects
     genomic_regions = [
-        GenomicRegion(chrom=chrom, start=start, end=end, name=name)
-        for start, end, name in regions
+        GenomicRegion(chrom=chrom, start=start, end=end, name=name) for start, end, name in regions
     ]
 
     # Count reads
@@ -62,6 +60,7 @@ class WindowData:
         region_class: 'IN' for in-target, 'OUT' for off-target
         name: Optional region name (e.g., gene name)
     """
+
     chrom: str
     start: int
     end: int
@@ -87,6 +86,7 @@ class SampleReadCounts:
         windows: Window metadata
         chromosomes: List of unique chromosomes
     """
+
     sample_name: str
     raw_counts: np.ndarray
     windows: List[WindowData]
@@ -123,11 +123,11 @@ class SampleReadCounts:
 
     def get_in_target_mask(self) -> np.ndarray:
         """Get boolean mask for in-target windows."""
-        return np.array([w.region_class == 'IN' for w in self.windows])
+        return np.array([w.region_class == "IN" for w in self.windows])
 
     def get_off_target_mask(self) -> np.ndarray:
         """Get boolean mask for off-target windows."""
-        return np.array([w.region_class == 'OUT' for w in self.windows])
+        return np.array([w.region_class == "OUT" for w in self.windows])
 
 
 class ReadCountProcessor:
@@ -151,7 +151,7 @@ class ReadCountProcessor:
         self,
         target_path: Union[str, Path],
         min_mapq: int = 20,
-        reference: Optional[Union[str, Path]] = None
+        reference: Optional[Union[str, Path]] = None,
     ):
         self.target_path = Path(target_path)
         self.min_mapq = min_mapq
@@ -169,67 +169,61 @@ class ReadCountProcessor:
         """Load window definitions from HDF5 target file."""
         windows = []
 
-        with h5py.File(self.target_path, 'r') as f:
+        with h5py.File(self.target_path, "r") as f:
             # Check if we have the expected structure
-            if 'chromosomes' not in f:
+            if "chromosomes" not in f:
                 raise ValueError(f"Invalid target file format: missing 'chromosomes' group")
 
-            for chrom in f['chromosomes']:
-                chrom_grp = f['chromosomes'][chrom]
+            for chrom in f["chromosomes"]:
+                chrom_grp = f["chromosomes"][chrom]
 
                 # Load arrays
-                starts = chrom_grp['start'][:]
-                ends = chrom_grp['end'][:]
-                gc_content = chrom_grp['gc_content'][:]
-                mappability = chrom_grp['mappability'][:]
+                starts = chrom_grp["start"][:]
+                ends = chrom_grp["end"][:]
+                gc_content = chrom_grp["gc_content"][:]
+                mappability = chrom_grp["mappability"][:]
 
                 # Handle region class - may be bytes or string
-                region_class = chrom_grp['class'][:]
-                if region_class.dtype.kind == 'S':  # byte string
-                    region_class = [c.decode('utf-8') for c in region_class]
+                region_class = chrom_grp["class"][:]
+                if region_class.dtype.kind == "S":  # byte string
+                    region_class = [c.decode("utf-8") for c in region_class]
                 else:
                     region_class = list(region_class)
 
                 # Optional: gene names
-                if 'name' in chrom_grp:
-                    names = chrom_grp['name'][:]
-                    if names.dtype.kind == 'S':
-                        names = [n.decode('utf-8') for n in names]
+                if "name" in chrom_grp:
+                    names = chrom_grp["name"][:]
+                    if names.dtype.kind == "S":
+                        names = [n.decode("utf-8") for n in names]
                 else:
                     names = [""] * len(starts)
 
                 # Create WindowData objects
                 for i in range(len(starts)):
-                    windows.append(WindowData(
-                        chrom=chrom,
-                        start=int(starts[i]),
-                        end=int(ends[i]),
-                        position=(int(starts[i]) + int(ends[i])) // 2,
-                        gc_content=float(gc_content[i]),
-                        mappability=float(mappability[i]),
-                        region_class=region_class[i],
-                        name=names[i] if i < len(names) else ""
-                    ))
+                    windows.append(
+                        WindowData(
+                            chrom=chrom,
+                            start=int(starts[i]),
+                            end=int(ends[i]),
+                            position=(int(starts[i]) + int(ends[i])) // 2,
+                            gc_content=float(gc_content[i]),
+                            mappability=float(mappability[i]),
+                            region_class=region_class[i],
+                            name=names[i] if i < len(names) else "",
+                        )
+                    )
 
         return windows
 
     def _windows_to_regions(self) -> List[GenomicRegion]:
         """Convert WindowData to GenomicRegion for BAM counting."""
         return [
-            GenomicRegion(
-                chrom=w.chrom,
-                start=w.start,
-                end=w.end,
-                name=w.name
-            )
+            GenomicRegion(chrom=w.chrom, start=w.start, end=w.end, name=w.name)
             for w in self.windows
         ]
 
     def process_sample(
-        self,
-        bam_path: Union[str, Path],
-        sample_name: str,
-        n_threads: int = 1
+        self, bam_path: Union[str, Path], sample_name: str, n_threads: int = 1
     ) -> SampleReadCounts:
         """Process a BAM file and count reads in all windows.
 
@@ -249,11 +243,7 @@ class ReadCountProcessor:
 
         # Sequential processing
         # Create BAM reader
-        reader = BAMReader(
-            bam_path,
-            min_mapq=self.min_mapq,
-            reference=self.reference
-        )
+        reader = BAMReader(bam_path, min_mapq=self.min_mapq, reference=self.reference)
 
         # Convert windows to regions
         regions = self._windows_to_regions()
@@ -270,14 +260,11 @@ class ReadCountProcessor:
             sample_name=sample_name,
             raw_counts=result.counts,
             windows=self.windows.copy(),
-            chromosomes=self.chromosomes.copy()
+            chromosomes=self.chromosomes.copy(),
         )
 
     def _process_sample_parallel(
-        self,
-        bam_path: Union[str, Path],
-        sample_name: str,
-        n_threads: int
+        self, bam_path: Union[str, Path], sample_name: str, n_threads: int
     ) -> SampleReadCounts:
         """Process a BAM file with chromosome-level parallelization.
 
@@ -303,13 +290,15 @@ class ReadCountProcessor:
         for chrom in self.chromosomes:
             if chrom in windows_by_chrom:
                 chrom_windows = windows_by_chrom[chrom]
-                work_items.append((
-                    chrom,
-                    str(bam_path),
-                    self.min_mapq,
-                    str(self.reference) if self.reference else None,
-                    [(w.start, w.end, w.name) for _, w in chrom_windows]
-                ))
+                work_items.append(
+                    (
+                        chrom,
+                        str(bam_path),
+                        self.min_mapq,
+                        str(self.reference) if self.reference else None,
+                        [(w.start, w.end, w.name) for _, w in chrom_windows],
+                    )
+                )
 
         # Process chromosomes in parallel
         logger.info(f"Processing {len(work_items)} chromosomes with {n_threads} threads...")
@@ -317,8 +306,7 @@ class ReadCountProcessor:
         chrom_results = {}
         with ProcessPoolExecutor(max_workers=n_threads) as executor:
             futures = {
-                executor.submit(_count_chromosome_reads, item): item[0]
-                for item in work_items
+                executor.submit(_count_chromosome_reads, item): item[0] for item in work_items
             }
 
             for future in as_completed(futures):
@@ -350,13 +338,11 @@ class ReadCountProcessor:
             sample_name=sample_name,
             raw_counts=counts,
             windows=self.windows.copy(),
-            chromosomes=self.chromosomes.copy()
+            chromosomes=self.chromosomes.copy(),
         )
 
     def process_samples_parallel(
-        self,
-        samples: Dict[str, Union[str, Path]],
-        n_workers: int = 1
+        self, samples: Dict[str, Union[str, Path]], n_workers: int = 1
     ) -> Dict[str, SampleReadCounts]:
         """Process multiple samples, optionally in parallel.
 
@@ -395,9 +381,7 @@ class ReadCountProcessor:
 
 
 def save_read_counts(
-    sample_data: SampleReadCounts,
-    output_path: Union[str, Path],
-    compression: str = "gzip"
+    sample_data: SampleReadCounts, output_path: Union[str, Path], compression: str = "gzip"
 ) -> None:
     """Save read counts to HDF5 file.
 
@@ -409,14 +393,14 @@ def save_read_counts(
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with h5py.File(output_path, 'w') as f:
+    with h5py.File(output_path, "w") as f:
         # Metadata
-        f.attrs['sample_name'] = sample_data.sample_name
-        f.attrs['n_windows'] = sample_data.n_windows
-        f.attrs['total_reads'] = sample_data.total_reads
+        f.attrs["sample_name"] = sample_data.sample_name
+        f.attrs["n_windows"] = sample_data.n_windows
+        f.attrs["total_reads"] = sample_data.total_reads
 
         # Create chromosomes group
-        chrom_grp = f.create_group('chromosomes')
+        chrom_grp = f.create_group("chromosomes")
 
         for chrom in sample_data.chromosomes:
             counts, windows = sample_data.get_chromosome_data(chrom)
@@ -424,19 +408,27 @@ def save_read_counts(
             chr_grp = chrom_grp.create_group(chrom)
 
             # Store arrays
-            chr_grp.create_dataset('raw_counts', data=counts, compression=compression)
-            chr_grp.create_dataset('start', data=[w.start for w in windows], compression=compression)
-            chr_grp.create_dataset('end', data=[w.end for w in windows], compression=compression)
-            chr_grp.create_dataset('position', data=[w.position for w in windows], compression=compression)
-            chr_grp.create_dataset('gc_content', data=[w.gc_content for w in windows], compression=compression)
-            chr_grp.create_dataset('mappability', data=[w.mappability for w in windows], compression=compression)
+            chr_grp.create_dataset("raw_counts", data=counts, compression=compression)
+            chr_grp.create_dataset(
+                "start", data=[w.start for w in windows], compression=compression
+            )
+            chr_grp.create_dataset("end", data=[w.end for w in windows], compression=compression)
+            chr_grp.create_dataset(
+                "position", data=[w.position for w in windows], compression=compression
+            )
+            chr_grp.create_dataset(
+                "gc_content", data=[w.gc_content for w in windows], compression=compression
+            )
+            chr_grp.create_dataset(
+                "mappability", data=[w.mappability for w in windows], compression=compression
+            )
 
             # String arrays need special handling
-            region_class = np.array([w.region_class for w in windows], dtype='S10')
-            chr_grp.create_dataset('class', data=region_class, compression=compression)
+            region_class = np.array([w.region_class for w in windows], dtype="S10")
+            chr_grp.create_dataset("class", data=region_class, compression=compression)
 
             names = np.array([w.name for w in windows], dtype=h5py.special_dtype(vlen=str))
-            chr_grp.create_dataset('name', data=names, compression=compression)
+            chr_grp.create_dataset("name", data=names, compression=compression)
 
 
 def load_read_counts(input_path: Union[str, Path]) -> SampleReadCounts:
@@ -450,49 +442,51 @@ def load_read_counts(input_path: Union[str, Path]) -> SampleReadCounts:
     """
     input_path = Path(input_path)
 
-    with h5py.File(input_path, 'r') as f:
-        sample_name = f.attrs['sample_name']
+    with h5py.File(input_path, "r") as f:
+        sample_name = f.attrs["sample_name"]
 
         windows = []
         all_counts = []
         chromosomes = []
 
-        for chrom in f['chromosomes']:
+        for chrom in f["chromosomes"]:
             chromosomes.append(chrom)
-            chr_grp = f['chromosomes'][chrom]
+            chr_grp = f["chromosomes"][chrom]
 
-            counts = chr_grp['raw_counts'][:]
-            starts = chr_grp['start'][:]
-            ends = chr_grp['end'][:]
-            positions = chr_grp['position'][:]
-            gc_content = chr_grp['gc_content'][:]
-            mappability = chr_grp['mappability'][:]
+            counts = chr_grp["raw_counts"][:]
+            starts = chr_grp["start"][:]
+            ends = chr_grp["end"][:]
+            positions = chr_grp["position"][:]
+            gc_content = chr_grp["gc_content"][:]
+            mappability = chr_grp["mappability"][:]
 
-            region_class = chr_grp['class'][:]
-            if region_class.dtype.kind == 'S':
-                region_class = [c.decode('utf-8') for c in region_class]
+            region_class = chr_grp["class"][:]
+            if region_class.dtype.kind == "S":
+                region_class = [c.decode("utf-8") for c in region_class]
 
-            names = chr_grp['name'][:]
-            if hasattr(names, 'astype'):
+            names = chr_grp["name"][:]
+            if hasattr(names, "astype"):
                 names = [str(n) for n in names]
 
             all_counts.extend(counts)
 
             for i in range(len(counts)):
-                windows.append(WindowData(
-                    chrom=chrom,
-                    start=int(starts[i]),
-                    end=int(ends[i]),
-                    position=int(positions[i]),
-                    gc_content=float(gc_content[i]),
-                    mappability=float(mappability[i]),
-                    region_class=region_class[i],
-                    name=names[i] if i < len(names) else ""
-                ))
+                windows.append(
+                    WindowData(
+                        chrom=chrom,
+                        start=int(starts[i]),
+                        end=int(ends[i]),
+                        position=int(positions[i]),
+                        gc_content=float(gc_content[i]),
+                        mappability=float(mappability[i]),
+                        region_class=region_class[i],
+                        name=names[i] if i < len(names) else "",
+                    )
+                )
 
         return SampleReadCounts(
             sample_name=sample_name,
             raw_counts=np.array(all_counts, dtype=np.int32),
             windows=windows,
-            chromosomes=sorted(chromosomes)
+            chromosomes=sorted(chromosomes),
         )
