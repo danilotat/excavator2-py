@@ -1,0 +1,772 @@
+{
+  "baseline": {
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "platform": "linux/amd64",
+    "config": ".test/config.yaml",
+    "samples": ".test/sample_sheet.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte"
+  },
+  "R_version": "4.4.1",
+  "seed": 20260924,
+  "source_sha256": "a3daa010eee4bc7172d0c7398d1816529e9e03c099fccb030c39b5c57e85ad3e",
+  "wrapper_sha256": "a1c2e332d3f80adcce42bea8e66ba34e359fc9e765fb699e6efcb53d18a73ffe",
+  "exporter_sha256": "020ba4cde187711eee92ecf4fb11e3ddd63953a4a2403e709a5fa7c4e8c92f3a",
+  "packer_sha256": "3bdda6772fae484e9285a900821125d9ca27611bd316548308ee7983927e08a1",
+  "segmentation_sha256": "c2a424e6176eba040391dede225fffc8a971d4565e0922c91cff6c1db16fbeed",
+  "conversion": "Binary values reshaped in Fortran order, without decimal conversion.",
+  "cases": {
+    "all_normal": {
+      "sha256": "0dd5f3bcaa622a90cfbf1c04ac07f07247536cb4a53ae14975cc5ea7b3d2a752",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            7
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            7,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    },
+    "boundaries": {
+      "sha256": "e7acc6b30cdd345268d24b7aabdf1060d7188a9c9f9ec37326377bc3084501f7",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            9,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            40,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            9
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            9,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    },
+    "cellularity": {
+      "sha256": "e0076416b3f626abb10477270d777428f25f78b0fd3b1ce78e9a4700053adfc5",
+      "arrays": {
+        "cellularity": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "corrected": {
+          "dtype": "float64",
+          "shape": [
+            7
+          ]
+        },
+        "original": {
+          "dtype": "float64",
+          "shape": [
+            7
+          ]
+        }
+      }
+    },
+    "extreme": {
+      "sha256": "181713e9d894bace930510bb212e588e95f2f6a12affc2698f5021f9624f9eaa",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    },
+    "nondefault": {
+      "sha256": "ea2fcd317d71d0c0e7c911793955fe03eca33577c5de251b5d97083201a56f55",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            12,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            11,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            12
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            12,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    },
+    "paired_baseline": {
+      "sha256": "b43db1045d04b513789e412e1d3403024cfc56f35e138ca906e67269655d09a6",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    },
+    "single": {
+      "sha256": "b43db1045d04b513789e412e1d3403024cfc56f35e138ca906e67269655d09a6",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            1,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    },
+    "ties": {
+      "sha256": "0885d2568fa4f68f44bccf9dea55abd154c711fdfafe622a0379af5d59991668",
+      "arrays": {
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            6,
+            2
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            6,
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        }
+      }
+    },
+    "uneven": {
+      "sha256": "3fa7a18bc13eff819251903dd76199152642cdde3f0f8be4719dd7cd23228d88",
+      "arrays": {
+        "bound": {
+          "dtype": "float64",
+          "shape": [
+            5,
+            2
+          ]
+        },
+        "calls": {
+          "dtype": "float64",
+          "shape": [
+            17,
+            2
+          ]
+        },
+        "initial_deviations": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "initial_statistic": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "iteration_trace": {
+          "dtype": "float64",
+          "shape": [
+            2,
+            11
+          ]
+        },
+        "iterations": {
+          "dtype": "int32",
+          "shape": [
+            1
+          ]
+        },
+        "mdata": {
+          "dtype": "float64",
+          "shape": [
+            17
+          ]
+        },
+        "muvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "posterior": {
+          "dtype": "float64",
+          "shape": [
+            17,
+            5
+          ]
+        },
+        "prior": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "sdvec": {
+          "dtype": "float64",
+          "shape": [
+            5
+          ]
+        },
+        "seed_after": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "seed_before": {
+          "dtype": "int32",
+          "shape": [
+            626
+          ]
+        },
+        "thrd": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        },
+        "thru": {
+          "dtype": "float64",
+          "shape": [
+            1
+          ]
+        }
+      }
+    }
+  }
+}
