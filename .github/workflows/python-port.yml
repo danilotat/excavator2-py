@@ -28,7 +28,7 @@ jobs:
               "cpp/$kernel.cpp" "cpp/tests/${kernel}_smoke.cpp" -o "$RUNNER_TEMP/$kernel-sanitized"
             "$RUNNER_TEMP/$kernel-sanitized"
           done
-      - run: uv build
+      - run: uv build --python ${{ matrix.python }}
       - name: Install and test built wheel outside the checkout
         shell: bash
         run: |
