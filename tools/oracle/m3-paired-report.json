@@ -1,0 +1,34 @@
+{
+  "files": {
+    "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+      "original_sha256": "1c06a3a46bc0dd2f77900d8d19b4d85ffa7d207e5491e05b6e26881b5da9cef4",
+      "rewritten_sha256": "1c06a3a46bc0dd2f77900d8d19b4d85ffa7d207e5491e05b6e26881b5da9cef4",
+      "rows": 15,
+      "text_equal": true
+    },
+    "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+      "original_sha256": "412dc7d3960e8fc57451518d732c8d629b73d844ae89bb67f01f6f17f97349ec",
+      "rewritten_sha256": "412dc7d3960e8fc57451518d732c8d629b73d844ae89bb67f01f6f17f97349ec",
+      "rows": 16,
+      "text_equal": true
+    },
+    "Results/Test1/FastCallResults_Test1.txt": {
+      "original_sha256": "c8b8c2a88f316493ec46993ed0ab48998d3f3f8facd7ba5961270addca7a2c05",
+      "rewritten_sha256": "c8b8c2a88f316493ec46993ed0ab48998d3f3f8facd7ba5961270addca7a2c05",
+      "rows": 1,
+      "text_equal": true
+    },
+    "Results/Test1/HSLMResults_Test1.txt": {
+      "original_sha256": "c2a424e6176eba040391dede225fffc8a971d4565e0922c91cff6c1db16fbeed",
+      "rewritten_sha256": "ee6b3c9481adafb71fed1a33b77cd28694cfddc8e1423adfbd79bbd5903ba270",
+      "rows": 281568,
+      "text_equal": false,
+      "max_absolute_error": 1.0061396160665481e-16,
+      "decision_mismatches": 0
+    }
+  },
+  "excluded_fields": [
+    "VCF fileDate"
+  ],
+  "passed": true
+}

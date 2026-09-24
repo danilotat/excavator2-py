@@ -12,3 +12,6 @@ size, iteration count, median full-fit times and speedup. It includes Python
 control but excludes label assignment, HSLM and I/O; it does not measure pipeline
 speedup or peak memory. Each fit runs scalar kernels on the calling thread.
 Record compiler/build details separately when comparing environments.
+
+Run `python benchmarks/hslm.py` for the scalar HSLM/reference comparison.
+It checks paths and reports three-repeat medians for 501 windows and 21 states.

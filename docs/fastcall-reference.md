@@ -1,9 +1,8 @@
 # FastCall: Python control and scalar C++ kernels
 
-The first numerical port is available through the Python API. The command-line
-pipeline still stops explicitly: HSLM, segment-table construction, preparation,
-and output writers are not integrated yet. M2 is complete: only the repeated E/M
-and posterior calculations run in C++. M3 has not started.
+FastCall is available through the Python API and the M3 analyze command.
+Only repeated E/M and posterior calculations run in C++; control remains Python.
+See [M3 analysis](hslm-analysis.md) for CLI integration and its supported scope.
 
 ## Readable implementation
 

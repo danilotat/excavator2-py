@@ -1,8 +1,9 @@
 # Developing the Python-first port
 
 This is an installable development package, version `0.1.0.dev0`, with a tested
-[FastCall implementation](fastcall-reference.md). The CLI does **not** yet prepare
-samples or call CNVs. The original implementation remains in `excavator2/`, and
+[FastCall implementation](fastcall-reference.md). The CLI can analyze converted legacy normalized counts; target generation and
+read preparation remain unimplemented. See [M3 usage and limits](hslm-analysis.md).
+The original implementation remains in `excavator2/`, and
 its installation/workflow instructions remain in the root README.
 
 ## Prerequisites
@@ -15,7 +16,7 @@ its installation/workflow instructions remain in the root README.
   CMake/Ninja when required; no global CMake installation is necessary.
 
 Python dependencies: NumPy, SciPy, PyYAML, pysam, and pyBigWig. Plotting is an
-optional extra. Our own native extension contains three scalar FastCall batch kernels. R, Perl, Fortran, samtools executables, and full reference
+optional extra. Our own native extension contains scalar FastCall and HSLM kernels. R, Perl, Fortran, samtools executables, and full reference
 assets are needed only for the legacy-oracle regeneration, not this package setup.
 
 ## Local setup
@@ -86,11 +87,13 @@ The original legacy workflow is unchanged. Scaffold tests check packaging and sa
 tests check both native and Python backends against original-R fixtures; end-to-end scientific
 equivalence remains unproven.
 
-All three stage commands accept their planned options but exit nonzero without
-writing output until implemented. Continue using the original scripts for real
+Target and prepare commands accept their planned options but exit nonzero
+without writing output until implemented. Analyze accepts versioned converted
+legacy artifacts; raw RData is not read directly. Continue using the original scripts for real
 analysis. A repeatable original-pipeline baseline has now been captured; see
 [the baseline report](legacy-baseline.md). M2 is complete: both FastCall backends match the saved fixtures. Python retains
-initialization, iteration/stopping, and assignment. M3 has not started.
+initialization, iteration/stopping, and assignment. M3 now adds HSLM and
+paired/pooling analysis; see [M3](hslm-analysis.md).
 See [the detailed roadmap](python-cpp-porting-roadmap.md).
 
 Build follows the official [scikit-build-core guide](https://scikit-build-core.readthedocs.io/en/latest/guide/getting_started.html)

@@ -366,13 +366,14 @@ The parity report must list baseline identity, fixture hashes, exact mismatch co
 
 ## 8. Implementation milestones and exit gates
 
-Current implementation status: **M2 FastCall is complete locally** with Python
-control, scalar C++ E/M/posterior kernels, and original-R differential fixtures.
-See [validation and limits](fastcall-reference.md). The legacy baseline and
-package scaffold are available; the full M1 artifact/converter contract remains
-future integration work. Cross-platform CI qualification remains pending.
-**M3 has not started**, and the three CLI stages still fail explicitly until
-implemented. Completion of M2 does not imply an end-to-end port.
+Current implementation status: **M2 and M3 are complete for the locally qualified
+single-profile analysis scope**. Python control, scalar HSLM/FastCall kernels,
+paired/pooling design, output writers and a minimal legacy artifact converter are
+available. New `analyze` matches the supplied legacy prepared dataset in decisions
+and the non-normal synthetic paired/pooling fixtures in outputs. See
+[the M3 evidence and limits](hslm-analysis.md). Cross-platform CI remains pending;
+the full future artifact contract is not implied by this analysis interchange.
+**M4 has not started**; target and prepare commands remain unimplemented.
 
 Estimates below are rough focused engineering effort for one experienced developer, not calendar commitments. They exclude reference download delays and expand if oracle instability or numerical incompatibility is substantial. Complete exit gates in dependency order.
 

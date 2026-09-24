@@ -13,3 +13,7 @@ clang++ -std=c++17 -O1 -g -fno-fast-math -ffp-contract=off \
 The test exercises E/M/posterior buffers at 1, 17, and 10,003 segments. Numerical
 parity, boundary validation and concurrent calls are checked through pytest in
 `tests/test_fastcall.py` and `tests/test_fastcall_native.py`, also on installed wheels.
+
+The same command with `hslm` replacing `fastcall` runs the HSLM smoke test.
+It verifies traced and rolling-buffer paths agree at the same three sizes.
+Both sanitizer checks are included in the Python port CI workflow.

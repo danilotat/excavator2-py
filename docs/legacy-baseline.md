@@ -52,8 +52,8 @@ roundtrip for numeric arrays. Unsupported object types cause export failure.
 M2 is complete: the [FastCall implementation](fastcall-reference.md) passes the
 saved synthetic and baseline-derived fixtures with both Python and scalar C++
 kernels. Initialization, iteration/stopping, cellularity, and assignment remain
-in Python. M3 has not started. Continue using the original pipeline for analyses
-until end-to-end parity is demonstrated.
+in Python. M3 now matches analysis from these prepared data in decisions; see
+[M3 validation](hslm-analysis.md). Full preparation and target parity remain future work.
 
 Pooled designs, CRAM, alternative thread counts, and per-iteration HSLM
 instrumentation remain additional coverage. FastCall boundaries, ties and
