@@ -1,4 +1,4 @@
 # Internal kernel headers
 
-Place shared declarations here only when kernels need them. There is no public
-C++ API yet; Python is the supported package interface.
+`fastcall.hpp` declares the three independently testable scalar kernels and their
+buffer contract. These are internal declarations; Python is the package interface.

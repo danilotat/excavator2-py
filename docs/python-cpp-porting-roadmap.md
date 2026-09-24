@@ -366,6 +366,14 @@ The parity report must list baseline identity, fixture hashes, exact mismatch co
 
 ## 8. Implementation milestones and exit gates
 
+Current implementation status: **M2 FastCall is complete locally** with Python
+control, scalar C++ E/M/posterior kernels, and original-R differential fixtures.
+See [validation and limits](fastcall-reference.md). The legacy baseline and
+package scaffold are available; the full M1 artifact/converter contract remains
+future integration work. Cross-platform CI qualification remains pending.
+**M3 has not started**, and the three CLI stages still fail explicitly until
+implemented. Completion of M2 does not imply an end-to-end port.
+
 Estimates below are rough focused engineering effort for one experienced developer, not calendar commitments. They exclude reference download delays and expand if oracle instability or numerical incompatibility is substantial. Complete exit gates in dependency order.
 
 | Milestone | Indicative effort | Deliverables and required exit gate |

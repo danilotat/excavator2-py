@@ -1,9 +1,9 @@
-# Python FastCall reference
+# FastCall: Python control and scalar C++ kernels
 
 The first numerical port is available through the Python API. The command-line
 pipeline still stops explicitly: HSLM, segment-table construction, preparation,
-and output writers are not integrated yet. No C++ numerical kernel was added in
-this step.
+and output writers are not integrated yet. M2 is complete: only the repeated E/M
+and posterior calculations run in C++. M3 has not started.
 
 ## Readable implementation
 
@@ -11,7 +11,9 @@ this step.
   and stopping policy, assignment, and optional replay of the original R RNG state.
 - `src/excavator2/reference/fastcall.py`: normal densities, truncated E-step,
   fixed-mean M-step, posterior normalization, and underflow fallback. These small
-  NumPy/SciPy functions are the references for future C++ kernels.
+  NumPy/SciPy functions are the references for the C++ kernels.
+- `cpp/fastcall.cpp`: scalar implementations of those three batch kernels.
+- `cpp/bindings/module.cpp`: array validation, allocation, and GIL release.
 
 The API consumes **one log2-ratio value per segment**, not the full window vector.
 Callers must preserve the original uncorrected values for later CN reporting.
@@ -90,5 +92,29 @@ explicitly on non-finite iteration results; it does not add numerical stabilizat
 to repair legacy failures. This is fixture-backed numerical parity for FastCall,
 not proof of universal equivalence or an end-to-end CNV calling release.
 
-Next: add the focused C++ E/M and posterior kernels behind this Python control
-logic, requiring the same fixtures and decision checks to pass.
+## Backend and array contract
+
+`fit_fastcall(..., backend="native")` is the default; use `backend="python"`
+to inspect or debug the NumPy/SciPy reference with the same Python control loop.
+The public API explicitly converts input to aligned, contiguous binary64 storage.
+The private native boundary rejects implicit conversions, unaligned arrays,
+incorrect shapes, non-finite inputs, and invalid model parameters. Vectors have
+shapes `(n,)` or `(5,)`, responsibilities/posteriors `(n, 5)`, and bounds `(5, 2)`;
+all matrices are C-contiguous. Outputs own their storage and inputs are not mutated.
+The GIL is released only during numerical work. Callers must not mutate shared
+input arrays while a kernel is running.
+
+Both backends pass the same original-R fixture tests, including exact labels,
+iteration counts and RNG states. The local M2 suite has 56 passing tests, including
+native boundary rejection, independent concurrent calls, and underflow/CDF edge
+cases. The standalone kernel smoke test also passes AddressSanitizer and
+UndefinedBehaviorSanitizer; see `cpp/tests/README.md` for the command.
+
+A five-repeat synthetic benchmark on macOS 15.7.9 ARM64, Python 3.12.6 and NumPy
+2.5.3 used 10,003 segments and two iterations: median full-fit time was 3.58 ms
+for Python and 2.78 ms for native (1.29x). This includes Python iteration control,
+excludes label assignment and I/O, and is not a pipeline speedup claim. Reproduce
+with `python benchmarks/fastcall.py --segments 10003 --repeats 5`.
+The scalar build disables fast-math and contraction. SIMD/AVX optimization is
+reserved for the later optimization milestone; no additional kernels are added
+as part of M2.

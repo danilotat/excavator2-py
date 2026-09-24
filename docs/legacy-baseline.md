@@ -47,15 +47,15 @@ The RData exporter was checked with binary64 fractions, signed zero, infinities,
 separate NA/NaN masks, matrix shape, and character values. It avoids a decimal
 roundtrip for numeric arrays. Unsupported object types cause export failure.
 
-## Next implementation step
+## Porting status
 
-The [readable Python FastCall reference](fastcall-reference.md) now matches the
-saved synthetic and baseline-derived fixtures. Next add its small C++ E/M and
-posterior kernels.
-Keep initialization, iteration/stopping, cellularity, and assignment policy in
-Python. Continue using the original pipeline for analyses until end-to-end parity
-is demonstrated.
+M2 is complete: the [FastCall implementation](fastcall-reference.md) passes the
+saved synthetic and baseline-derived fixtures with both Python and scalar C++
+kernels. Initialization, iteration/stopping, cellularity, and assignment remain
+in Python. M3 has not started. Continue using the original pipeline for analyses
+until end-to-end parity is demonstrated.
 
-Pooled designs, CRAM, alternative thread counts, threshold/tie edge cases, and
-per-iteration HSLM/EM instrumentation remain additional coverage. The first Python
-port has not yet been implemented; this report establishes its comparison target.
+Pooled designs, CRAM, alternative thread counts, and per-iteration HSLM
+instrumentation remain additional coverage. FastCall boundaries, ties and
+per-iteration traces are covered by the M2 fixtures. This baseline does not yet
+establish equivalence of an all-new pipeline.

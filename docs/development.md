@@ -1,7 +1,7 @@
 # Developing the Python-first port
 
 This is an installable development package, version `0.1.0.dev0`, with a tested
-[Python FastCall reference](fastcall-reference.md). The CLI does **not** yet prepare
+[FastCall implementation](fastcall-reference.md). The CLI does **not** yet prepare
 samples or call CNVs. The original implementation remains in `excavator2/`, and
 its installation/workflow instructions remain in the root README.
 
@@ -15,9 +15,8 @@ its installation/workflow instructions remain in the root README.
   CMake/Ninja when required; no global CMake installation is necessary.
 
 Python dependencies: NumPy, SciPy, PyYAML, pysam, and pyBigWig. Plotting is an
-optional extra. Our own native extension currently contains only importable
-scaffold metadata. R, Perl, Fortran, samtools executables, and full reference
-assets are needed only for the later legacy-oracle work, not this package setup.
+optional extra. Our own native extension contains three scalar FastCall batch kernels. R, Perl, Fortran, samtools executables, and full reference
+assets are needed only for the legacy-oracle regeneration, not this package setup.
 
 ## Local setup
 
@@ -27,7 +26,7 @@ From the repository root:
 uv sync --locked
 uv run excavator2 --help
 uv run excavator2 target --help
-uv run python -c "from excavator2 import _core; print(_core.implementation_status)"
+uv run python -c "from excavator2 import _core; print(_core.fastcall_posterior.__name__)"
 uv run pytest
 uv run ruff check .
 uv run ruff format --check .
@@ -55,13 +54,13 @@ The pip route respects dependency bounds but does not consume `uv.lock`.
 | Location | Purpose |
 |---|---|
 | `src/excavator2/cli.py` | Three-stage CLI and options |
-| `src/excavator2/reference/` | Future readable Python versions of accelerated kernels |
+| `src/excavator2/reference/` | Readable Python versions of accelerated kernels |
 | `cpp/bindings/` | Minimal Python/C++ boundary |
-| `cpp/include/excavator2/`, `cpp/tests/` | Future shared declarations and native tests |
-| `tests/` | Installation/CLI smoke checks |
-| `tests/differential/`, `tests/fixtures/` | Future oracle comparisons and small goldens |
-| `tools/oracle/` | Legacy baseline preparation checklist |
-| `benchmarks/` | Future measured performance checks |
+| `cpp/include/excavator2/`, `cpp/tests/` | Kernel declarations and sanitizer smoke tests |
+| `tests/` | Packaging, CLI, and differential numerical tests |
+| `tests/differential/`, `tests/fixtures/` | Oracle comparisons and small goldens |
+| `tools/oracle/` | Pinned legacy baseline and fixture generation |
+| `benchmarks/` | Reproducible FastCall performance check |
 | `excavator2/`, `.test/` | Preserved original implementation and example inputs |
 
 `fastcall.py` now owns the first numerical port. Add other Python stage modules
@@ -78,21 +77,20 @@ uv build
 
 This builds a source distribution and a wheel under `dist/`; the wheel includes
 `excavator2._core`. There is no AVX requirement or host-specific ISA flag. Native
-floating-point flags disable fast-math and contraction for future compatibility
-work. Wheels remain specific to their Python/platform ABI.
+floating-point flags disable fast-math and contraction to preserve numerical compatibility. Wheels remain specific to their Python/platform ABI.
 
 The separate `python-port.yml` workflow checks Python 3.11–3.13 on Linux and macOS,
 including an installed-wheel test outside the checkout. This matrix is a target
 for CI qualification, not a claim that every platform has already passed.
 The original legacy workflow is unchanged. Scaffold tests check packaging and safe CLI failure. Separate FastCall differential
-tests check the Python model against original-R fixtures; end-to-end scientific
+tests check both native and Python backends against original-R fixtures; end-to-end scientific
 equivalence remains unproven.
 
 All three stage commands accept their planned options but exit nonzero without
 writing output until implemented. Continue using the original scripts for real
 analysis. A repeatable original-pipeline baseline has now been captured; see
-[the baseline report](legacy-baseline.md). The Python FastCall reference now matches its saved fixtures. Next: add its focused
-C++ kernels while retaining the Python control logic.
+[the baseline report](legacy-baseline.md). M2 is complete: both FastCall backends match the saved fixtures. Python retains
+initialization, iteration/stopping, and assignment. M3 has not started.
 See [the detailed roadmap](python-cpp-porting-roadmap.md).
 
 Build follows the official [scikit-build-core guide](https://scikit-build-core.readthedocs.io/en/latest/guide/getting_started.html)

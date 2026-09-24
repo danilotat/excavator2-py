@@ -1,10 +1,9 @@
 # Focused numerical core
 
-Only the extension binding exists today. Add `hslm.cpp` for transitions,
-emissions, and Viterbi; add `fastcall.cpp` for batched E/M and posterior kernels.
-Keep parameters, algorithm control, filtering, file access, and output in Python.
+`fastcall.cpp` implements the scalar E-step, fixed-mean M-step, and posterior
+kernels. Their readable specifications are in `src/excavator2/reference/fastcall.py`.
+The binding validates arrays and releases the GIL during computation. Parameters,
+iteration/stopping, cellularity, assignment, file access, and output stay in Python.
 
-Every kernel needs documented array shapes, a readable implementation in
-`src/excavator2/reference/`, and comparison with legacy checkpoints. Additional
-C++ requires measured performance or numerical compatibility justification.
-Do not add an I/O framework or SIMD backend before there is evidence for it.
+See `docs/fastcall-reference.md` for shapes, compatibility behavior and evidence.
+HSLM is not implemented. Additional kernels and SIMD remain later milestone work.
