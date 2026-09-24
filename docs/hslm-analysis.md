@@ -4,8 +4,8 @@ M3 is implemented for single-profile paired and pooled analysis from converted
 legacy normalized counts. Python owns the experimental design, ratios, global
 parameter estimation, chromosome arms, filtering, segment summaries, FastCall
 control and writers. C++ owns only HSLM transitions, emissions and Viterbi, plus
-the existing FastCall kernels. Target generation and read preparation are still
-unimplemented; M4 has not started.
+the existing FastCall kernels. [M4 now adds BAM preparation](preparation.md); target generation remains
+unimplemented.
 
 ## Running analysis
 
@@ -133,6 +133,6 @@ Every push and pull request now also runs a fresh pinned-legacy versus current-w
 comparison for paired and pooled non-normal analysis. Reports, outputs and failure
 logs are uploaded as the `legacy-concordance` artifact. See
 [the oracle harness instructions](../tools/oracle/README.md#live-old-versus-current-ci-concordance)
-for reproduction and the exact gates. The large supplied BAM/reference run is not
-part of this per-PR job. The new harness passes locally; its first GitHub-hosted run
+for reproduction and the exact gates. The job now also covers original versus current preparation on small BAMs;
+the large supplied BAM/reference run is not part of this per-PR job. The new harness passes locally; its first GitHub-hosted run
 will occur when these commits are pushed.

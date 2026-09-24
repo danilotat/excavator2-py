@@ -366,14 +366,13 @@ The parity report must list baseline identity, fixture hashes, exact mismatch co
 
 ## 8. Implementation milestones and exit gates
 
-Current implementation status: **M2 and M3 are complete for the locally qualified
-single-profile analysis scope**. Python control, scalar HSLM/FastCall kernels,
-paired/pooling design, output writers and a minimal legacy artifact converter are
-available. New `analyze` matches the supplied legacy prepared dataset in decisions
-and the non-normal synthetic paired/pooling fixtures in outputs. See
-[the M3 evidence and limits](hslm-analysis.md). Cross-platform CI remains pending;
-the full future artifact contract is not implied by this analysis interchange.
-**M4 has not started**; target and prepare commands remain unimplemented.
+Current implementation status: **M2–M4 are implemented for the locally qualified
+BAM/single-profile scope**. Python preparation and paired/pooling analysis use a
+converted original target. Counts and prepared matrices match the supplied BAMs;
+new prepare → analyze preserves original calls. See [M4 evidence and limits](preparation.md).
+Live CI now also runs original versus current preparation on small BAMs, in addition
+to analysis-only comparisons. Cross-platform M4 qualification awaits CI.
+**M5 has not started**; target generation remains unimplemented.
 
 Estimates below are rough focused engineering effort for one experienced developer, not calendar commitments. They exclude reference download delays and expand if oracle instability or numerical incompatibility is substantial. Complete exit gates in dependency order.
 

@@ -15,3 +15,6 @@ Record compiler/build details separately when comparing environments.
 
 Run `python benchmarks/hslm.py` for the scalar HSLM/reference comparison.
 It checks paths and reports three-repeat medians for 501 windows and 21 states.
+
+Run `python benchmarks/preparation.py BAM TARGET` to time BAM decoding/counting
+and normalization separately against a converted target with preparation features.

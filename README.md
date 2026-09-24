@@ -6,8 +6,8 @@
 The Python-first port is being developed in `src/excavator2/`, with a small C++
 extension under `cpp/`. See the [development setup](docs/development.md) and
 [porting roadmap](docs/python-cpp-porting-roadmap.md). The development package supports
-[FastCall and HSLM analysis from converted legacy inputs](docs/hslm-analysis.md).
-Use the original workflow below for target generation and read preparation.
+[BAM preparation and analysis against converted legacy targets](docs/preparation.md).
+Use the original workflow below for target generation.
 
 > The first **read count based** tool that exploits **all the reads** produced by **WES** experiments to detect **CNVs** with a **genome-wide resolution**.
 

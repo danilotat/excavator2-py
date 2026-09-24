@@ -112,7 +112,8 @@ python tools/oracle/concordance.py --output .oracle/live-concordance
 ```
 
 Choose a new output directory for each run. This performs real old-versus-new
-execution, not just a comparison against committed golden files. Its scope is
-M3 analysis from prepared counts, including non-normal calls. It does not download
-large BAM/reference assets or rerun target generation and read preparation; the
-full supplied-data baseline remains the separate workflow described above.
+execution, not just a comparison against committed golden files. It now covers M3 analysis and M4 preparation: small indexed BAMs are generated,
+the original filtering/counting/normalization scripts run, and exact counts plus
+five correction checkpoints are compared before paired/pooling calls. This adds
+another 16 call-output comparisons. It does not download large BAM/reference
+assets or rerun target generation; the full supplied-data baseline remains separate.

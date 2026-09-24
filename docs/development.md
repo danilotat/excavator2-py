@@ -1,8 +1,8 @@
 # Developing the Python-first port
 
 This is an installable development package, version `0.1.0.dev0`, with a tested
-[FastCall implementation](fastcall-reference.md). The CLI can analyze converted legacy normalized counts; target generation and
-read preparation remain unimplemented. See [M3 usage and limits](hslm-analysis.md).
+[FastCall implementation](fastcall-reference.md). The CLI can prepare indexed BAMs and analyze their counts using a converted
+legacy target. Target generation remains unimplemented. See [M4 usage and limits](preparation.md).
 The original implementation remains in `excavator2/`, and
 its installation/workflow instructions remain in the root README.
 
@@ -87,9 +87,8 @@ The original legacy workflow is unchanged. Scaffold tests check packaging and sa
 tests check both native and Python backends against original-R fixtures; end-to-end scientific
 equivalence remains unproven.
 
-Target and prepare commands accept their planned options but exit nonzero
-without writing output until implemented. Analyze accepts versioned converted
-legacy artifacts; raw RData is not read directly. Continue using the original scripts for real
+The target command still exits nonzero without writing output. Prepare and
+analyze accept versioned artifacts; raw RData is not read directly. Continue using the original scripts for real
 analysis. A repeatable original-pipeline baseline has now been captured; see
 [the baseline report](legacy-baseline.md). M2 is complete: both FastCall backends match the saved fixtures. Python retains
 initialization, iteration/stopping, and assignment. M3 now adds HSLM and
