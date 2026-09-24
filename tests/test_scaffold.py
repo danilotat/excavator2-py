@@ -25,17 +25,6 @@ def test_module_version():
     [
         ["target", "--config", "config.yaml"],
         ["prepare", "--samples", "samples.yaml", "--target", "target/", "--threads", "4"],
-        [
-            "analyze",
-            "--samples",
-            "sample_list.yaml",
-            "--input",
-            "prepared/",
-            "--target",
-            "target/",
-            "--experiment",
-            "paired",
-        ],
     ],
 )
 def test_unimplemented_stage_fails_without_creating_output(tmp_path, command):

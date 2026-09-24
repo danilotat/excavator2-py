@@ -30,7 +30,7 @@ dev = ["pytest>=8,<10", "ruff>=0.11,<1"]
 minimum-version = "build-system.requires"
 cmake.version = ">=3.20"
 wheel.packages = ["src/excavator2"]
-sdist.include = ["src/**", "cpp/**", "tests/**", "docs/**", "CMakeLists.txt", "LICENSE", "tools/oracle/**"]
+sdist.include = ["src/**", "cpp/**", "tests/**", "docs/**", "CMakeLists.txt", "LICENSE", "tools/oracle/**", "tools/convert_legacy.py"]
 sdist.exclude = [".test/**", "excavator2/**", ".venv/**", "dist/**"]
 
 [tool.pytest.ini_options]

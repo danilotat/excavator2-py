@@ -24,7 +24,7 @@ def mapq_value(value: str) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="excavator2",
-        description="Python/C++ port scaffold. Scientific stages are not implemented yet.",
+        description="Python/C++ port: analysis from converted legacy prepared data.",
     )
     parser.add_argument("--version", action="version", version=f"excavator2 {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -34,7 +34,7 @@ def build_parser() -> argparse.ArgumentParser:
     prepare = commands.add_parser("prepare", help="Prepare read counts (not implemented)")
     prepare.add_argument("--mapq", "-q", type=mapq_value, default=20)
 
-    analyze = commands.add_parser("analyze", help="Call CNVs (not implemented)")
+    analyze = commands.add_parser("analyze", help="Call CNVs from converted legacy artifacts")
     analyze.add_argument("--input", "-i", type=Path, required=True)
     analyze.add_argument(
         "--experiment", "-e", choices=("paired", "pooling", "pooled"), required=True
@@ -56,6 +56,23 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "analyze":
+        from .analyze import run_analysis
+
+        try:
+            run_analysis(
+                args.samples,
+                args.input,
+                args.target,
+                args.output,
+                args.experiment,
+                args.parameters,
+                args.threads,
+                args.force,
+            )
+        except (ValueError, OSError, KeyError, FloatingPointError) as error:
+            parser.exit(status=1, message=f"excavator2 analyze: {error}\n")
+        return 0
     parser.exit(
         status=1,
         message=(
