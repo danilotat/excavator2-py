@@ -9,7 +9,7 @@ from excavator2 import __version__, _core
 
 
 def test_compiled_extension_imports():
-    assert _core.implementation_status == "scaffold"
+    assert callable(_core.fastcall_posterior)
 
 
 def test_module_version():

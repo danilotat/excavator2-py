@@ -42,9 +42,12 @@ def load_case(name):
 
 
 @pytest.mark.parametrize("name", ["five_states", *FIT_CASES])
-def test_fit_matches_original_r(name):
+@pytest.mark.parametrize("backend", ["python", "native"])
+def test_fit_matches_original_r(name, backend):
     expected = load_case(name)
-    fit = fit_fastcall(expected["mdata"], upper=expected["thru"][0], lower=expected["thrd"][0])
+    fit = fit_fastcall(
+        expected["mdata"], upper=expected["thru"][0], lower=expected["thrd"][0], backend=backend
+    )
     assert fit.iterations == expected["iterations"][0]
     assert fit.converged
     assert_array_equal(fit.means, expected["muvec"])

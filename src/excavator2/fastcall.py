@@ -9,7 +9,8 @@ from dataclasses import dataclass
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
 
-from .reference import fastcall as kernels
+from . import _core
+from .reference import fastcall as reference_kernels
 
 FloatArray = NDArray[np.float64]
 
@@ -81,27 +82,46 @@ def stopping_statistic(posterior: FloatArray, priors: FloatArray) -> float:
     return float(np.sum(flat * recycled))
 
 
-def fit_fastcall(values: ArrayLike, *, upper: float = 0.35, lower: float = 0.5) -> FastCallFit:
+def fit_fastcall(
+    values: ArrayLike, *, upper: float = 0.35, lower: float = 0.5, backend: str = "native"
+) -> FastCallFit:
     """Fit the legacy five-state model to one value per segment.
+
+    Use backend="python" for the readable reference; "native" runs only the
+    E/M and posterior kernels in C++. Both share this control loop.
 
     `lower` is the positive magnitude d in the legacy YAML; the normal state's
     lower bound is -d. No segment-length weighting or learned means are added.
     """
-    values = segment_values(values)
+    values = np.require(segment_values(values), dtype=np.float64, requirements=["C", "A"])
+    if backend == "native":
+        posterior = _core.fastcall_posterior
+        expectation = _core.fastcall_expectation
+        maximization = _core.fastcall_maximization
+    elif backend == "python":
+        posterior = reference_kernels.posterior
+        expectation = reference_kernels.expectation
+        maximization = reference_kernels.maximization
+    else:
+        raise ValueError("backend must be 'native' or 'python'")
     if not np.isfinite([upper, lower]).all() or not (0 < upper < 0.9 and 0 < lower < 1.3):
         raise ValueError("require 0 < upper < 0.9 and 0 < lower < 1.3")
     means, deviations = start_conditions(values, upper, lower)
     priors = np.array([0.05, 0.1, 0.7, 0.1, 0.05])
     edges = [-20.0, -1.3, -lower, upper, 0.9, 20.0]
     bounds = np.column_stack([edges[:-1], edges[1:]])
-    probabilities = kernels.posterior(values, means, deviations, priors)
+    probabilities = posterior(values, means, deviations, priors)
     statistic = stopping_statistic(probabilities, priors)
     trace = []
     converged = False
     for iteration in range(1, 1001):
-        responsibilities = kernels.expectation(values, means, deviations, priors, bounds)
-        deviations, priors = kernels.maximization(values, responsibilities, means, deviations)
-        probabilities = kernels.posterior(values, means, deviations, priors)
+        responsibilities = expectation(values, means, deviations, priors, bounds)
+        if not np.isfinite(responsibilities).all():
+            raise FloatingPointError("legacy FastCall produced non-finite responsibilities")
+        deviations, priors = maximization(values, responsibilities, means, deviations)
+        if not np.isfinite(deviations).all() or not np.isfinite(priors).all():
+            raise FloatingPointError("legacy FastCall produced non-finite parameters")
+        probabilities = posterior(values, means, deviations, priors)
         previous = statistic
         statistic = stopping_statistic(probabilities, priors)
         if not np.isfinite(statistic):
