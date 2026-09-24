@@ -1,4 +1,4 @@
-name: Python port scaffold
+name: Python port
 
 on: [push, pull_request]
 
@@ -16,6 +16,15 @@ jobs:
       - run: uv run --no-sync ruff check .
       - run: uv run --no-sync ruff format --check .
       - run: uv run --no-sync pytest
+      - name: Native sanitizers
+        shell: bash
+        run: |
+          for kernel in fastcall hslm; do
+            clang++ -std=c++17 -O1 -g -fno-fast-math -ffp-contract=off \
+              -fsanitize=address,undefined -fno-omit-frame-pointer -Icpp/include \
+              "cpp/$kernel.cpp" "cpp/tests/${kernel}_smoke.cpp" -o "$RUNNER_TEMP/$kernel-sanitized"
+            "$RUNNER_TEMP/$kernel-sanitized"
+          done
       - run: uv build
       - name: Install and test built wheel outside the checkout
         shell: bash

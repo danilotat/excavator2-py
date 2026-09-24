@@ -102,8 +102,11 @@ py::tuple maximization(const Array& values, const Array& responsibilities,
 }
 }  // namespace
 
+void bind_hslm(py::module_& module);
+
 PYBIND11_MODULE(_core, module) {
-    module.doc() = "Scalar FastCall numerical kernels; algorithm control remains in Python";
+    bind_hslm(module);
+    module.doc() = "Scalar HSLM and FastCall numerical kernels; algorithm control remains in Python";
     module.def("fastcall_posterior", &posterior, py::arg("values").noconvert(),
                py::arg("means").noconvert(), py::arg("deviations").noconvert(),
                py::arg("priors").noconvert());
