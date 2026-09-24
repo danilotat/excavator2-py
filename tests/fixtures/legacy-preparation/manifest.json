@@ -1,0 +1,29 @@
+{
+  "baseline": {
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "platform": "linux/amd64",
+    "config": ".test/config.yaml",
+    "samples": ".test/sample_sheet.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte"
+  },
+  "files": {
+    "chunk_1000001.npz": "cd77eff8d0071fe9a7ca52783111e224b579e62e7affdaadc373b6423de35e2f",
+    "chunk_499999.npz": "49db9a6b328d5649270c22b5c8f11c1c045ec9f7b0fcc5dc43871276b4132f9c",
+    "chunk_500000.npz": "627b4f19ed212c4a18efbd1905bf1b52ef87734d202aaa0f1f700aeb8cd00aa6",
+    "chunk_500001.npz": "292c43b1e5370cec69050a2bda8dfbb53becba049cd2f387c2eecb9d487f5bd5",
+    "endpoints.npz": "5adbb171d17a4ad6f17332800e6b7cdea859584ceb4865e037cd673746f8beb0",
+    "final_only.npz": "2cd6fcc0aa428c660ae2f7c6623a5e608cfdb20eb195a77d666fb7526ee7b374",
+    "normalization.npz": "a5da005e9d9cb96ff3aface8e586113996b9b6c2fda211bf95f71ec435688561",
+    "overlap.npz": "53b944fca737440fa6daced47914a90b478642817749383e6f74d391e9f6a931",
+    "tools/oracle/characterize_preparation.R": "ecf06baa0872adf62989d663153baa36fb56ffe22d08de901449a4157c69839d",
+    "excavator2/lib/F77/F4R.f": "a49dcf79c76ebe6ad9418bc95c320b4e04137b80b9062de5ae45b81a8ebc6c36",
+    "excavator2/lib/R/MakeReadCount.R": "63585c9d994f1d8a3046f80f17fa408dfa1c86ad21aa433965a7f9345be2193e",
+    "excavator2/lib/R/LibraryExomeRC.R": "bd5fd2447f5948afe80fb469c87253c43c1b669ca0366c6e856769ee5373e98a"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "baseline": {
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "platform": "linux/amd64",
+    "config": ".test/config.yaml",
+    "samples": ".test/sample_sheet.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte"
+  },
+  "files": {
+    "expected.npz": "1eaf9769737d82e216ab973044605821df98d73da252c0b8cd85bbf0293e9ffb",
+    "Test1.bam": "64fdc62ebf02f8bd26167704cd77ef0822d7ab97722b56ae2d05287dd7da197c",
+    "Test1.bam.bai": "da92904031c72136f943718d17e7d4c33cb3537b99a09b50705fda0ea45b01a1",
+    "target/manifest.json": "6922f29f0a4e7664836ff351a4107251ad8b36ede5df0e7217069658d2a9b812",
+    "target/reference-0.npz": "dd0f9cfda4d9cee10a2725abbf77f579c622675726de2eb01739d075c9f694dc",
+    "target/reference-1.npz": "dd0f9cfda4d9cee10a2725abbf77f579c622675726de2eb01739d075c9f694dc",
+    "target/preparation.npz": "486cec45b40feef2836d84bc064a4e99059ca4ae2c53b7032aad6200c909e4c1",
+    "tools/oracle/characterize_preparation_pipeline.R": "8c3b683194bc5b77c8d78880a3d1d9ccafa4a4a44bbadb7d2b9ed4892f3b75e6",
+    "tools/oracle/make_preparation_bams.py": "a0a8435efbe5e1da34eb5fbfbad7e63f8310a32f824c530c91a7a8b07b436dee",
+    "excavator2/lib/R/EXCAVATORNormalizationExome.R": "50417b7a4d66f3f17684ce4587910c66a06ece013a9e1e287e26626d742c68b4",
+    "excavator2/lib/R/LibraryExomeRC.R": "bd5fd2447f5948afe80fb469c87253c43c1b669ca0366c6e856769ee5373e98a",
+    "excavator2/lib/R/MakeReadCount.R": "63585c9d994f1d8a3046f80f17fa408dfa1c86ad21aa433965a7f9345be2193e",
+    "excavator2/lib/bash/FiltBam.sh": "3ad0fb5ceff293174bbd280fe347a04c38c8451c63cff5b53f4045544c990f66",
+    "excavator2/lib/F77/F4R.f": "a49dcf79c76ebe6ad9418bc95c320b4e04137b80b9062de5ae45b81a8ebc6c36"
+  }
+}
