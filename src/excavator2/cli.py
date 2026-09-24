@@ -31,7 +31,9 @@ def build_parser() -> argparse.ArgumentParser:
     target = commands.add_parser("target", help="Initialize target regions (not implemented)")
     target.add_argument("--config", "--settings", "-s", type=Path, required=True)
 
-    prepare = commands.add_parser("prepare", help="Prepare read counts (not implemented)")
+    prepare = commands.add_parser(
+        "prepare", help="Prepare BAM counts against a converted legacy target"
+    )
     prepare.add_argument("--mapq", "-q", type=mapq_value, default=20)
 
     analyze = commands.add_parser("analyze", help="Call CNVs from converted legacy artifacts")
@@ -56,6 +58,16 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "prepare":
+        from .prepare import run_preparation
+
+        try:
+            run_preparation(
+                args.samples, args.target, args.output, args.threads, args.mapq, args.force
+            )
+        except (ValueError, OSError, KeyError, FloatingPointError) as error:
+            parser.exit(status=1, message=f"excavator2 prepare: {error}\n")
+        return 0
     if args.command == "analyze":
         from .analyze import run_analysis
 

@@ -9,7 +9,7 @@ from excavator2.artifacts import convert_legacy
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for name in ["prepared-exports", "target-exports", "chromosomes", "centromeres", "output"]:
-        parser.add_argument(f"--{name}", type=Path, required=True)
+        parser.add_argument(f"--{name}", type=Path, required=name != "prepared-exports")
     parser.add_argument("--assembly", required=True)
     args = parser.parse_args()
     convert_legacy(
