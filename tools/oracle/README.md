@@ -81,3 +81,38 @@ Two full one-worker paired runs matched across 476 exported checkpoint/result fi
 with only VCF dates excluded. See `baseline-report.json`, `golden.sha256.json`, and
 `docs/legacy-baseline.md`. `environment-explicit.txt` records the image's installed
 package URLs. Other experimental modes and worker counts remain unqualified.
+
+## Live old-versus-current CI concordance
+
+The `Live legacy concordance (paired and pooling)` job in `python-port.yml`
+runs on every push, pull request, and manual workflow dispatch. It builds the
+current wheel and tests it in a separate environment. Each run:
+
+1. Extracts the original commit in `baseline.json` with `git archive`.
+2. Runs that snapshot in the digest-pinned legacy container, with networking
+   disabled inside the container. The bundled Fortran binary is used only after
+   its accompanying source matches the snapshot. The container's R wrapper is
+   not substituted for the pinned source.
+3. Generates fresh two-chromosome normalized-count inputs, executes the original
+   paired and pooled analyses, and exports those same inputs for the new package.
+4. Runs the current wheel's CLI and compares all eight output files per design.
+
+Calls and VCF records must match exactly (except VCF `fileDate`). HSLM coordinates,
+classes, row order and segment boundaries must agree exactly; continuous HSLM
+values retain rtol=1e-13 and atol=2e-15. Missing or extra output files fail the job.
+Failures return a nonzero exit code; no `continue-on-error` or conditional skip
+is used for concordance. The `legacy-concordance` artifact retains JSON reports,
+source/input provenance, both sets of outputs and logs for 14 days, including
+failed runs. The existing cross-platform fixture tests remain separate.
+
+Reproduce with Docker available and the current package installed:
+
+```sh
+python tools/oracle/concordance.py --output .oracle/live-concordance
+```
+
+Choose a new output directory for each run. This performs real old-versus-new
+execution, not just a comparison against committed golden files. Its scope is
+M3 analysis from prepared counts, including non-normal calls. It does not download
+large BAM/reference assets or rerun target generation and read preparation; the
+full supplied-data baseline remains the separate workflow described above.

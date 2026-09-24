@@ -126,3 +126,13 @@ The lower-level FastCall API can replay an exported R RNG state; the CLI does no
 yet accept one. Multi-profile HSLM, CRAM/preparation, plots, arbitrary malformed
 legacy inputs and cross-platform numerical qualification remain outside this
 M3 acceptance scope. No known scientific bug has been intentionally repaired.
+
+## Live CI concordance
+
+Every push and pull request now also runs a fresh pinned-legacy versus current-wheel
+comparison for paired and pooled non-normal analysis. Reports, outputs and failure
+logs are uploaded as the `legacy-concordance` artifact. See
+[the oracle harness instructions](../tools/oracle/README.md#live-old-versus-current-ci-concordance)
+for reproduction and the exact gates. The large supplied BAM/reference run is not
+part of this per-PR job. The new harness passes locally; its first GitHub-hosted run
+will occur when these commits are pushed.

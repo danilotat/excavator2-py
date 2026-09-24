@@ -1,6 +1,9 @@
 name: Python port
 
-on: [push, pull_request]
+on: [push, pull_request, workflow_dispatch]
+
+permissions:
+  contents: read
 
 jobs:
   package:
@@ -34,3 +37,32 @@ jobs:
           cd "$RUNNER_TEMP"
           "$RUNNER_TEMP/wheel-venv/bin/python" -m pytest "$GITHUB_WORKSPACE/tests"
           "$RUNNER_TEMP/wheel-venv/bin/excavator2" --help
+
+  concordance:
+    name: Live legacy concordance (paired and pooling)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # git archive needs the pinned legacy source commit
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --python 3.12
+      - run: uv build
+      - name: Install current wheel in a separate environment
+        run: |
+          uv venv --python 3.12 "$RUNNER_TEMP/concordance-venv"
+          uv pip install --python "$RUNNER_TEMP/concordance-venv/bin/python" dist/*.whl
+      - name: Run pinned old version and current wheel on fresh shared inputs
+        run: |
+          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/concordance.py \
+            --output .oracle/ci-concordance
+      - name: Upload concordance reports, inputs, outputs and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: legacy-concordance
+          path: .oracle/ci-concordance/
+          include-hidden-files: true
+          if-no-files-found: warn
+          retention-days: 14
