@@ -9,6 +9,21 @@ import numpy as np
 
 
 def compare(original, rewritten):
+    original = Path(original)
+    rewritten = Path(rewritten)
+
+    def inventory(root):
+        return {
+            path.relative_to(root)
+            for path in root.glob("Results/*/*")
+            if path.is_file() and path.suffix in (".txt", ".vcf")
+        }
+
+    old_files, new_files = inventory(original), inventory(rewritten)
+    if old_files != new_files:
+        missing = sorted(str(path) for path in old_files - new_files)
+        extra = sorted(str(path) for path in new_files - old_files)
+        raise ValueError(f"output inventory differs; missing={missing}, extra={extra}")
     reports = {}
     for expected in sorted(original.glob("Results/*/*")):
         if expected.suffix not in (".txt", ".vcf"):
@@ -43,7 +58,13 @@ def compare(original, rewritten):
             report["max_absolute_error"] = float(np.max(np.abs(x - y)))
             report["decision_mismatches"] = 0
         elif old != new:
-            raise ValueError(f"call table/VCF differs: {relative}")
+            first = next(
+                (i for i, pair in enumerate(zip(old, new), 1) if pair[0] != pair[1]),
+                min(len(old), len(new)) + 1,
+            )
+            before = old[first - 1] if first <= len(old) else "<missing>"
+            after = new[first - 1] if first <= len(new) else "<missing>"
+            raise ValueError(f"call table/VCF differs: {relative}:{first}: {before!r} != {after!r}")
         reports[str(relative)] = report
     if not reports:
         raise ValueError("no expected outputs found")
