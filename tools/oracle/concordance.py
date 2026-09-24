@@ -15,6 +15,8 @@ import tempfile
 from pathlib import Path
 
 from compare_analysis import compare
+from compare_preparation import compare_preparation
+from make_preparation_bams import make_bams
 from oracle import BASELINE, ROOT, container_command, file_record, save_json
 
 from excavator2 import __version__, _core
@@ -42,6 +44,10 @@ def run(output):
                 "characterize_analysis.R",
                 "export.R",
                 "compare_analysis.py",
+                "compare_preparation.py",
+                "make_preparation_bams.py",
+                "characterize_preparation_pipeline.R",
+                "run_preparation_concordance.sh",
             ]
         },
         "designs": {},
@@ -109,6 +115,72 @@ def run(output):
                 report["designs"][mode] = result
             except (ValueError, OSError, subprocess.CalledProcessError) as error:
                 report["designs"][mode] = {"passed": False, "error": str(error)}
+        make_bams(output)
+        with (output / "legacy-preparation.log").open("w") as log:
+            subprocess.run(
+                container_command(output)
+                + ["bash", "/repo/tools/oracle/run_preparation_concordance.sh"],
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                check=True,
+            )
+        convert_legacy(
+            None,
+            output / "exports/preparation-target",
+            output / "legacy/target/synthetic_chromosome.txt",
+            output / "legacy/centromeres.txt",
+            "synthetic",
+            output / "preparation-input",
+        )
+        with (output / "current-preparation.log").open("w") as log:
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "excavator2",
+                    "prepare",
+                    "--samples",
+                    str(output / "bam-samples.yaml"),
+                    "--target",
+                    str(output / "preparation-input/target"),
+                    "--output",
+                    str(output / "current-prepared"),
+                    "--threads",
+                    "2",
+                ],
+                stdout=log,
+                stderr=subprocess.STDOUT,
+                check=True,
+            )
+        report["preparation"] = compare_preparation(
+            output / "exports/legacy-prepared", output / "current-prepared"
+        )
+        for mode in ["paired", "pooling"]:
+            with (output / f"current-prepared-{mode}.log").open("w") as log:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "excavator2",
+                        "analyze",
+                        "--samples",
+                        str(output / "legacy/paired.yaml"),
+                        "--input",
+                        str(output / "current-prepared"),
+                        "--target",
+                        str(output / "preparation-input/target"),
+                        "--output",
+                        str(output / f"current-prepared-{mode}"),
+                        "--experiment",
+                        mode,
+                    ],
+                    stdout=log,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
+            report["designs"][f"prepared-{mode}"] = compare(
+                output / f"legacy-prepared-{mode}", output / f"current-prepared-{mode}"
+            )
         report["passed"] = all(result["passed"] for result in report["designs"].values())
     except (ValueError, OSError, subprocess.CalledProcessError, tarfile.TarError) as error:
         report["error"] = str(error)
