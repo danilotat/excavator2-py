@@ -1,0 +1,13 @@
+{
+  "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+  "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+  "platform": "linux/amd64",
+  "config": ".test/config.yaml",
+  "samples": ".test/sample_sheet.yaml",
+  "design": ".test/sample_file_list.yaml",
+  "reference_urls": {
+    "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+    "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+  },
+  "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte"
+}

@@ -1,0 +1,62 @@
+{
+  ".test/config.yaml": {
+    "sha256": "00b59339855e232d2a2ef8301cf4009a4546311fd610262619b91ad7213ff055",
+    "size": 776
+  },
+  ".test/data/PL11_N_shallow_0.01.bam": {
+    "sha256": "637358606213a1712d7886b3dd6eadfd2470dc286993a43c8b7d6a252f72fe7e",
+    "size": 26905895
+  },
+  ".test/data/PL11_N_shallow_0.01.bam.bai": {
+    "sha256": "f9490d23937da3518f0a4839de998bf8abb055427adc783b5ded1ae2d478b2ac",
+    "size": 2350240
+  },
+  ".test/data/PL11_T_shallow_0.001.bam": {
+    "sha256": "f16b496d2b2a9a9e0949ac4eece95e1b30ea9996b0c1a97be0eaeb5a08793b70",
+    "size": 20554639
+  },
+  ".test/data/PL11_T_shallow_0.001.bam.bai": {
+    "sha256": "9970487524e8663211cdeb7133f48bbbeea5027112a57cb8176fdd7ed3635ada",
+    "size": 2223896
+  },
+  ".test/data/SureSelect_Human_All_Exon_V7.hg38.bed": {
+    "sha256": "5f80760849a288f4903a293afe9cfceafa5da886ad66a15a819156c7fae46790",
+    "size": 5194543
+  },
+  ".test/ref/CentromerePosition_hg38.txt": {
+    "sha256": "ea88af667a62de385d7cc41c80becb370b6ab4db8700109cb2ef64a2341fceac",
+    "size": 592
+  },
+  ".test/ref/ChromosomeCoordinate_hg38.txt": {
+    "sha256": "3bb7173d5b8bf95f6f782528d90c950b4e6d851ef8c2ef74f15bea379cd243fe",
+    "size": 508
+  },
+  ".test/ref/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta": {
+    "sha256": "0713026dfdd61fb1cd68be4b9689a9e5c55c8708a3843248b0b574506fd0f0e9",
+    "size": 3145187795
+  },
+  ".test/ref/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.fai": {
+    "sha256": "41a18c49dd97005d216e9313ba4bd3c646e1110f728e7988183aa44e3f000ad9",
+    "size": 9001
+  },
+  ".test/ref/GapHg38.UCSC.txt": {
+    "sha256": "ae83d2933145f17632dc5a43652ae104a63c5203da02290ccb02e6e26e28af6f",
+    "size": 44027
+  },
+  ".test/ref/k100.Bismap.MultiTrackMappability.bw": {
+    "sha256": "8db66fa89f47f019bd4a011889cc6891aff2f55a661a831c4182651f140b0074",
+    "size": 1111797362
+  },
+  ".test/sample_file_list.yaml": {
+    "sha256": "3b1ffeed0735833c8991d2a699cb2d944efe6c2fd2a0459fc585312e74acf513",
+    "size": 23
+  },
+  ".test/sample_sheet.yaml": {
+    "sha256": "2bf237bd1d7f955144e28041f1b77ae98876663c4d8e918139217afe6a6729da",
+    "size": 89
+  },
+  "tools/oracle/baseline.json": {
+    "sha256": "6144c6f038671cfc94033db36881e4eac7ec9a8de494819361060ca252ce0440",
+    "size": 764
+  }
+}

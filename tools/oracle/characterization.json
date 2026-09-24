@@ -1,0 +1,24 @@
+{
+  "baseline_image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+  "mapq": {
+    "source": "excavator2/lib/bash/FiltBam.sh",
+    "predicate": "$3 == 0 || $3 >= \"/$MAPQ/\"",
+    "tested_values": [0, 1, 10, 19, 20, 60],
+    "retained_values": [0, 1, 10, 19, 20, 60],
+    "wrapper_default": 0,
+    "worker_default": 20,
+    "wrapper_forwards_mapq_to_worker": false,
+    "policy": "Preserve observed behavior for compatibility; no bug fix applied."
+  },
+  "checkpoint_export_smoke": {
+    "verified": [
+      "binary64 1/3 without decimal roundtrip",
+      "negative zero sign bit",
+      "positive and negative infinity",
+      "separate R NA and NaN masks",
+      "column-major matrix shape",
+      "character strings and missing characters"
+    ],
+    "local_evidence": ".oracle/export-smoke/"
+  }
+}
