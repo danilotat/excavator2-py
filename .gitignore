@@ -1,0 +1,26 @@
+# Python, native builds, and local environments
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.so
+*.dylib
+*.pyd
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.DS_Store
+
+# Downloaded reference assets and generated legacy runs
+.test/output*/
+.test/ref/*.fasta
+.test/ref/*.fasta.gz
+.test/ref/*.fai
+.test/ref/*.bw
+
+# Local oracle runs, runtime reports, and partial reference downloads
+.oracle/
+.test/ref/*.part
