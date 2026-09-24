@@ -1,0 +1,17 @@
+{
+  "schema": 1,
+  "kind": "prepared",
+  "target_id": "b69430b1d3cf0c51f67748afa60ff249702e64c8c241c965cc96f22204116441",
+  "samples": {
+    "Control1": "sample-0.npz",
+    "Control2": "sample-1.npz",
+    "Test1": "sample-2.npz",
+    "Test2": "sample-3.npz"
+  },
+  "files": {
+    "sample-0.npz": "e39dd098d3f55d0af0116c62fbdc73c7e0b57cb38dd296f40a898d4ff939c2d7",
+    "sample-1.npz": "7991be99119bd4a64420aab5d2f9de9f015a7eda746ab606b76c757435fe3828",
+    "sample-2.npz": "be6e3e05f96d0802ab431afd6fbb4eda166c47d79074879afcbe86a1dd1c6b32",
+    "sample-3.npz": "37fb91be9395bc743a69e9292fa263b3391002d625d0779a529b503ec74c0161"
+  }
+}
