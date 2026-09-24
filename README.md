@@ -2,6 +2,13 @@
 ![GitHub docker image build](https://github.com/ctglab/excavator2/actions/workflows/docker.yml/badge.svg)
 [![DOI](https://img.shields.io/badge/DOI-10.1093/nar/gkw718-blue.svg)](https://doi.org/10.1093/nar/gkw695)
 # EXCAVATOR2
+
+The Python-first port is being developed in `src/excavator2/`, with a small C++
+extension under `cpp/`. See the [development setup](docs/development.md) and
+[porting roadmap](docs/python-cpp-porting-roadmap.md). It is currently a build/CLI
+scaffold, with a [tested Python FastCall reference](docs/fastcall-reference.md);
+use the original workflow below for real analyses.
+
 > The first **read count based** tool that exploits **all the reads** produced by **WES** experiments to detect **CNVs** with a **genome-wide resolution**.
 
 **Copy Number Variants** (CNVs) are structural rearrangements contributing to phenotypic variation that have been proved to be **associated with many disease states**. Over the last years, the identification of CNVs from **whole-exome sequencing** (WES) has become a common practice for both research and clinical purpose as it represents a cost-effective alternative to whole-genome for the study of disease-associated variants affecting just the coding regions. Moreover, the sequencing of a smaller range of genomic regions—i.e., **Targeted Sequencing** (TS)—that are directly associated with disease and/or have a straight functional interpretation is widespread and extensively used for diagnostic purposes and treatment-response monitoring, especially in oncology.  
@@ -322,4 +329,3 @@ FastCall:
   u: 0.35 # Threshold u for the truncated gaussian distribution
   minExons: 4 # Segments with less exons than this threshold will be filtered out
 ```
-
