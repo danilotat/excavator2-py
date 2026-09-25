@@ -132,6 +132,24 @@ harness checks exported RData against `Filtered.txt`, then writes compact arrays
 inputs, stderr and provenance under `fixtures/` in the output directory. Committed
 captures live in `tests/fixtures/legacy-target/`; their tests run in wheel CI.
 The Python geometry port now compares every output cell against these captures
-in the fixture tests. FASTA/BigWig features and live old-versus-new target CI are
-later M5 steps. See
+in the fixture tests. Full target CLI comparisons remain a later M5 step. See
 [the target contract](../../docs/target-porting.md).
+
+
+## M5.3 live target-feature concordance
+
+```sh
+python tools/oracle/characterize_features.py --output .oracle/target-features --compare-current
+```
+
+This generates tiny FASTA/BigWig references and runs the pinned original
+`TargetCreate.sh` plus its R save scripts unchanged. Three success cases compare
+all GC, mappability and first-base arrays exactly; four cases require matching
+failure outcomes. The seven cases include ambiguous/lowercase sequence, uncovered
+BigWig bases, decimal rounding, bare-name grep behavior and boundary failures.
+Without `--compare-current`, the tool only captures original outputs.
+
+The CI concordance job runs this against the installed wheel on every workflow
+run, and uploads `.oracle/ci-target-features/` with the existing reports. This
+qualifies feature extraction, not the unfinished target CLI or full-reference
+acceptance. Committed captures are in `tests/fixtures/legacy-target-features/`.

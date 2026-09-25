@@ -1,8 +1,8 @@
 # M5 target generation
 
-M5.2 is complete: Python target geometry matches all five successful legacy
-fixtures exactly and rejects the three captured failure cases. The `target` CLI
-remains a scaffold until features and artifacts are integrated. M5.3 is next.
+M5.3 is complete for the captured reference fixtures: Python geometry and
+FASTA/BigWig features match the legacy outputs. The `target` CLI remains a
+scaffold until artifacts and orchestration are integrated. M5.4 is next.
 
 ## Compatibility contract
 
@@ -66,7 +66,8 @@ not required. Broader edge-case coverage will be added with implementation.
 Fixture tests run in the existing Linux/macOS wheel CI matrix. They compare every
 Python geometry output cell, row order and chromosome list against the captured
 original outputs, and check failure behavior. This is fixture-based geometry
-concordance; live full-target concordance remains M5.4. Existing live
+concordance; live feature comparison is now also enabled. Full-target
+concordance remains M5.4. Existing live
 preparation/analysis concordance remains enabled.
 
 The internal entry point is `excavator2.target.target_geometry(bed, coordinates,
@@ -82,7 +83,7 @@ parser equivalence, arbitrary assemblies and performance are not qualified.
 1. **M5.2 — Python geometry (complete):** readable Python/NumPy implementation;
    exact comparisons against all five success fixtures and explicit errors for
    all three failure cases. Separate from reference extraction.
-2. **M5.3 — reference feature contract and extraction:** characterize the original
+2. **M5.3 — reference feature contract and extraction (complete for fixtures):** characterize the original
    FASTA/BigWig path with tiny references, including missing/ambiguous bases,
    uncovered values, boundaries, and decimal serialization. GC/MAP extraction
    uses BED `[target_start-1, target_end)`; first-base extraction uses
@@ -94,5 +95,59 @@ parser equivalence, arbitrary assemblies and performance are not qualified.
    all-new `target → prepare → analyze` on the supplied data against original
    calls. M5 is complete only after this acceptance run passes.
 
-M5.2 does not validate FASTA/BigWig extraction, arbitrary assemblies, full target
-CLI behavior, performance, or end-to-end calls from newly generated targets.
+M5.3 does not qualify arbitrary assemblies, full target CLI behavior, performance,
+or end-to-end calls from newly generated targets. Reference features are qualified
+on the fixtures described below.
+
+## M5.3 reference features
+
+`excavator2.target_features.target_features(target, fasta, bigwig)` now returns
+per-chromosome `gc`, `mappability` and `first_base` arrays. FASTA access uses pysam;
+BigWig access uses pyBigWig, which was already a package dependency. Policy and
+rounding remain readable Python; reference I/O uses those native-backed libraries.
+No custom C++ or CLI integration was added in this step.
+
+The implementation uses `stats(..., type="mean", exact=True)`: uncovered bases
+are excluded from the mean, and approximate zoom summaries are bypassed, as
+specified by the [pyBigWig documentation](https://github.com/deeptools/pyBigWig#compute-summary-information-on-a-range).
+The unchanged legacy scripts confirm these additional rules:
+
+- MAP uses covered-base mean (column six), with zero for no coverage, including
+  chromosomes with no BigWig data. Values pass through six significant decimal
+  digits, reproducing `bigWigAverageOverBed` text output before R reads it.
+- GC counts G/C case-insensitively over the full requested sequence length,
+  including ambiguous bases in the denominator. Values pass through six decimal
+  places, reproducing `bedtools nuc` text output.
+- FRB preserves base case and ambiguous characters. It returns two string columns:
+  target start and the base at that zero-based offset.
+- The shell selects chromosomes using `grep -w` on entire target rows. Bare names
+  such as `1` can therefore select rows from other chromosomes whose coordinate
+  columns contain `1`. This bug remains explicit in the Python implementation.
+- GC intervals extending past the FASTA contig end are skipped; BigWig means can
+  still be computed from covered bases within bounds. FRB is skipped when its
+  one-base interval is outside the FASTA. If no FRB rows survive for a chromosome,
+  the original fails and Python raises an explicit error. Feature array lengths
+  can consequently differ. No silent padding or truncation is performed.
+- A zero target start produces a negative GC/MAP BED coordinate and fails.
+
+Seven cases in `tests/fixtures/legacy-target-features` cover fractional GC and
+mapping values, lowercase and ambiguous bases, partial/missing/zero BigWig
+coverage, bare chromosome names, and reference boundaries. Three cases succeed
+with exact array comparisons; four reproduce legacy failures. Small FASTA,
+index, BigWig, target inputs, expected arrays, logs and hashes are committed.
+
+Reproduce live original-versus-current feature comparison with:
+
+```sh
+python tools/oracle/characterize_features.py \
+  --output .oracle/feature-concordance --compare-current
+```
+
+Use a fresh output directory with Docker available. The harness extracts the
+pinned source commit and runs its unchanged `TargetCreate.sh` and R save scripts.
+The existing CI concordance job now performs this comparison using the installed
+current wheel and retains the results alongside preparation/analysis reports.
+Local feature parity is established on these fixtures; full supplied-reference
+qualification and `target → prepare → analyze` acceptance remain M5.4. Arbitrary
+FASTA/BigWig variants, shell metacharacters in names and performance are not yet
+qualified.

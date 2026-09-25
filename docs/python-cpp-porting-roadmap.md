@@ -373,9 +373,11 @@ new prepare → analyze preserves original calls. See [M4 evidence and limits](p
 Live CI now also runs original versus current preparation on small BAMs, in addition
 to analysis-only comparisons. Cross-platform M4 package tests and live concordance passed in
 [CI run 36043110098](https://github.com/danilotat/excavator2-py/actions/runs/36043110098).
-**M5.2 is complete**: Python target geometry exactly matches the five successful
-legacy fixtures and preserves rejection of three failure cases. Full target
-generation is not yet integrated; the next bounded step is M5.3, reference features. See [M5 contract and remaining steps](target-porting.md).
+**M5.3 is complete for captured fixtures**: Python geometry and reference features
+match original outputs, including captured failure cases. pyBigWig and pysam
+provide native-backed reference access. Live feature comparison is added to CI.
+Full target generation is not yet integrated; M5.4 is CLI/artifact integration and
+end-to-end acceptance. See [M5 contract and remaining steps](target-porting.md).
 
 Estimates below are rough focused engineering effort for one experienced developer, not calendar commitments. They exclude reference download delays and expand if oracle instability or numerical incompatibility is substantial. Complete exit gates in dependency order.
 
