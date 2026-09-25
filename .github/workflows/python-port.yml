@@ -57,12 +57,18 @@ jobs:
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/concordance.py \
             --output .oracle/ci-concordance
+      - name: Compare target features against the pinned legacy tools
+        run: |
+          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_features.py \
+            --output .oracle/ci-target-features --compare-current
       - name: Upload concordance reports, inputs, outputs and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: legacy-concordance
-          path: .oracle/ci-concordance/
+          path: |
+            .oracle/ci-concordance/
+            .oracle/ci-target-features/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
