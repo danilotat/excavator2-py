@@ -26,7 +26,7 @@ def test_module_version():
         ["target", "--config", "config.yaml"],
     ],
 )
-def test_unimplemented_stage_fails_without_creating_output(tmp_path, command):
+def test_missing_config_fails_without_creating_output(tmp_path, command):
     output = tmp_path / "output"
     result = subprocess.run(
         [sys.executable, "-m", "excavator2", *command, "--output", str(output)],
@@ -34,5 +34,5 @@ def test_unimplemented_stage_fails_without_creating_output(tmp_path, command):
         text=True,
     )
     assert result.returncode == 1
-    assert "not implemented" in result.stderr
+    assert "excavator2 target:" in result.stderr
     assert not output.exists()

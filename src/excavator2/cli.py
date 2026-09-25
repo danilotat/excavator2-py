@@ -24,19 +24,17 @@ def mapq_value(value: str) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="excavator2",
-        description="Python/C++ port: analysis from converted legacy prepared data.",
+        description="Python/C++ port: target generation, BAM preparation and CNV analysis.",
     )
     parser.add_argument("--version", action="version", version=f"excavator2 {__version__}")
     commands = parser.add_subparsers(dest="command", required=True)
-    target = commands.add_parser("target", help="Initialize target regions (not implemented)")
+    target = commands.add_parser("target", help="Initialize target regions and reference features")
     target.add_argument("--config", "--settings", "-s", type=Path, required=True)
 
-    prepare = commands.add_parser(
-        "prepare", help="Prepare BAM counts against a converted legacy target"
-    )
+    prepare = commands.add_parser("prepare", help="Prepare BAM counts against a target artifact")
     prepare.add_argument("--mapq", "-q", type=mapq_value, default=20)
 
-    analyze = commands.add_parser("analyze", help="Call CNVs from converted legacy artifacts")
+    analyze = commands.add_parser("analyze", help="Call CNVs from prepared artifacts")
     analyze.add_argument("--input", "-i", type=Path, required=True)
     analyze.add_argument(
         "--experiment", "-e", choices=("paired", "pooling", "pooled"), required=True
@@ -58,6 +56,14 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "target":
+        from .target_pipeline import run_target
+
+        try:
+            run_target(args.config, args.output, args.force)
+        except (ValueError, OSError, KeyError, RuntimeError) as error:
+            parser.exit(status=1, message=f"excavator2 target: {error}\n")
+        return 0
     if args.command == "prepare":
         from .prepare import run_preparation
 
@@ -85,11 +91,3 @@ def main(argv: Sequence[str] | None = None) -> int:
         except (ValueError, OSError, KeyError, FloatingPointError) as error:
             parser.exit(status=1, message=f"excavator2 analyze: {error}\n")
         return 0
-    parser.exit(
-        status=1,
-        message=(
-            f"excavator2 {args.command}: this package is a development scaffold; "
-            "the scientific stage is not implemented. No output was written. "
-            "Use the original scripts for analysis.\n"
-        ),
-    )

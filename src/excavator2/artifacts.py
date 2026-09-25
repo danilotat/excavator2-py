@@ -39,7 +39,8 @@ def read_yaml(path):
 
 
 def digest(path):
-    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+    with Path(path).open("rb") as handle:
+        return hashlib.file_digest(handle, "sha256").hexdigest()
 
 
 def read_export(folder):
