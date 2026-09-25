@@ -166,3 +166,33 @@ compares manifest identity/reference metadata and every target/GC/MAP/FRB array
 exactly. The M5 supplied-data reports document all-new target → prepare → analyze
 acceptance against the saved original run. Feature CI includes a precision case
 covering binary32 GC and x86 R extended-precision decimal conversion.
+
+## M6.2 fresh-reference non-normal end-to-end comparison
+
+```sh
+/path/to/installed-wheel/python tools/oracle/end_to_end.py --output .oracle/end-to-end
+```
+
+Choose a fresh output directory. The harness generates 23 small reference contigs,
+FASTA/BigWig and annotations, plus three indexed BAMs (two controls and one test).
+Read-count decreases and increases are confined to chr1/chr2; BED interval lengths
+are chosen to keep the legacy sorted midpoints monotonic.
+
+It runs the pinned original TargetPerla, DataPrepare and DataAnalysis CLIs, and
+all three current CLIs, with paired and pooling designs. The current target and
+prepared inputs are generated entirely by the current package; converted original
+artifacts are used only for comparison. Targets/covariates/reference bases, raw
+counts and prepared matrices must match exactly. Final outputs use the established
+analysis comparator (exact calls and discrete decisions, bounded HSLM drift, only
+VCF fileDate excluded). Each mode must produce exactly four non-normal loss/gain calls and all four
+scientific output files. Missing outputs fail even when the old wrapper reports
+success. Logs, hashes and `concordance.json` remain available on failure.
+
+The CI concordance job invokes this with its installed wheel and uploads
+`.oracle/ci-end-to-end/` alongside the existing stage comparisons. It uses neither
+large downloaded reference assets nor pre-existing local oracle runs.
+
+Local M6.2 acceptance produced exact matches for 4,113 windows across all three
+samples and four calls per mode. The original plotting stage fails on the synthetic
+assembly's unavailable UCSC chromInfo; plots are explicitly excluded from this
+scientific-data gate. See `m6-end-to-end-report.json` and the M6 qualification matrix.

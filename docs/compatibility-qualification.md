@@ -56,7 +56,7 @@ not just final calls. See the M5 reports for the original comparison basis.
 | Area | Evidence established | Remaining gap |
 | --- | --- | --- |
 | Supplied paired pipeline | New target through final calls; 281,567 windows per sample | Supplied example has no non-normal calls |
-| Non-normal paired/pooling | Original fixtures and live CI, including BAM preparation | One complete fresh target-to-calls non-normal acceptance fixture |
+| Non-normal paired/pooling | Original fixtures, stage CI and M6.2 complete fresh-reference chain | Remote confirmation of the newly added full-chain CI step |
 | Target geometry | Eight cases; live old/new comparison; supplied target exact | Additional assemblies, unusual contigs and broader interval edge cases |
 | Target features | Eight cases plus all supplied arrays; binary32/R decimal replay | UCSC 3,000-block algorithm-switch boundary, additional missing-data patterns |
 | Read counting | Endpoints, overlaps, terminal/chunk cases; supplied exact counts | CRAM, empty selected streams and broader alignment-flag combinations |
@@ -65,8 +65,44 @@ not just final calls. See the M5 reports for the original comparison basis.
 | Plots and diagnostics | Scientific data tables/VCF comparisons | Plots remain unimplemented and unqualified; no visual parity claim |
 | Packaging | Linux/macOS Python 3.11–3.13 CI and independent clean-wheel run | Release notices, migration guide and distribution qualification belong to M8 |
 
-Next bounded step: **M6.2, a non-normal end-to-end fixture starting from target
-configuration and reference files**, exercised through all three CLIs and compared
-with the original in CI. Then address remaining numerical/feature boundary tests
-and explicitly resolve plot scope before signing off M6. Keep scientific bug fixes
+Next bounded step: **M6.3, target-feature boundary qualification**, starting with
+the UCSC 3,000-block algorithm switch and its rounding implications. Then address
+remaining numerical edge cases and explicitly resolve plot scope before signing
+off M6. Keep scientific bug fixes
 and performance changes separate from qualification.
+
+
+## M6.2 fresh-reference non-normal chain
+
+The installed-wheel run now covers the complete original and current target,
+preparation and analysis CLIs on generated inputs: 23 reference contigs, 4,113
+windows, two controls and one test with decreases/increases on chr1 and chr2.
+Both paired and pooling produce four non-normal calls (losses and gains).
+
+All target/GC/MAP/FRB arrays, all 12,339 raw counts and all prepared matrices match
+exactly. Each mode's four scientific output files matches exactly apart from VCF
+fileDate; this fixture has zero measured continuous HSLM drift. The harness rejects
+missing output files, fewer/different calls, and loss of either loss/gain coverage.
+It requires exact target and preparation equality before accepting final calls.
+
+See `tools/oracle/m6-end-to-end-report.json` and reproduce using:
+
+```sh
+/path/to/installed-wheel/python tools/oracle/end_to_end.py --output .oracle/end-to-end
+```
+
+The current path generates its own target; converted original artifacts are used
+only as comparison inputs. No downloaded genome/BAM assets or previous oracle
+runs are required. CI now invokes the same harness and retains its complete logs,
+inputs and report. Local acceptance passed; the new remote CI step is pending.
+Six comparator tests additionally prove that valid-checksum scientific changes
+in target features, row ordering, reference bases and centromeres are rejected.
+The full local suite has 143 passing tests.
+
+Plot qualification remains open: the original plotting code cannot obtain UCSC
+chromInfo for the synthetic assembly in the offline container and fails in both
+modes. This is explicit in the report; the pass applies to scientific data and
+calls only. A first fixture with longer overlapping IN windows also exposed
+nonmonotonic midpoints and failed in both original inference and port validation.
+The passing fixture uses shorter intervals, without changing either scientific
+implementation. Reproducer details are retained in the local improvement log.

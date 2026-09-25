@@ -378,8 +378,10 @@ from reference files; the all-new target → prepare → analyze pipeline preser
 calls on the supplied paired dataset. GC binary32 rounding and pinned-R decimal
 conversion are now reproduced. CI includes live geometry and feature comparisons
 as well as preparation/analysis checks. The complete M5 CI run passed on Linux
-and macOS Python 3.11–3.13. M6.1 adds independent clean-wheel acceptance and a
-[qualification matrix](compatibility-qualification.md); M6 remains in progress.
+and macOS Python 3.11–3.13. M6.1 established clean-wheel acceptance; M6.2 now
+passes a complete fresh-reference non-normal paired/pooling chain locally and
+adds it to CI. See the [qualification matrix](compatibility-qualification.md).
+M6 remains in progress; feature boundaries and plot scope remain open.
 See [M5 evidence and limits](target-porting.md).
 
 Estimates below are rough focused engineering effort for one experienced developer, not calendar commitments. They exclude reference download delays and expand if oracle instability or numerical incompatibility is substantial. Complete exit gates in dependency order.
