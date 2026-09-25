@@ -28,6 +28,9 @@
     "past_end": {
       "status": 0
     },
+    "precision": {
+      "status": 0
+    },
     "standard": {
       "status": 0
     },
@@ -84,17 +87,29 @@
       "sha256": "6e0eb65a1df010662e70de90b8d75397f9387eb6614052a25c003f38a4df0f47",
       "size": 18
     },
+    "precision/expected.npz": {
+      "sha256": "98a13258310c3dbbe4c87659f03295b17733f560e1bfe2cc91c38453ae439334",
+      "size": 612
+    },
+    "precision/legacy.log": {
+      "sha256": "ca2ab6262ec7c22fd88c9e02d88c9d08defcccecff62538394b5f31813ee6d9a",
+      "size": 257
+    },
+    "precision/target.tsv": {
+      "sha256": "612f765059aa9e49fc399028c25f94b04fe9cb87afa2ff85cab02aa3ffe18314",
+      "size": 16
+    },
     "reference.bw": {
-      "sha256": "6ffb777675ea1126bf514c751473a124ab1f271c6337ad2c4a68821743ad3e2e",
-      "size": 659
+      "sha256": "cf81494de4730715960bb2709db33771edcb3987890700b4c383ae012e72b860",
+      "size": 745
     },
     "reference.fa": {
-      "sha256": "1c4d51b3786d9263d0ac972e31298a2f3304174b9a42a8a277c9db4c2c0ed69a",
-      "size": 214
+      "sha256": "bef71a3682c68209c0b6f069563abf2e8d9206fb4ae4695ee7a4a6df8f7c2f4d",
+      "size": 321
     },
     "reference.fa.fai": {
-      "sha256": "d75c101fea99b4dc6ae58206a6d6792a29407df3cd26001439a669c051a1d97d",
-      "size": 40
+      "sha256": "be5b30f466ec6ed91ad0f5591cda4659e11856a0bb06f18fdc8ff308306f4a82",
+      "size": 61
     },
     "standard/expected.npz": {
       "sha256": "796bba13880dfeaf006621b28be2840c20d734031fb0dbf1ac04febf5028a253",
@@ -118,8 +133,8 @@
     }
   },
   "harness": {
-    "sha256": "06bf84ed73baefe0b731bbc6e407b9fde234d2973ee4edc50cb092dbc74a7254",
-    "size": 7125
+    "sha256": "f2afdd4c8ee48af6de0d071694e324eb59b5c5fe4eecb1ac749d6c868f32c3dd",
+    "size": 7367
   },
   "source": {
     "excavator2/lib/R/SaveFRB.R": {

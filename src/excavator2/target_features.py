@@ -1,11 +1,42 @@
 """Reference features matching TargetCreate.sh and its decimal text roundtrips."""
 
+import math
 import re
+from decimal import Decimal
 from pathlib import Path
 
 import numpy as np
 import pyBigWig
 import pysam
+
+
+def legacy_decimal(text: str) -> float:
+    """Replay pinned x86 R's decimal -> 64-bit significand -> binary64 rounding.
+
+    R parses through extended precision. NumPy longdouble is only binary64 on
+    macOS ARM, so use exact integer arithmetic for this small decimal boundary.
+    This is for finite feature text, not a general replacement for R's parser.
+    """
+    numerator, denominator = Decimal(text).as_integer_ratio()
+    if numerator == 0:
+        return 0.0
+    sign = -1 if numerator < 0 else 1
+    numerator = abs(numerator)
+    exponent = numerator.bit_length() - denominator.bit_length()
+    if exponent >= 0:
+        if numerator < denominator << exponent:
+            exponent -= 1
+    elif numerator << -exponent < denominator:
+        exponent -= 1
+    shift = 63 - exponent
+    if shift >= 0:
+        numerator <<= shift
+    else:
+        denominator <<= -shift
+    significand, remainder = divmod(numerator, denominator)
+    if 2 * remainder > denominator or (2 * remainder == denominator and significand % 2):
+        significand += 1
+    return sign * math.ldexp(float(significand), -shift)
 
 
 def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
@@ -47,11 +78,11 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
                 mean = None
                 if left < bw_end:
                     mean = track.stats(chrom, left, bw_end, type="mean", exact=True)[0]
-                mappability.append(float(format(0.0 if mean is None else mean, ".6g")))
+                mappability.append(legacy_decimal(format(0.0 if mean is None else mean, ".6g")))
                 if chrom in lengths and end <= lengths[chrom]:
                     sequence = reference.fetch(chrom, left, end).upper()
                     fraction = (sequence.count("G") + sequence.count("C")) / len(sequence)
-                    gc.append(float(format(fraction, ".6f")))
+                    gc.append(legacy_decimal(format(float(np.float32(fraction)), ".6f")))
                 # FRB is one base to the right of the GC/MAP left endpoint.
                 if chrom in lengths and start < lengths[chrom]:
                     first_base.append((str(start), reference.fetch(chrom, start, start + 1)))

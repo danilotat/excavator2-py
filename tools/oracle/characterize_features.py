@@ -19,13 +19,23 @@ def run(output, compare=False):
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     reference = output / "reference.fa"
-    reference.write_text(">chr1\n" + "ACGTacgtNNRYCGATNnGC" * 5 + "\n>chr2\n" + "N" * 100 + "\n")
+    reference.write_text(
+        ">chr1\n"
+        + "ACGTacgtNNRYCGATNnGC" * 5
+        + "\n>chr2\n"
+        + "N" * 100
+        + "\n>chr4\n"
+        + "G" * 55
+        + "A" * 45
+        + "\n"
+    )
     pysam.faidx(str(reference))
     with pyBigWig.open(str(output / "reference.bw"), "w") as bw:
-        bw.addHeader([("chr1", 100), ("chr2", 100)])
+        bw.addHeader([("chr1", 100), ("chr2", 100), ("chr4", 100)])
         bw.addEntries(
             ["chr1"] * 4, [0, 5, 20, 70], ends=[3, 10, 40, 100], values=[0.1, 0.7, 0.0, 0.123456789]
         )
+        bw.addEntries(["chr4"], [0], ends=[100], values=[0.984153])
     source = output / "source"
     source.mkdir()
     with tempfile.TemporaryFile() as archive:
@@ -51,6 +61,7 @@ def run(output, compare=False):
     ]
     cases = {
         "standard": intervals,
+        "precision": [("chr4", 1, 89)],
         "bare_names": [(c.removeprefix("chr"), s, e) for c, s, e in intervals],
         "past_end": [("chr1", 95, 105)],
         "last_base": [("chr1", 100, 100)],
@@ -86,7 +97,7 @@ def run(output, compare=False):
                 stdout=log,
                 stderr=subprocess.STDOUT,
             )
-        expected_success = name in {"standard", "bare_names", "past_end"}
+        expected_success = name in {"standard", "bare_names", "past_end", "precision"}
         if (result.returncode == 0) != expected_success:
             raise ValueError(f"unexpected legacy status for {name}: {result.returncode}")
         records[name] = {"status": result.returncode}

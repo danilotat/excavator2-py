@@ -21,7 +21,7 @@ def test_feature_fixture_integrity():
         assert hashlib.sha256(content).hexdigest() == record["sha256"]
 
 
-@pytest.mark.parametrize("name", ["standard", "bare_names", "past_end"])
+@pytest.mark.parametrize("name", ["standard", "bare_names", "past_end", "precision"])
 def test_features_match_original(name):
     target = np.loadtxt(FIXTURES / name / "target.tsv", dtype=str, ndmin=2)
     actual = target_features(target, FIXTURES / "reference.fa", FIXTURES / "reference.bw")
