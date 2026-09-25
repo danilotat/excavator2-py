@@ -1,0 +1,237 @@
+{
+  "baseline": {
+    "config": ".test/config.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte",
+    "platform": "linux/amd64",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "samples": ".test/sample_sheet.yaml",
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc"
+  },
+  "cases": {
+    "bare_names": {
+      "expected_success": true,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "463be2b92b22f36f6e1db17e980fc88b48a661d5b0f332e34f5e760c3477282e",
+          "size": 220
+        },
+        "expected.npz": {
+          "sha256": "8243e93dbb6f99ab4a6f00554495d7ec85432ea097b781ff378184ab27a2aa2b",
+          "size": 2052
+        },
+        "gaps.tsv": {
+          "sha256": "3243770cd0bd8b478a2dfd30464f69a1ad2d9b23cc0c66e080151ad00f89e5a1",
+          "size": 454
+        },
+        "stderr.log": {
+          "sha256": "307481058b8a481bb9044b4536e8f480c90c28a40327f040ccdbb9415af4bf15",
+          "size": 845
+        },
+        "target.bed": {
+          "sha256": "4ab897d66fd0bad7ae8bcf8464f1ff89ef34db092bab5813e4b02e206dc3e657",
+          "size": 32
+        }
+      },
+      "rows": 666,
+      "status": 0
+    },
+    "coordinate_names_ignored": {
+      "expected_success": true,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "a19b1db4497df9f4cbb82805fbc354e1ac9a44e62dcf360e404d184e48a24afe",
+          "size": 289
+        },
+        "expected.npz": {
+          "sha256": "21b9fd9cb8fb3610d8f6eeae30864d7d8a1da66483a9aca5d190cf7438e634ec",
+          "size": 2687
+        },
+        "gaps.tsv": {
+          "sha256": "3243770cd0bd8b478a2dfd30464f69a1ad2d9b23cc0c66e080151ad00f89e5a1",
+          "size": 454
+        },
+        "stderr.log": {
+          "sha256": "bc7785aa6822358efecdd0e5413ef07718649a18ffda8529de103d30b4d46d9a",
+          "size": 914
+        },
+        "target.bed": {
+          "sha256": "11deaa56a7988218f2ba5420890ec621386fe16938dfad224327d8fa6ffc4f3b",
+          "size": 41
+        }
+      },
+      "rows": 666,
+      "status": 0
+    },
+    "gap_endpoints": {
+      "expected_success": true,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "c2a615191ed561910e71c3380db2644f12dbd678a7aa1b49c220696f377bb1be",
+          "size": 289
+        },
+        "expected.npz": {
+          "sha256": "6a62708d5a8f77df97042e08618ed39a69ff63f462d2026faed873a9c014f4c0",
+          "size": 2689
+        },
+        "gaps.tsv": {
+          "sha256": "90282c9f6a004b9515559307c413c989940aab271c275973375e2f84bf803597",
+          "size": 454
+        },
+        "stderr.log": {
+          "sha256": "bc7785aa6822358efecdd0e5413ef07718649a18ffda8529de103d30b4d46d9a",
+          "size": 914
+        },
+        "target.bed": {
+          "sha256": "89ce4189c42cdbe8a001a08fcd9bb4f953b99971d4ad7f8f774b0544c7e5fb7a",
+          "size": 88
+        }
+      },
+      "rows": 662,
+      "status": 0
+    },
+    "missing_chromosome_gap": {
+      "expected_success": false,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "c2a615191ed561910e71c3380db2644f12dbd678a7aa1b49c220696f377bb1be",
+          "size": 289
+        },
+        "gaps.tsv": {
+          "sha256": "aaebaac101c0b63879a7d225ff9e66993199fb84edd1e1f794faae16abd87fdc",
+          "size": 437
+        },
+        "stderr.log": {
+          "sha256": "05d034e7616675222c706e85d3664422abfb36323a53914172f4f154eefb2a0b",
+          "size": 270
+        },
+        "target.bed": {
+          "sha256": "11deaa56a7988218f2ba5420890ec621386fe16938dfad224327d8fa6ffc4f3b",
+          "size": 41
+        }
+      },
+      "status": 1
+    },
+    "no_alternate_gap": {
+      "expected_success": false,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "c2a615191ed561910e71c3380db2644f12dbd678a7aa1b49c220696f377bb1be",
+          "size": 289
+        },
+        "gaps.tsv": {
+          "sha256": "54cd9cb55ff9f505762c1ca05e7fde66892e783eb8d1ad8a74ebf4ea3be62823",
+          "size": 436
+        },
+        "stderr.log": {
+          "sha256": "3f23896ef99c6ca24287b1104b1aa0f72f29302268a54ad78e918d80714edfa6",
+          "size": 234
+        },
+        "target.bed": {
+          "sha256": "11deaa56a7988218f2ba5420890ec621386fe16938dfad224327d8fa6ffc4f3b",
+          "size": 41
+        }
+      },
+      "status": 1
+    },
+    "no_eligible_gap": {
+      "expected_success": false,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "c2a615191ed561910e71c3380db2644f12dbd678a7aa1b49c220696f377bb1be",
+          "size": 289
+        },
+        "gaps.tsv": {
+          "sha256": "3243770cd0bd8b478a2dfd30464f69a1ad2d9b23cc0c66e080151ad00f89e5a1",
+          "size": 454
+        },
+        "stderr.log": {
+          "sha256": "55f8578cd40e91d56e781dea12a8f48d6f6e6b58bb5fbf696a0c24f9e125f73e",
+          "size": 213
+        },
+        "target.bed": {
+          "sha256": "e0027b4f8ab3ea1ddd7f29b81ebc61a90f1ffccc907b2deb31cd8593d4ddc5e4",
+          "size": 13
+        }
+      },
+      "status": 1
+    },
+    "standard": {
+      "expected_success": true,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "c2a615191ed561910e71c3380db2644f12dbd678a7aa1b49c220696f377bb1be",
+          "size": 289
+        },
+        "expected.npz": {
+          "sha256": "21b9fd9cb8fb3610d8f6eeae30864d7d8a1da66483a9aca5d190cf7438e634ec",
+          "size": 2687
+        },
+        "gaps.tsv": {
+          "sha256": "3243770cd0bd8b478a2dfd30464f69a1ad2d9b23cc0c66e080151ad00f89e5a1",
+          "size": 454
+        },
+        "stderr.log": {
+          "sha256": "bc7785aa6822358efecdd0e5413ef07718649a18ffda8529de103d30b4d46d9a",
+          "size": 914
+        },
+        "target.bed": {
+          "sha256": "11deaa56a7988218f2ba5420890ec621386fe16938dfad224327d8fa6ffc4f3b",
+          "size": 41
+        }
+      },
+      "rows": 666,
+      "status": 0
+    },
+    "unsorted_overlap": {
+      "expected_success": true,
+      "files": {
+        "chromosomes.tsv": {
+          "sha256": "c2a615191ed561910e71c3380db2644f12dbd678a7aa1b49c220696f377bb1be",
+          "size": 289
+        },
+        "expected.npz": {
+          "sha256": "e17b621ea19bb964e9d31c8e96ab977ef448b8e59f0e88be126a8db3b4dbfdb7",
+          "size": 2791
+        },
+        "gaps.tsv": {
+          "sha256": "3243770cd0bd8b478a2dfd30464f69a1ad2d9b23cc0c66e080151ad00f89e5a1",
+          "size": 454
+        },
+        "stderr.log": {
+          "sha256": "bc7785aa6822358efecdd0e5413ef07718649a18ffda8529de103d30b4d46d9a",
+          "size": 914
+        },
+        "target.bed": {
+          "sha256": "55df89150c197a6ccbe678b597de33e0d7195b7e48a931f871ed2f830fe37d6c",
+          "size": 54
+        }
+      },
+      "rows": 678,
+      "status": 0
+    }
+  },
+  "harness": {
+    "characterize_target.R": {
+      "sha256": "a0fbcac5afe6a03283df92c75c13cfaeb458545862b569f6773919b63024738c",
+      "size": 799
+    },
+    "characterize_target.py": {
+      "sha256": "dfd462bb91b376bd1fe312e1fa2b32e545158fe990f9eb16085356ddbb4a326f",
+      "size": 6310
+    },
+    "export.R": {
+      "sha256": "020ba4cde187711eee92ecf4fb11e3ddd63953a4a2403e709a5fa7c4e8c92f3a",
+      "size": 1833
+    }
+  },
+  "scope": "FilterTarget.R geometry only; window=100, flank=200; feature extraction deferred",
+  "source": {
+    "sha256": "e1c04fff6fe7da27e6c80c1ac8c4bb571e27f9220218222cdf5a45aae493bd64",
+    "size": 6140
+  }
+}
