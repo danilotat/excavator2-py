@@ -65,6 +65,10 @@ jobs:
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_features.py \
             --output .oracle/ci-target-features --compare-current
+      - name: Compare the complete pipeline on fresh non-normal inputs
+        run: |
+          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/end_to_end.py \
+            --output .oracle/ci-end-to-end
       - name: Upload concordance reports, inputs, outputs and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -74,6 +78,7 @@ jobs:
             .oracle/ci-concordance/
             .oracle/ci-target-features/
             .oracle/ci-target-geometry/
+            .oracle/ci-end-to-end/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
