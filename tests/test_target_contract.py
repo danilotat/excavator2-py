@@ -1,4 +1,4 @@
-"""Characterize original target geometry; these do not test a target port yet."""
+"""Original target geometry fixtures and exact Python-port comparisons."""
 
 import hashlib
 import json
@@ -79,3 +79,60 @@ def test_off_target_endpoint_and_flank_quirks():
     assert_array_equal(chr2[0, 1:3], ["0", "99"])
     assert_array_equal(chr1[-1, 1:3], ["3101", "3200"])
     assert any(list(row[[1, 2, 4]]) == ["501", "600", "OUT"] for row in chr1)
+
+
+@pytest.mark.parametrize("name", MANIFEST["cases"])
+def test_python_geometry_matches_original(name):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / name
+    arguments = (folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+    if MANIFEST["cases"][name]["expected_success"]:
+        actual = target_geometry(*arguments)
+        assert_array_equal(actual, target(name))
+        with np.load(folder / "expected.npz") as data:
+            assert_array_equal(list(dict.fromkeys(actual[:, 0])), data["chromosomes"])
+    else:
+        errors = {
+            "no_eligible_gap": "no eligible off-target gap for chr1",
+            "no_alternate_gap": "requires an alternate-contig gap row",
+            "missing_chromosome_gap": "requires gaps for chr2",
+        }
+        with pytest.raises(ValueError, match=errors[name]):
+            target_geometry(*arguments)
+
+
+@pytest.mark.parametrize("window", [0, -1, 9, 10.5, True])
+def test_geometry_rejects_invalid_window(window):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    with pytest.raises(ValueError, match="window must be an integer of at least 10"):
+        target_geometry(
+            folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", window
+        )
+
+
+def test_geometry_ignores_extra_bed_columns(tmp_path):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    bed = tmp_path / "annotated.bed"
+    bed.write_text(
+        "".join(
+            f"{line}\tregion{i}\n"
+            for i, line in enumerate((folder / "target.bed").read_text().splitlines())
+        )
+    )
+    actual = target_geometry(bed, folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+    assert_array_equal(actual, target("standard"))
+
+
+def test_geometry_rejects_incomplete_coordinate_table(tmp_path):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    coordinates = tmp_path / "chromosomes.tsv"
+    coordinates.write_text("chr1\t0\t3000\n")
+    with pytest.raises(ValueError, match="23 canonical coordinate rows"):
+        target_geometry(folder / "target.bed", coordinates, folder / "gaps.tsv", 100)
