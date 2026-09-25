@@ -1,0 +1,142 @@
+{
+  "baseline": {
+    "config": ".test/config.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte",
+    "platform": "linux/amd64",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "samples": ".test/sample_sheet.yaml",
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc"
+  },
+  "cases": {
+    "bare_names": {
+      "status": 0
+    },
+    "last_base": {
+      "status": 1
+    },
+    "missing_contig": {
+      "status": 1
+    },
+    "partial_skips": {
+      "status": 1
+    },
+    "past_end": {
+      "status": 0
+    },
+    "standard": {
+      "status": 0
+    },
+    "zero_start": {
+      "status": 255
+    }
+  },
+  "files": {
+    "bare_names/expected.npz": {
+      "sha256": "c6c0de8e580cfbb9d2dcf610eeffec61298dbb41171b5339a86e926fdcb7d94d",
+      "size": 1250
+    },
+    "bare_names/legacy.log": {
+      "sha256": "e9d56c8fc07b04cdcc49d19a7c6a0cce3480750e36b7777453ecbf35a747bf9d",
+      "size": 510
+    },
+    "bare_names/target.tsv": {
+      "sha256": "f01c145e68a3be8224f9ea97b76f459b1c256f00fadd3324f46aa88f49c75622",
+      "size": 117
+    },
+    "last_base/legacy.log": {
+      "sha256": "91b7608f2538664d08fad6fefcfa31b2465d69f77229f6f774cecbea52226e28",
+      "size": 433
+    },
+    "last_base/target.tsv": {
+      "sha256": "15cb3b1956d71fc51937d5a80775ea4dec6c3f56ca3081f94c9abda44ca44cef",
+      "size": 19
+    },
+    "missing_contig/legacy.log": {
+      "sha256": "d68a58f16142e5a7bd10eff7a25caf82897f7c1131b3af75da54fc55d42c7467",
+      "size": 498
+    },
+    "missing_contig/target.tsv": {
+      "sha256": "65f3a3de61de581d7c020dc6e4596738d5ca881cbca0d7ace2f64d1f7f281c2e",
+      "size": 15
+    },
+    "partial_skips/legacy.log": {
+      "sha256": "3fab54726742c389d8d6dba5534627d9a760aaaeb965eecdde41d1d012eb1fc4",
+      "size": 831
+    },
+    "partial_skips/target.tsv": {
+      "sha256": "0a7e9df013064076f8e4dadc493fd27b7439db7d6948b17fe697bd1c892d2bae",
+      "size": 49
+    },
+    "past_end/expected.npz": {
+      "sha256": "221381068187d165efdefe0447cccb53bf4541347ab9d92fb17b329bb8adb296",
+      "size": 607
+    },
+    "past_end/legacy.log": {
+      "sha256": "e0a38dc0f86a3666cfe1594c52b406a844ef2aaf15e92a0dbccde8b23220c891",
+      "size": 332
+    },
+    "past_end/target.tsv": {
+      "sha256": "6e0eb65a1df010662e70de90b8d75397f9387eb6614052a25c003f38a4df0f47",
+      "size": 18
+    },
+    "reference.bw": {
+      "sha256": "6ffb777675ea1126bf514c751473a124ab1f271c6337ad2c4a68821743ad3e2e",
+      "size": 659
+    },
+    "reference.fa": {
+      "sha256": "1c4d51b3786d9263d0ac972e31298a2f3304174b9a42a8a277c9db4c2c0ed69a",
+      "size": 214
+    },
+    "reference.fa.fai": {
+      "sha256": "d75c101fea99b4dc6ae58206a6d6792a29407df3cd26001439a669c051a1d97d",
+      "size": 40
+    },
+    "standard/expected.npz": {
+      "sha256": "796bba13880dfeaf006621b28be2840c20d734031fb0dbf1ac04febf5028a253",
+      "size": 1270
+    },
+    "standard/legacy.log": {
+      "sha256": "519f7ce6f1ab6ec7af06078770e9736488f53967548bcd4c4a2d53e26c985cea",
+      "size": 515
+    },
+    "standard/target.tsv": {
+      "sha256": "ee0515a2470083ac1994801640df8e353347fe41b432437dc567abfe159559d1",
+      "size": 144
+    },
+    "zero_start/legacy.log": {
+      "sha256": "4ca503cf3065953e09b19345e26129ff65fe309810ad23521c68088bbba36d9f",
+      "size": 31
+    },
+    "zero_start/target.tsv": {
+      "sha256": "7d0cad579d0fb4ca41efcaaacf0c03c33114e5edfacc3d2ed94a4d593e62cb91",
+      "size": 15
+    }
+  },
+  "harness": {
+    "sha256": "06bf84ed73baefe0b731bbc6e407b9fde234d2973ee4edc50cb092dbc74a7254",
+    "size": 7125
+  },
+  "source": {
+    "excavator2/lib/R/SaveFRB.R": {
+      "sha256": "5b121e1ac15696c1d9dcaeff21f0df4fbd4aff3ed738d90a819aa15aaa53c5c1",
+      "size": 1028
+    },
+    "excavator2/lib/R/SaveGCC.R": {
+      "sha256": "0d165f75d23bf93fa798178d85e898070bfa95edf320664965a5e976aba3b379",
+      "size": 653
+    },
+    "excavator2/lib/R/SaveMap.R": {
+      "sha256": "5293612d0dfdc5a5d61ddb622b7c93e72c45b3885c685bbfdeaa7f4608cbfa82",
+      "size": 734
+    },
+    "excavator2/lib/bash/TargetCreate.sh": {
+      "sha256": "1f96e05da7b4472e04063fbaccd94b93a9b1f5ebe7a496cdcd278be8ec23a8aa",
+      "size": 2935
+    }
+  }
+}

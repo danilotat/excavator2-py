@@ -1,0 +1,12 @@
+Warning message:
+package ‘argparse’ was built under R version 4.4.2 
+Feature (chr3:0-9) beyond the length of chr3 size (0 bp).  Skipping.
+Warning message:
+package ‘argparse’ was built under R version 4.4.2 
+Read 0 items
+WARNING. chromosome (chr3) was not found in the FASTA file. Skipping.
+Warning message:
+package ‘argparse’ was built under R version 4.4.2 
+Error in read.table(File_In, sep = "\n", quote = "\"", fill = T, header = F) : 
+  no lines available in input
+Execution halted
