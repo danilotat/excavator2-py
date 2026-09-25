@@ -1,0 +1,324 @@
+{
+  "milestone": "M6.1",
+  "passed": true,
+  "source_commit": "ac53247279f28966437c7788c49caa0196064941",
+  "baseline_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+  "wheel": {
+    "name": "excavator2-0.1.0.dev0-cp312-cp312-macosx_15_0_arm64.whl",
+    "sha256": "8f3f9005d3496e83e941cac96afb1e390497ddc0584fcb8d2f4c9018bb86fc62"
+  },
+  "runtime": {
+    "python": "3.12.6",
+    "system": "Darwin",
+    "machine": "arm64",
+    "dependencies": {
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "PyYAML": "6.0.3",
+      "pysam": "0.24.1",
+      "pyBigWig": "0.3.26"
+    },
+    "fresh_environment": true,
+    "package_and_extension_outside_checkout": true,
+    "python_isolated_mode": true
+  },
+  "tests": {
+    "passed": 137,
+    "working_directory_outside_checkout": true
+  },
+  "ci": {
+    "url": "https://github.com/danilotat/excavator2-py/actions/runs/36102519608",
+    "jobs": [
+      {
+        "name": "Live legacy concordance (paired and pooling)",
+        "conclusion": "success"
+      },
+      {
+        "name": "package (macos-latest, 3.12)",
+        "conclusion": "success"
+      },
+      {
+        "name": "package (ubuntu-latest, 3.11)",
+        "conclusion": "success"
+      },
+      {
+        "name": "package (ubuntu-latest, 3.13)",
+        "conclusion": "success"
+      },
+      {
+        "name": "package (ubuntu-latest, 3.12)",
+        "conclusion": "success"
+      },
+      {
+        "name": "package (macos-latest, 3.11)",
+        "conclusion": "success"
+      },
+      {
+        "name": "package (macos-latest, 3.13)",
+        "conclusion": "success"
+      }
+    ]
+  },
+  "target": {
+    "passed": true,
+    "target_id": "af57f48a9255b7b6295ae9f50b6fdcfc841880123886bd11d9634d8cb11eba50",
+    "arrays": {
+      "preparation/target": {
+        "shape": [
+          281567,
+          5
+        ],
+        "exact": true
+      },
+      "preparation/gc": {
+        "shape": [
+          281567
+        ],
+        "exact": true
+      },
+      "preparation/mappability": {
+        "shape": [
+          281567
+        ],
+        "exact": true
+      },
+      "chr1/matrix": {
+        "shape": [
+          26619,
+          2
+        ],
+        "exact": true
+      },
+      "chr2/matrix": {
+        "shape": [
+          22028,
+          2
+        ],
+        "exact": true
+      },
+      "chr3/matrix": {
+        "shape": [
+          17538,
+          2
+        ],
+        "exact": true
+      },
+      "chr4/matrix": {
+        "shape": [
+          12947,
+          2
+        ],
+        "exact": true
+      },
+      "chr5/matrix": {
+        "shape": [
+          14533,
+          2
+        ],
+        "exact": true
+      },
+      "chr6/matrix": {
+        "shape": [
+          14510,
+          2
+        ],
+        "exact": true
+      },
+      "chr7/matrix": {
+        "shape": [
+          13776,
+          2
+        ],
+        "exact": true
+      },
+      "chr8/matrix": {
+        "shape": [
+          10681,
+          2
+        ],
+        "exact": true
+      },
+      "chr9/matrix": {
+        "shape": [
+          11404,
+          2
+        ],
+        "exact": true
+      },
+      "chr10/matrix": {
+        "shape": [
+          11863,
+          2
+        ],
+        "exact": true
+      },
+      "chr11/matrix": {
+        "shape": [
+          14968,
+          2
+        ],
+        "exact": true
+      },
+      "chr12/matrix": {
+        "shape": [
+          14927,
+          2
+        ],
+        "exact": true
+      },
+      "chr13/matrix": {
+        "shape": [
+          6932,
+          2
+        ],
+        "exact": true
+      },
+      "chr14/matrix": {
+        "shape": [
+          8853,
+          2
+        ],
+        "exact": true
+      },
+      "chr15/matrix": {
+        "shape": [
+          9652,
+          2
+        ],
+        "exact": true
+      },
+      "chr16/matrix": {
+        "shape": [
+          11223,
+          2
+        ],
+        "exact": true
+      },
+      "chr17/matrix": {
+        "shape": [
+          14453,
+          2
+        ],
+        "exact": true
+      },
+      "chr18/matrix": {
+        "shape": [
+          5417,
+          2
+        ],
+        "exact": true
+      },
+      "chr19/matrix": {
+        "shape": [
+          13440,
+          2
+        ],
+        "exact": true
+      },
+      "chr20/matrix": {
+        "shape": [
+          6381,
+          2
+        ],
+        "exact": true
+      },
+      "chr21/matrix": {
+        "shape": [
+          3127,
+          2
+        ],
+        "exact": true
+      },
+      "chr22/matrix": {
+        "shape": [
+          5269,
+          2
+        ],
+        "exact": true
+      },
+      "chrX/matrix": {
+        "shape": [
+          11026,
+          2
+        ],
+        "exact": true
+      }
+    }
+  },
+  "preparation": {
+    "basis": "M4 artifacts previously qualified against original",
+    "samples": {
+      "Control1": {
+        "windows": 281567,
+        "exact_arrays": [
+          "matrix",
+          "counts",
+          "weighted",
+          "size",
+          "map",
+          "gc",
+          "normalized"
+        ]
+      },
+      "Test1": {
+        "windows": 281567,
+        "exact_arrays": [
+          "matrix",
+          "counts",
+          "weighted",
+          "size",
+          "map",
+          "gc",
+          "normalized"
+        ]
+      }
+    }
+  },
+  "analysis": {
+    "files": {
+      "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+        "original_sha256": "1c06a3a46bc0dd2f77900d8d19b4d85ffa7d207e5491e05b6e26881b5da9cef4",
+        "rewritten_sha256": "fd32b5d5ea8419089d8ad6271c026182bcfa96cd73088d05f23aa6a648114720",
+        "rows": 15,
+        "text_equal": true
+      },
+      "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+        "original_sha256": "412dc7d3960e8fc57451518d732c8d629b73d844ae89bb67f01f6f17f97349ec",
+        "rewritten_sha256": "0ccfa7de47538c96b57bf0f38eb09db3072706b0c6a331cfcd3692caba37ed44",
+        "rows": 16,
+        "text_equal": true
+      },
+      "Results/Test1/FastCallResults_Test1.txt": {
+        "original_sha256": "c8b8c2a88f316493ec46993ed0ab48998d3f3f8facd7ba5961270addca7a2c05",
+        "rewritten_sha256": "c8b8c2a88f316493ec46993ed0ab48998d3f3f8facd7ba5961270addca7a2c05",
+        "rows": 1,
+        "text_equal": true
+      },
+      "Results/Test1/HSLMResults_Test1.txt": {
+        "original_sha256": "c2a424e6176eba040391dede225fffc8a971d4565e0922c91cff6c1db16fbeed",
+        "rewritten_sha256": "ee6b3c9481adafb71fed1a33b77cd28694cfddc8e1423adfbd79bbd5903ba270",
+        "rows": 281568,
+        "text_equal": false,
+        "max_absolute_error": 1.0061396160665481e-16,
+        "decision_mismatches": 0
+      }
+    },
+    "excluded_fields": [
+      "VCF fileDate"
+    ],
+    "passed": true
+  },
+  "input_provenance": {
+    "FASTA": "0713026dfdd61fb1cd68be4b9689a9e5c55c8708a3843248b0b574506fd0f0e9",
+    "BigWig": "8db66fa89f47f019bd4a011889cc6891aff2f55a661a831c4182651f140b0074",
+    "Chromosomes": "3bb7173d5b8bf95f6f782528d90c950b4e6d851ef8c2ef74f15bea379cd243fe",
+    "Centromeres": "ea88af667a62de385d7cc41c80becb370b6ab4db8700109cb2ef64a2341fceac",
+    "Gaps": "ae83d2933145f17632dc5a43652ae104a63c5203da02290ccb02e6e26e28af6f",
+    "BED": "5f80760849a288f4903a293afe9cfceafa5da886ad66a15a819156c7fae46790"
+  },
+  "limits": [
+    "Supplied paired example contains no non-normal calls",
+    "Live non-normal CI currently qualifies stages separately, not a fresh-reference full chain",
+    "Plots and broader edge cases remain open; M6 is not complete"
+  ]
+}
