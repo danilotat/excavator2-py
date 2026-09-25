@@ -1,0 +1,379 @@
+{
+  "baseline": {
+    "config": ".test/config.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte",
+    "platform": "linux/amd64",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "samples": ".test/sample_sheet.yaml",
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc"
+  },
+  "designs": {
+    "paired": {
+      "excluded_fields": [
+        "VCF fileDate"
+      ],
+      "files": {
+        "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+          "original_sha256": "da735389c76270403a9f2b79443065f24395e6ece962d20a8266e3859fa97de6",
+          "rewritten_sha256": "da735389c76270403a9f2b79443065f24395e6ece962d20a8266e3859fa97de6",
+          "rows": 19,
+          "text_equal": true
+        },
+        "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+          "original_sha256": "5433c133e9fc4349a3706fc61584b59202d951d55256a4f431e4aae27240c5c1",
+          "rewritten_sha256": "5433c133e9fc4349a3706fc61584b59202d951d55256a4f431e4aae27240c5c1",
+          "rows": 212,
+          "text_equal": true
+        },
+        "Results/Test1/FastCallResults_Test1.txt": {
+          "original_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+          "rewritten_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+          "rows": 5,
+          "text_equal": true
+        },
+        "Results/Test1/HSLMResults_Test1.txt": {
+          "decision_mismatches": 0,
+          "max_absolute_error": 0.0,
+          "original_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+          "rewritten_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+          "rows": 4114,
+          "text_equal": true
+        }
+      },
+      "non_normal_calls": 4,
+      "passed": true
+    },
+    "pooling": {
+      "excluded_fields": [
+        "VCF fileDate"
+      ],
+      "files": {
+        "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+          "original_sha256": "da735389c76270403a9f2b79443065f24395e6ece962d20a8266e3859fa97de6",
+          "rewritten_sha256": "da735389c76270403a9f2b79443065f24395e6ece962d20a8266e3859fa97de6",
+          "rows": 19,
+          "text_equal": true
+        },
+        "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+          "original_sha256": "5433c133e9fc4349a3706fc61584b59202d951d55256a4f431e4aae27240c5c1",
+          "rewritten_sha256": "5433c133e9fc4349a3706fc61584b59202d951d55256a4f431e4aae27240c5c1",
+          "rows": 212,
+          "text_equal": true
+        },
+        "Results/Test1/FastCallResults_Test1.txt": {
+          "original_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+          "rewritten_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+          "rows": 5,
+          "text_equal": true
+        },
+        "Results/Test1/HSLMResults_Test1.txt": {
+          "decision_mismatches": 0,
+          "max_absolute_error": 0.0,
+          "original_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+          "rewritten_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+          "rows": 4114,
+          "text_equal": true
+        }
+      },
+      "non_normal_calls": 4,
+      "passed": true
+    }
+  },
+  "harness": {
+    "compare_analysis.py": {
+      "sha256": "bd0015a55fdb92003854a3e1147c4c99e3f0faf0d348d380a4e7a16f9009d7a9",
+      "size": 3618
+    },
+    "compare_target.py": {
+      "sha256": "722992507d87b48d5e1b204e41ffd296586fa7954885a1d5316a3c9e6de74369",
+      "size": 1735
+    },
+    "end_to_end.py": {
+      "sha256": "6e074de7e8bc7e8f1cb6238c8f224539e280fdbb3f6b02e065f55f0eea1377be",
+      "size": 9223
+    },
+    "export.R": {
+      "sha256": "020ba4cde187711eee92ecf4fb11e3ddd63953a4a2403e709a5fa7c4e8c92f3a",
+      "size": 1833
+    },
+    "run_end_to_end.sh": {
+      "sha256": "5524b27729d538cd7c652b0b47edc16e0794509fdec538e3d2c6f2a28f8b2958",
+      "size": 1052
+    }
+  },
+  "inputs": {
+    "inputs/Control1.bam": {
+      "sha256": "99a23ac2854966bd2c20ac45a08e7fa200f37e6bc32611c274b53e7e0331e665",
+      "size": 422112
+    },
+    "inputs/Control1.bam.bai": {
+      "sha256": "bd63f9fca29312babffa5bb6dd503e88eb1ed38192726d9a262b3c4dfdc7e5a5",
+      "size": 2592
+    },
+    "inputs/Control2.bam": {
+      "sha256": "97fb3f7c60931da40b3172059fe7b2cecda3f2b75cd8e14e92533ba2b261a65b",
+      "size": 503741
+    },
+    "inputs/Control2.bam.bai": {
+      "sha256": "0f6f87a20198a6e06ad2b738488184b8fa87093ac3dbc650440a00907207a69c",
+      "size": 2592
+    },
+    "inputs/Test1.bam": {
+      "sha256": "7629db9f1784e1cb6170ee46f43c137e9caf4a293e010cb863b901ce4af5f073",
+      "size": 424346
+    },
+    "inputs/Test1.bam.bai": {
+      "sha256": "b56ed95d35bf9c4ce9ad42e742ba0343d43521eac7e148a7298cc2e68ee36425",
+      "size": 2592
+    },
+    "inputs/centromeres.tsv": {
+      "sha256": "9131fe779e7c21617927f2c73d00b8c17a460f781ce999b638a6a4063814c812",
+      "size": 397
+    },
+    "inputs/coordinates.tsv": {
+      "sha256": "04de7b8516c452251d76af7f5e57ff9833a4c5f5bd83da0ae220d9dd7d1c6312",
+      "size": 312
+    },
+    "inputs/gaps.tsv": {
+      "sha256": "1262078906bb2f26d9f6f6c6a7b3ba12210bdebb80eafc3d29e792b76e2f8cf3",
+      "size": 727
+    },
+    "inputs/reference.bw": {
+      "sha256": "ae5b2a3bf50aff918069524f3f1c1d3291f554350d6e26b9356e4b90085c059a",
+      "size": 2161
+    },
+    "inputs/reference.fa": {
+      "sha256": "ece9107696d00f1cab0fbd646573655caeefb8de3912d6d97d14130b3306d3da",
+      "size": 552174
+    },
+    "inputs/reference.fa.fai": {
+      "sha256": "19a331b0502ad0983eec0de4f5d366d151abd7003170d2785133a0a43c79b08a",
+      "size": 694
+    },
+    "inputs/target.bed": {
+      "sha256": "bb5f1678797555217d159afd5b43097c76a2d88b1eb92d2391ec24c223ba4939",
+      "size": 318
+    }
+  },
+  "legacy_plotting": {
+    "failed_modes": [
+      "paired",
+      "pooling"
+    ],
+    "qualified": false,
+    "reason": "Synthetic assembly has no UCSC chromInfo; container is offline."
+  },
+  "passed": true,
+  "prepared": {
+    "Control1": {
+      "exact": true,
+      "windows": 4113
+    },
+    "Control2": {
+      "exact": true,
+      "windows": 4113
+    },
+    "Test1": {
+      "exact": true,
+      "windows": 4113
+    }
+  },
+  "qualification": {
+    "current_cli_python_isolated": true,
+    "installed_wheel": true,
+    "notes": "Report captured before metadata-only plotting annotation and strengthening call gate to exactly four loss/gain calls; strengthened gate verified against saved checkpoints.",
+    "package_source_commit": "ac53247279f28966437c7788c49caa0196064941"
+  },
+  "scope": "scientific data and calls; plots excluded",
+  "target": {
+    "arrays": {
+      "chr1/matrix": {
+        "exact": true,
+        "shape": [
+          175,
+          2
+        ]
+      },
+      "chr10/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr11/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr12/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr13/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr14/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr15/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr16/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr17/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr18/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr19/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr2/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr20/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr21/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr22/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr3/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr4/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr5/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr6/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr7/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr8/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chr9/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "chrX/matrix": {
+        "exact": true,
+        "shape": [
+          179,
+          2
+        ]
+      },
+      "preparation/gc": {
+        "exact": true,
+        "shape": [
+          4113
+        ]
+      },
+      "preparation/mappability": {
+        "exact": true,
+        "shape": [
+          4113
+        ]
+      },
+      "preparation/target": {
+        "exact": true,
+        "shape": [
+          4113,
+          5
+        ]
+      }
+    },
+    "passed": true,
+    "target_id": "860951e220373e8bffa50a616cf6c9ac0d9963b95d88da63a626574f678ce4c8"
+  }
+}
