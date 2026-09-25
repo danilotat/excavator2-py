@@ -76,7 +76,7 @@ def write_inputs(output):
     return cases
 
 
-def run(output):
+def run(output, compare=False):
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     cases = write_inputs(output)
@@ -147,6 +147,8 @@ def run(output):
             record["files"][path.name] = file_record(path)
         manifest["cases"][name] = record
     save_json(fixtures / "manifest.json", manifest)
+    if compare:
+        compare_current(fixtures)
     print(
         json.dumps(
             {
@@ -158,11 +160,43 @@ def run(output):
     )
 
 
+def compare_current(fixtures):
+    from excavator2.target import target_geometry
+
+    manifest = json.loads((fixtures / "manifest.json").read_text())
+    for name, record in manifest["cases"].items():
+        folder = fixtures / name
+        try:
+            actual = target_geometry(
+                folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100
+            )
+        except ValueError:
+            if record["expected_success"]:
+                raise
+            continue
+        if not record["expected_success"]:
+            raise AssertionError(f"port accepted legacy geometry failure {name}")
+        with np.load(folder / "expected.npz", allow_pickle=False) as expected:
+            np.testing.assert_array_equal(actual, expected["target"], err_msg=name)
+            np.testing.assert_array_equal(
+                list(dict.fromkeys(actual[:, 0])), expected["chromosomes"]
+            )
+    save_json(
+        fixtures.parent / "concordance.json",
+        {
+            "passed": True,
+            "cases": len(manifest["cases"]),
+            "comparison": "exact geometry and success/failure outcomes",
+        },
+    )
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--compare-current", action="store_true")
     args = parser.parse_args()
-    run(args.output)
+    run(args.output, args.compare_current)
 
 
 if __name__ == "__main__":
