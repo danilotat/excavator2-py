@@ -90,7 +90,8 @@ Live CI regenerates original geometry/features and preparation/analysis cases.
 The target command now writes versioned artifacts consumed by prepare/analyze;
 raw RData is not read directly. Local M5 supplied-data acceptance and 137 tests
 passed in editable and installed-wheel environments. Broader M6 qualification
-remains, including confirmation of the latest integration on remote CI.
+remains; the M5 integration passed remote CI. See the
+[M6 qualification matrix](compatibility-qualification.md).
 See [the baseline report](legacy-baseline.md), [M3](hslm-analysis.md),
 [M4](preparation.md) and [M5](target-porting.md).
 See [the detailed roadmap](python-cpp-porting-roadmap.md).

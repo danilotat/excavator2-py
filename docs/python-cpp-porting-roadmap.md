@@ -377,8 +377,10 @@ to analysis-only comparisons. Cross-platform M4 package tests and live concordan
 from reference files; the all-new target → prepare → analyze pipeline preserves
 calls on the supplied paired dataset. GC binary32 rounding and pinned-R decimal
 conversion are now reproduced. CI includes live geometry and feature comparisons
-as well as preparation/analysis checks. Latest remote qualification is pending.
-See [M5 evidence and limits](target-porting.md). M6 broader qualification is next.
+as well as preparation/analysis checks. The complete M5 CI run passed on Linux
+and macOS Python 3.11–3.13. M6.1 adds independent clean-wheel acceptance and a
+[qualification matrix](compatibility-qualification.md); M6 remains in progress.
+See [M5 evidence and limits](target-porting.md).
 
 Estimates below are rough focused engineering effort for one experienced developer, not calendar commitments. They exclude reference download delays and expand if oracle instability or numerical incompatibility is substantial. Complete exit gates in dependency order.
 

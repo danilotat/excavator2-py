@@ -2,8 +2,8 @@
 
 M5 is implemented and locally qualified on the supplied paired dataset. All
 three commands now work from reference files and BAMs. The remaining milestone
-is M6: broader compatibility qualification; remote CI must also confirm this
-latest integration.
+is M6: broader compatibility qualification. The M5 integration passed remote
+CI; see the [M6 qualification evidence](compatibility-qualification.md).
 
 ## Compatibility contract
 
