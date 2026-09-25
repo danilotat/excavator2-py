@@ -143,13 +143,26 @@ python tools/oracle/characterize_features.py --output .oracle/target-features --
 ```
 
 This generates tiny FASTA/BigWig references and runs the pinned original
-`TargetCreate.sh` plus its R save scripts unchanged. Three success cases compare
+`TargetCreate.sh` plus its R save scripts unchanged. Four success cases compare
 all GC, mappability and first-base arrays exactly; four cases require matching
-failure outcomes. The seven cases include ambiguous/lowercase sequence, uncovered
+failure outcomes. The eight cases include ambiguous/lowercase sequence, uncovered
 BigWig bases, decimal rounding, bare-name grep behavior and boundary failures.
 Without `--compare-current`, the tool only captures original outputs.
 
 The CI concordance job runs this against the installed wheel on every workflow
 run, and uploads `.oracle/ci-target-features/` with the existing reports. This
-qualifies feature extraction, not the unfinished target CLI or full-reference
-acceptance. Committed captures are in `tests/fixtures/legacy-target-features/`.
+qualifies feature extraction. CLI integration and supplied-reference acceptance
+are documented in `docs/target-porting.md`. Committed captures are in `tests/fixtures/legacy-target-features/`.
+
+
+## M5 geometry and full-target acceptance
+
+`characterize_target.py --output .oracle/geometry --compare-current` also compares
+newly captured legacy geometry against the current Python implementation. CI runs
+this against the installed wheel and retains `.oracle/ci-target-geometry/`.
+
+`compare_target.py ORIGINAL_CONVERTED_TARGET NEW_TARGET --report report.json`
+compares manifest identity/reference metadata and every target/GC/MAP/FRB array
+exactly. The M5 supplied-data reports document all-new target → prepare → analyze
+acceptance against the saved original run. Feature CI includes a precision case
+covering binary32 GC and x86 R extended-precision decimal conversion.

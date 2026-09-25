@@ -3,11 +3,12 @@
 M4 adds the `prepare` command against an exported original target. BAM decoding
 uses pysam/HTSlib; batched counting uses NumPy searches, and size/MAP/GC correction
 remains readable Python/NumPy. No custom C++ was added. Existing HSLM/FastCall kernels
-continue to handle analysis. M5 target generation has not started.
+continue to handle analysis. M5 now provides native target generation; see
+[target usage and acceptance](target-porting.md#m54-target-cli-and-supplied-data-acceptance).
 
 ## Usage
 
-Convert the original target once. The `export.R` checkpoint format must include
+Either generate a target with `excavator2 target`, or convert the original target once. The `export.R` checkpoint format must include
 MyTarget, GCC, MAP and FRB; pre-existing normalized samples are no longer required.
 For the saved supplied-data baseline:
 

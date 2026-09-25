@@ -1,8 +1,9 @@
 # M5 target generation
 
-M5.3 is complete for the captured reference fixtures: Python geometry and
-FASTA/BigWig features match the legacy outputs. The `target` CLI remains a
-scaffold until artifacts and orchestration are integrated. M5.4 is next.
+M5 is implemented and locally qualified on the supplied paired dataset. All
+three commands now work from reference files and BAMs. The remaining milestone
+is M6: broader compatibility qualification; remote CI must also confirm this
+latest integration.
 
 ## Compatibility contract
 
@@ -78,7 +79,7 @@ is tab-separated files with integer genomic coordinates, a nonempty BED and at
 least 23 canonical coordinate rows. Extra BED columns are ignored. Full R text
 parser equivalence, arbitrary assemblies and performance are not qualified.
 
-## Remaining bounded steps
+## Completed M5 steps
 
 1. **M5.2 — Python geometry (complete):** readable Python/NumPy implementation;
    exact comparisons against all five success fixtures and explicit errors for
@@ -90,14 +91,13 @@ parser equivalence, arbitrary assemblies and performance are not qualified.
    `[target_start, target_start+1)`. The original map parser saves column 6 of
    `bigWigAverageOverBed` output. Prove feature parity before integration. Prefer
    existing native-backed readers; add custom C++ only for a measured bottleneck.
-3. **M5.4 — integration and acceptance:** wire YAML/config, target artifacts and
+3. **M5.4 — integration and acceptance (locally complete):** wire YAML/config, target artifacts and
    the `target` CLI into preparation; add live target comparisons to CI and run
    all-new `target → prepare → analyze` on the supplied data against original
    calls. M5 is complete only after this acceptance run passes.
 
-M5.3 does not qualify arbitrary assemblies, full target CLI behavior, performance,
-or end-to-end calls from newly generated targets. Reference features are qualified
-on the fixtures described below.
+Arbitrary assemblies and performance remain unqualified. CLI and supplied-data
+end-to-end evidence are described under M5.4 below.
 
 ## M5.3 reference features
 
@@ -105,7 +105,7 @@ on the fixtures described below.
 per-chromosome `gc`, `mappability` and `first_base` arrays. FASTA access uses pysam;
 BigWig access uses pyBigWig, which was already a package dependency. Policy and
 rounding remain readable Python; reference I/O uses those native-backed libraries.
-No custom C++ or CLI integration was added in this step.
+No custom C++ was added for reference access; CLI integration followed in M5.4.
 
 The implementation uses `stats(..., type="mean", exact=True)`: uncovered bases
 are excluded from the mean, and approximate zoom summaries are bypassed, as
@@ -130,9 +130,9 @@ The unchanged legacy scripts confirm these additional rules:
   can consequently differ. No silent padding or truncation is performed.
 - A zero target start produces a negative GC/MAP BED coordinate and fails.
 
-Seven cases in `tests/fixtures/legacy-target-features` cover fractional GC and
+Eight cases in `tests/fixtures/legacy-target-features` cover fractional GC and
 mapping values, lowercase and ambiguous bases, partial/missing/zero BigWig
-coverage, bare chromosome names, and reference boundaries. Three cases succeed
+coverage, bare chromosome names, and reference boundaries. Four cases succeed
 with exact array comparisons; four reproduce legacy failures. Small FASTA,
 index, BigWig, target inputs, expected arrays, logs and hashes are committed.
 
@@ -147,7 +147,61 @@ Use a fresh output directory with Docker available. The harness extracts the
 pinned source commit and runs its unchanged `TargetCreate.sh` and R save scripts.
 The existing CI concordance job now performs this comparison using the installed
 current wheel and retains the results alongside preparation/analysis reports.
-Local feature parity is established on these fixtures; full supplied-reference
-qualification and `target → prepare → analyze` acceptance remain M5.4. Arbitrary
+Local feature parity is established on these fixtures and on the supplied
+reference artifacts (see M5.4 below). Arbitrary
 FASTA/BigWig variants, shell metacharacters in names and performance are not yet
 qualified.
+
+## M5.4 target CLI and supplied-data acceptance
+
+The target command now accepts the original `Reference`/`Target` YAML mappings:
+
+```sh
+excavator2 target --config .test/config.yaml --output target/
+excavator2 prepare --samples .test/sample_sheet.yaml --target target/ --output prepared/ --threads 4
+excavator2 analyze --samples sample_list.yaml --input prepared/ --target target/ --output results/ --experiment paired
+```
+
+For paired analysis, `sample_list.yaml` maps `T1` and `C1` to the prepared test and
+control sample names. Relative reference paths resolve from the working directory.
+The requested output directory itself is the version-one target artifact; unlike
+the old wrapper, it does not add assembly/panel/window subdirectories. Supply that
+same directory to both downstream commands. Converted old targets remain readable.
+
+The artifact includes target windows, GC/MAP vectors, reference bases, centromeres,
+ordered-window identity and source hashes. Publication uses a temporary directory
+and final rename; existing outputs and `--force` are rejected. References are
+hashed as streams rather than loaded into memory. Feature rows that do not align
+with the target are rejected before publication; this does not silently repair
+legacy extraction defects.
+
+The all-new pipeline passed against the saved, pinned original supplied-data run:
+
+- All 281,567 target rows and both covariate vectors agree exactly, as do all 23
+  chromosomes' first-base arrays and the target identity.
+- Both samples' 281,567 counts and all saved preparation arrays match the M4
+  acceptance artifacts, previously verified against the original.
+- HSLM boundaries and calls agree; continuous values pass the existing tolerances.
+  FastCall output and VCF records match, with only VCF file dates excluded.
+- The supplied run has no non-normal calls. Existing synthetic paired/pooling
+  fixtures and live CI remain necessary to qualify non-normal calling.
+
+Reports are `tools/oracle/m5-target-report.json`, `m5-preparation-report.json` and
+`m5-analysis-report.json`. Reproduce the target comparison using:
+
+```sh
+python tools/oracle/compare_target.py converted/target target/ --report target-report.json
+python tools/oracle/compare_analysis.py original/results results/ --report analysis-report.json
+```
+
+Full-reference testing exposed precision details absent from the initial feature
+fixtures. GC must round through binary32 before six-decimal formatting. The pinned
+x86 R runtime then parses feature text through a 64-bit significand before rounding
+to binary64. Python now reproduces these two rounding steps using integer arithmetic
+rather than host-dependent `longdouble`. The new small `precision` oracle case covers
+both effects. This corrects port compatibility, without changing original science.
+
+CI now compares live original geometry and reference features separately, in
+addition to the existing live preparation and paired/pooling comparisons. CLI
+artifact integration runs in the platform/wheel test matrix. The large supplied
+reference files remain local acceptance assets, not per-push CI downloads.

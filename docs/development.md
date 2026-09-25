@@ -1,8 +1,9 @@
 # Developing the Python-first port
 
 This is an installable development package, version `0.1.0.dev0`, with a tested
-[FastCall implementation](fastcall-reference.md). The CLI can prepare indexed BAMs and analyze their counts using a converted
-legacy target. Target generation remains unimplemented. See [M4 usage and limits](preparation.md).
+[FastCall implementation](fastcall-reference.md). The CLI now generates targets,
+prepares indexed BAMs and analyzes their counts. The all-new pipeline matches the
+original calls on the supplied paired dataset; see [M5 usage and limits](target-porting.md).
 The original implementation remains in `excavator2/`, and
 its installation/workflow instructions remain in the root README.
 
@@ -16,8 +17,9 @@ its installation/workflow instructions remain in the root README.
   CMake/Ninja when required; no global CMake installation is necessary.
 
 Python dependencies: NumPy, SciPy, PyYAML, pysam, and pyBigWig. Plotting is an
-optional extra. Our own native extension contains scalar FastCall and HSLM kernels. R, Perl, Fortran, samtools executables, and full reference
-assets are needed only for the legacy-oracle regeneration, not this package setup.
+optional extra. Our own native extension contains scalar FastCall and HSLM kernels. R, Perl, Fortran and samtools executables
+are needed only for legacy-oracle regeneration. Target generation requires the
+FASTA, BigWig and coordinate annotations referenced by the input YAML.
 
 ## Local setup
 
@@ -64,10 +66,9 @@ The pip route respects dependency bounds but does not consume `uv.lock`.
 | `benchmarks/` | Reproducible FastCall performance check |
 | `excavator2/`, `.test/` | Preserved original implementation and example inputs |
 
-`fastcall.py` now owns the first numerical port. Add other Python stage modules
-(`target.py`, `reads.py`, `normalization.py`, `design.py`, `hslm.py`) when implementing
-those stages, rather than populating
-empty placeholder APIs. Keep algorithm policy in Python. Custom C++ starts with
+`target_pipeline.py` owns target orchestration, `target.py` geometry, and
+`target_features.py` reference extraction. Preparation, normalization, HSLM and
+FastCall policy remain in their Python stage modules. Keep algorithm policy in Python. Custom C++ starts with
 HSLM and FastCall hot kernels; further additions require evidence.
 
 ## Build and validation
@@ -83,16 +84,15 @@ floating-point flags disable fast-math and contraction to preserve numerical com
 The separate `python-port.yml` workflow checks Python 3.11–3.13 on Linux and macOS,
 including an installed-wheel test outside the checkout. This matrix is a target
 for CI qualification, not a claim that every platform has already passed.
-The original legacy workflow is unchanged. Scaffold tests check packaging and safe CLI failure. Separate FastCall differential
-tests check both native and Python backends against original-R fixtures; end-to-end scientific
-equivalence remains unproven.
-
-The target command still exits nonzero without writing output. Prepare and
-analyze accept versioned artifacts; raw RData is not read directly. Continue using the original scripts for real
-analysis. A repeatable original-pipeline baseline has now been captured; see
-[the baseline report](legacy-baseline.md). M2 is complete: both FastCall backends match the saved fixtures. Python retains
-initialization, iteration/stopping, and assignment. M3 now adds HSLM and
-paired/pooling analysis; see [M3](hslm-analysis.md).
+The original legacy workflow is unchanged. Differential tests cover native/Python
+kernels and captured original geometry, features, preparation and analysis.
+Live CI regenerates original geometry/features and preparation/analysis cases.
+The target command now writes versioned artifacts consumed by prepare/analyze;
+raw RData is not read directly. Local M5 supplied-data acceptance and 137 tests
+passed in editable and installed-wheel environments. Broader M6 qualification
+remains, including confirmation of the latest integration on remote CI.
+See [the baseline report](legacy-baseline.md), [M3](hslm-analysis.md),
+[M4](preparation.md) and [M5](target-porting.md).
 See [the detailed roadmap](python-cpp-porting-roadmap.md).
 
 Build follows the official [scikit-build-core guide](https://scikit-build-core.readthedocs.io/en/latest/guide/getting_started.html)
