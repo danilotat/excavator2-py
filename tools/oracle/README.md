@@ -117,3 +117,20 @@ the original filtering/counting/normalization scripts run, and exact counts plus
 five correction checkpoints are compared before paired/pooling calls. This adds
 another 16 call-output comparisons. It does not download large BAM/reference
 assets or rerun target generation; the full supplied-data baseline remains separate.
+
+## M5.1 target geometry characterization
+
+Run the unchanged baseline `FilterTarget.R` on eight small synthetic cases:
+
+```sh
+python tools/oracle/characterize_target.py --output .oracle/target-geometry
+```
+
+Use a fresh output directory and the installed port environment with Docker.
+Five cases succeed and three intentionally reproduce original failures. The
+harness checks exported RData against `Filtered.txt`, then writes compact arrays,
+inputs, stderr and provenance under `fixtures/` in the output directory. Committed
+captures live in `tests/fixtures/legacy-target/`; their tests run in wheel CI.
+This is geometry characterization, not a target-port comparison. FASTA/BigWig
+features and live old-versus-new target CI are later M5 steps. See
+[the target contract](../../docs/target-porting.md).

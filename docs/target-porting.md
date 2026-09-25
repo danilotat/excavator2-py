@@ -1,0 +1,88 @@
+# M5 target generation
+
+M5.1 is complete: the legacy geometry contract and eight small oracle cases are
+captured. No production target generator has been implemented. The `target` CLI
+remains a scaffold. M5.2 is the next bounded step.
+
+## Compatibility contract
+
+The source of truth is `excavator2/lib/R/FilterTarget.R` at commit
+`92f9c6e79fdeae32a09b99fa6994edc9a53e4efc`, executed unchanged in the pinned
+legacy container. These are observed compatibility rules, including bugs;
+correcting them belongs after call parity.
+
+- Chromosomes are hard-coded as 1–22 and X. Prefix `chr` when the first BED
+  chromosome name has more than three characters. Y and other contigs are ignored.
+  Coordinate-file names are overwritten internally; numeric coordinate rows are
+  interpreted in canonical chromosome order.
+- On-target rows retain BED coordinates. They are not merged. Within a chromosome,
+  BED order determines the gaps between chromosome start, target ends, target
+  starts and chromosome end. Sorting the BED first would change the output.
+- A gap is eligible when its length is at least `window + 400`. Flank is 200.
+  With `n = floor(gap_length / window)`, boundaries are
+  `gap_start + 200 + k * window`, for `k = 0..n`. Each OUT window starts one
+  base after its left boundary and ends at its right boundary. Flanks are not
+  subtracted before computing `n`: windows can overlap IN regions and extend
+  beyond chromosome end.
+- Chromosomes without BED entries instead use a grid from chromosome start to
+  end, spaced by window size: OUT coordinates are `[grid[k], grid[k+1]-1]`.
+  This differs from the populated-chromosome convention.
+- IN rows are concatenated before OUT rows, then sorted numerically by start
+  within canonical chromosome order. The captured duplicate-start IN rows retain
+  their original order.
+- Gap input skips its first line and uses columns 2–4 for chromosome/start/end.
+  For bare chromosome names, the first `chr` occurrence is removed from gap names.
+  Rows with `_` in their chromosome are excluded.
+- A target row is removed if either endpoint lies in `[gap_start, gap_end)`.
+  Full interval overlap is not tested: a row spanning a gap can survive, an end
+  exactly at gap start is removed, and a start exactly at gap end survives.
+- IDs `a1..aN` are assigned after filtering. The `MyTarget` character matrix has
+  columns chromosome, start, end, ID, IN/OUT. Its values equal `Filtered.txt`.
+
+The original wrapper also enforces a minimum window size of 10, checks reference
+paths and only the first BED row's start/end, and nests output under
+`<output>/<assembly>/<target>/w_<window>`. CLI/config translation is deferred.
+
+## Captured evidence
+
+All probes use window 100 and chromosome bounds 0–3000. Inputs, full output
+arrays, stderr and SHA-256 provenance are in `tests/fixtures/legacy-target/`.
+
+| Case | Original result | Behavior covered |
+| --- | --- | --- |
+| standard | 666 rows | IN/OUT coordinates, ignored Y, flanks, chromosome bounds |
+| bare_names | 666 rows | Equivalent geometry without `chr` prefix |
+| unsorted_overlap | 678 rows | Input order, overlapping regions, duplicate starts |
+| gap_endpoints | 662 rows | Half-open endpoint filtering and spanning intervals |
+| coordinate_names_ignored | 666 rows | Reversed coordinate labels leave results unchanged |
+| no_eligible_gap | Fails | Empty eligible-gap loop produces nonfinite sequence bound |
+| no_alternate_gap | Fails | Negative empty index drops all gap rows |
+| missing_chromosome_gap | Fails | Empty chromosome gap loop indexes beyond bounds |
+
+Expected failures are evidence, not desired new behavior. M5.2 should preserve
+rejection of these cases with explicit Python errors; matching R error text is
+not required. Broader edge-case coverage will be added with implementation.
+
+Fixture tests run in the existing Linux/macOS wheel CI matrix. At this stage they
+verify the captured contract and fixture integrity, **not old-versus-new target
+concordance**. Existing live preparation/analysis concordance remains enabled.
+
+## Remaining bounded steps
+
+1. **M5.2 — Python geometry:** implement the above rules in readable Python/NumPy;
+   compare every output cell and row order against all five success fixtures;
+   test the three failure cases. Keep this separate from reference extraction.
+2. **M5.3 — reference feature contract and extraction:** characterize the original
+   FASTA/BigWig path with tiny references, including missing/ambiguous bases,
+   uncovered values, boundaries, and decimal serialization. GC/MAP extraction
+   uses BED `[target_start-1, target_end)`; first-base extraction uses
+   `[target_start, target_start+1)`. The original map parser saves column 6 of
+   `bigWigAverageOverBed` output. Prove feature parity before integration. Prefer
+   existing native-backed readers; add custom C++ only for a measured bottleneck.
+3. **M5.4 — integration and acceptance:** wire YAML/config, target artifacts and
+   the `target` CLI into preparation; add live target comparisons to CI and run
+   all-new `target → prepare → analyze` on the supplied data against original
+   calls. M5 is complete only after this acceptance run passes.
+
+M5.1 does not validate FASTA/BigWig extraction, arbitrary assemblies, full target
+CLI behavior, performance, or end-to-end calls from newly generated targets.
