@@ -1,8 +1,8 @@
 # M5 target generation
 
-M5.1 is complete: the legacy geometry contract and eight small oracle cases are
-captured. No production target generator has been implemented. The `target` CLI
-remains a scaffold. M5.2 is the next bounded step.
+M5.2 is complete: Python target geometry matches all five successful legacy
+fixtures exactly and rejects the three captured failure cases. The `target` CLI
+remains a scaffold until features and artifacts are integrated. M5.3 is next.
 
 ## Compatibility contract
 
@@ -63,15 +63,25 @@ Expected failures are evidence, not desired new behavior. M5.2 should preserve
 rejection of these cases with explicit Python errors; matching R error text is
 not required. Broader edge-case coverage will be added with implementation.
 
-Fixture tests run in the existing Linux/macOS wheel CI matrix. At this stage they
-verify the captured contract and fixture integrity, **not old-versus-new target
-concordance**. Existing live preparation/analysis concordance remains enabled.
+Fixture tests run in the existing Linux/macOS wheel CI matrix. They compare every
+Python geometry output cell, row order and chromosome list against the captured
+original outputs, and check failure behavior. This is fixture-based geometry
+concordance; live full-target concordance remains M5.4. Existing live
+preparation/analysis concordance remains enabled.
+
+The internal entry point is `excavator2.target.target_geometry(bed, coordinates,
+gaps, window)`, returning a five-column NumPy string matrix. It creates no files
+and performs no reference feature extraction. Geometry and compatibility policy
+remain Python; NumPy handles array generation, sorting and filtering. Input scope
+is tab-separated files with integer genomic coordinates, a nonempty BED and at
+least 23 canonical coordinate rows. Extra BED columns are ignored. Full R text
+parser equivalence, arbitrary assemblies and performance are not qualified.
 
 ## Remaining bounded steps
 
-1. **M5.2 — Python geometry:** implement the above rules in readable Python/NumPy;
-   compare every output cell and row order against all five success fixtures;
-   test the three failure cases. Keep this separate from reference extraction.
+1. **M5.2 — Python geometry (complete):** readable Python/NumPy implementation;
+   exact comparisons against all five success fixtures and explicit errors for
+   all three failure cases. Separate from reference extraction.
 2. **M5.3 — reference feature contract and extraction:** characterize the original
    FASTA/BigWig path with tiny references, including missing/ambiguous bases,
    uncovered values, boundaries, and decimal serialization. GC/MAP extraction
@@ -84,5 +94,5 @@ concordance**. Existing live preparation/analysis concordance remains enabled.
    all-new `target → prepare → analyze` on the supplied data against original
    calls. M5 is complete only after this acceptance run passes.
 
-M5.1 does not validate FASTA/BigWig extraction, arbitrary assemblies, full target
+M5.2 does not validate FASTA/BigWig extraction, arbitrary assemblies, full target
 CLI behavior, performance, or end-to-end calls from newly generated targets.

@@ -131,6 +131,7 @@ Five cases succeed and three intentionally reproduce original failures. The
 harness checks exported RData against `Filtered.txt`, then writes compact arrays,
 inputs, stderr and provenance under `fixtures/` in the output directory. Committed
 captures live in `tests/fixtures/legacy-target/`; their tests run in wheel CI.
-This is geometry characterization, not a target-port comparison. FASTA/BigWig
-features and live old-versus-new target CI are later M5 steps. See
+The Python geometry port now compares every output cell against these captures
+in the fixture tests. FASTA/BigWig features and live old-versus-new target CI are
+later M5 steps. See
 [the target contract](../../docs/target-porting.md).
