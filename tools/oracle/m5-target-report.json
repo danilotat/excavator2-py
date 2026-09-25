@@ -1,0 +1,193 @@
+{
+  "passed": true,
+  "target_id": "af57f48a9255b7b6295ae9f50b6fdcfc841880123886bd11d9634d8cb11eba50",
+  "arrays": {
+    "preparation/target": {
+      "shape": [
+        281567,
+        5
+      ],
+      "exact": true
+    },
+    "preparation/gc": {
+      "shape": [
+        281567
+      ],
+      "exact": true
+    },
+    "preparation/mappability": {
+      "shape": [
+        281567
+      ],
+      "exact": true
+    },
+    "chr1/matrix": {
+      "shape": [
+        26619,
+        2
+      ],
+      "exact": true
+    },
+    "chr2/matrix": {
+      "shape": [
+        22028,
+        2
+      ],
+      "exact": true
+    },
+    "chr3/matrix": {
+      "shape": [
+        17538,
+        2
+      ],
+      "exact": true
+    },
+    "chr4/matrix": {
+      "shape": [
+        12947,
+        2
+      ],
+      "exact": true
+    },
+    "chr5/matrix": {
+      "shape": [
+        14533,
+        2
+      ],
+      "exact": true
+    },
+    "chr6/matrix": {
+      "shape": [
+        14510,
+        2
+      ],
+      "exact": true
+    },
+    "chr7/matrix": {
+      "shape": [
+        13776,
+        2
+      ],
+      "exact": true
+    },
+    "chr8/matrix": {
+      "shape": [
+        10681,
+        2
+      ],
+      "exact": true
+    },
+    "chr9/matrix": {
+      "shape": [
+        11404,
+        2
+      ],
+      "exact": true
+    },
+    "chr10/matrix": {
+      "shape": [
+        11863,
+        2
+      ],
+      "exact": true
+    },
+    "chr11/matrix": {
+      "shape": [
+        14968,
+        2
+      ],
+      "exact": true
+    },
+    "chr12/matrix": {
+      "shape": [
+        14927,
+        2
+      ],
+      "exact": true
+    },
+    "chr13/matrix": {
+      "shape": [
+        6932,
+        2
+      ],
+      "exact": true
+    },
+    "chr14/matrix": {
+      "shape": [
+        8853,
+        2
+      ],
+      "exact": true
+    },
+    "chr15/matrix": {
+      "shape": [
+        9652,
+        2
+      ],
+      "exact": true
+    },
+    "chr16/matrix": {
+      "shape": [
+        11223,
+        2
+      ],
+      "exact": true
+    },
+    "chr17/matrix": {
+      "shape": [
+        14453,
+        2
+      ],
+      "exact": true
+    },
+    "chr18/matrix": {
+      "shape": [
+        5417,
+        2
+      ],
+      "exact": true
+    },
+    "chr19/matrix": {
+      "shape": [
+        13440,
+        2
+      ],
+      "exact": true
+    },
+    "chr20/matrix": {
+      "shape": [
+        6381,
+        2
+      ],
+      "exact": true
+    },
+    "chr21/matrix": {
+      "shape": [
+        3127,
+        2
+      ],
+      "exact": true
+    },
+    "chr22/matrix": {
+      "shape": [
+        5269,
+        2
+      ],
+      "exact": true
+    },
+    "chrX/matrix": {
+      "shape": [
+        11026,
+        2
+      ],
+      "exact": true
+    }
+  },
+  "provenance": {
+    "original_manifest_sha256": "3d7be434a882eadd909af85e723e1cc8b0e0e4654b25b32bfac389235bdefc51",
+    "rewritten_manifest_sha256": "221fee9014dd6db0236197908f14790d52446b81e422a42130cab09f7a5f7a55",
+    "original_baseline_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "comparison_basis": "M4 original-qualified artifacts",
+    "config_sha256": "00b59339855e232d2a2ef8301cf4009a4546311fd610262619b91ad7213ff055"
+  }
+}
