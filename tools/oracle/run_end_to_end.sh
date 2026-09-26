@@ -9,7 +9,8 @@ for name in F4R FastJointSLMLibraryI; do
 done
 sha256sum "$program"/lib/F77/*.so > native-binaries.sha256
 Rscript -e 'sessionInfo()' > legacy-runtime.txt
-perl "$program/TargetPerla.pl" -s /work/legacy-config.yaml -o /work/legacy-target > target.log 2>&1
+python /repo/tools/oracle/time_command.py --report /work/legacy-target-time.json -- \
+    perl "$program/TargetPerla.pl" -s /work/legacy-config.yaml -o /work/legacy-target > target.log 2>&1
 target=/work/legacy-target/synthetic/panel/w_100
 perl "$program/EXCAVATORDataPrepare.pl" -s /work/legacy-samples.yaml -t "$target" -o /work/legacy-prepared -@ 1 > prepare.log 2>&1
 for mode in paired pooling; do

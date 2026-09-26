@@ -15,6 +15,7 @@ import yaml
 from compare_analysis import compare as compare_analysis
 from compare_target import compare as compare_target
 from oracle import BASELINE, ROOT, container_command, file_record, save_json
+from time_command import measure
 
 from excavator2.artifacts import convert_legacy, load_manifest, read_export
 
@@ -123,6 +124,7 @@ def run(output):
                 "export.R",
                 "compare_target.py",
                 "compare_analysis.py",
+                "time_command.py",
             ]
         }
         with (output / "legacy.log").open("w") as log:
@@ -177,15 +179,25 @@ def run(output):
             ]
             for mode in ["paired", "pooling"]
         ]
+        stage_seconds = []
         for index, command in enumerate(commands):
             with (output / f"current-{index}.log").open("w") as log:
-                subprocess.run(
+                seconds = measure(
                     [sys.executable, "-I", "-m", "excavator2", *command],
                     cwd=output,
                     stdout=log,
                     stderr=subprocess.STDOUT,
-                    check=True,
                 )
+                stage_seconds.append(seconds)
+        report["timings"] = {
+            "target": {
+                "original_seconds": json.loads((output / "legacy-target-time.json").read_text())[
+                    "seconds"
+                ],
+                "port_seconds": stage_seconds[0],
+                "runs": 1,
+            }
+        }
         report["target"] = compare_target(output / "converted/target", output / "current-target")
         prepared = load_manifest(output / "current-prepared", "prepared")
         report["prepared"] = {}

@@ -17,6 +17,27 @@ the supplied dataset and a differential test corpus. **Plotting is deferred.**
 See the [compatibility report](docs/compatibility-qualification.md),
 [performance results](docs/performance.md) and [roadmap](docs/python-cpp-porting-roadmap.md).
 
+## CI performance comparison
+
+The table is updated automatically from the latest passing benchmark on
+`dev/porting`. Both versions run on the same Linux CI machine with matching
+scientific outputs. This is a **small synthetic workload, not a real-WES or
+full-pipeline speedup**. Target timing is one run; paired analysis uses three
+measured runs with alternating execution order and one excluded warm-up.
+Interpreter startup and artifact I/O are included; Docker setup and correctness
+checks are excluded. Preparation timing is omitted because the original generates
+plots that the port does not. Neither timed stage generates plots.
+
+<!-- ci-benchmark:start -->
+
+Results will appear after the first successful benchmark publication.
+
+<!-- ci-benchmark:end -->
+
+Full timing and provenance data are retained in CI's `version-benchmark` artifact;
+see [benchmark instructions](benchmarks/README.md) for local reproduction. Hosted
+runner timings vary, so performance numbers are informational, not pass/fail thresholds.
+
 ## Installation
 
 Requirements: **Python 3.11–3.13**, [uv](https://docs.astral.sh/uv/), and a C++17
