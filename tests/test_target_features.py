@@ -2,15 +2,37 @@
 
 import hashlib
 import json
+import re
 from pathlib import Path
 
 import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from excavator2.target_features import target_features
+from excavator2.target_features import _feature_row_indices, target_features
 
 FIXTURES = Path(__file__).parent / "fixtures/legacy-target-features"
+
+
+def test_index_preserves_whole_row_matching_order_and_boundaries():
+    chromosomes = ["chr1", "chr10", "1", "X", "chr1-alt", "chr1.1", "chr1_alt", "é"]
+    # Legacy grep selects matches in any column. Repeated tokens select a row
+    # only once; punctuation and underscores have different word boundaries.
+    rows = np.array(
+        [
+            ["chr10", "1", "10", "chr1:chr1", "IN"],
+            ["chr1-alt", "10", "20", "X_é", "OUT"],
+            ["chr1.1", "1", "20", "é-X", "IN"],
+            ["chr1_alt", "10", "30", "chr10 chr1-alt", "OUT"],
+        ]
+    )
+    indexed = _feature_row_indices(rows, chromosomes)
+    for chromosome in chromosomes:
+        literal = re.compile(rf"(?<!\w){re.escape(chromosome)}(?!\w)")
+        expected = [i for i, row in enumerate(rows) if literal.search("\t".join(row))]
+        assert indexed[chromosome] == expected
+    assert indexed["1"] == [0, 2]
+    assert indexed["chr1"] == [0, 1, 2, 3]
 
 
 def test_feature_fixture_integrity():

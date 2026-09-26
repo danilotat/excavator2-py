@@ -39,6 +39,28 @@ def legacy_decimal(text: str) -> float:
     return sign * math.ldexp(float(significand), -shift)
 
 
+def _feature_row_indices(target, chromosomes):
+    """Index whole-word chromosome occurrences anywhere in each legacy row.
+
+    Canonical chromosome names are word tokens. Index them in one pass instead
+    of scanning all rows once per chromosome. Keep literal boundary matching for
+    names containing punctuation, where tokenization would change semantics.
+    A row is selected at most once per chromosome, in original input order.
+    """
+    selected = {chromosome: [] for chromosome in chromosomes}
+    words = {c for c in chromosomes if re.fullmatch(r"\w+", c)}
+    other = {c: re.compile(rf"(?<!\w){re.escape(c)}(?!\w)") for c in chromosomes if c not in words}
+    tokens = re.compile(r"\w+")
+    for index, row in enumerate(target):
+        line = "\t".join(row)
+        for chromosome in words.intersection(tokens.findall(line)):
+            selected[chromosome].append(index)
+        for chromosome, pattern in other.items():
+            if pattern.search(line):
+                selected[chromosome].append(index)
+    return selected
+
+
 def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
     """Return per-chromosome gc, mappability and two-column first_base arrays.
 
@@ -51,7 +73,7 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
         raise ValueError("target must be a nonempty five-column matrix")
     chromosomes = list(dict.fromkeys(target[:, 0]))
     prefix = "" if any("chr" in c for c in chromosomes) else "chr"
-    lines = ["\t".join(row) for row in target]
+    selected_rows = _feature_row_indices(target, chromosomes)
     result = {}
     with pysam.FastaFile(str(fasta)) as reference, pyBigWig.open(str(bigwig)) as track:
         if not track.isBigWig():
@@ -60,12 +82,9 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
         bw_lengths = track.chroms()
         for chromosome in chromosomes:
             # TargetCreate.sh uses grep -w on the entire row, not column one.
-            pattern = re.compile(rf"(?<!\w){re.escape(chromosome)}(?!\w)")
-            selected = [
-                row for row, line in zip(target, lines, strict=True) if pattern.search(line)
-            ]
             gc, mappability, first_base = [], [], []
-            for chrom, start, end, _, _ in selected:
+            for index in selected_rows[chromosome]:
+                chrom, start, end, _, _ = target[index]
                 chrom = prefix + chrom
                 start, end = int(start), int(end)
                 left = start - 1
