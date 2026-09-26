@@ -9,6 +9,8 @@ complete**, with plotting explicitly deferred by the user. See
 [the final qualification report](compatibility-qualification.md). M7 performance
 work and M8 release qualification remain. The historical plan below retains the
 broader original scope; M6 completion does not claim plot implementation.
+M7.1 now provides a measured target-row indexing improvement with full parity
+checks; see [performance results and remaining M7 work](performance.md).
 
 ## 1. Objective and release contract
 

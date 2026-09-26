@@ -500,6 +500,40 @@
       "name": "excavator2-0.1.0.dev0-cp312-cp312-macosx_15_0_arm64.whl",
       "sha256": "62e024ee68d533456405f08859767d219b2a8c9332d1b9a2133cff5ae2bc3d98"
     },
-    "remote_ci": "pending"
+    "remote_ci": {
+      "passed": true,
+      "revision": "2e75e61cb07307d39d9c82bdb06a2b0fa56f44f6",
+      "url": "https://github.com/danilotat/excavator2-py/actions/runs/36242892970",
+      "jobs": [
+        {
+          "name": "Live legacy concordance (paired and pooling)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (macos-latest, 3.11)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (ubuntu-latest, 3.13)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (ubuntu-latest, 3.11)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (macos-latest, 3.12)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (ubuntu-latest, 3.12)",
+          "conclusion": "success"
+        },
+        {
+          "name": "package (macos-latest, 3.13)",
+          "conclusion": "success"
+        }
+      ]
+    }
   }
 }

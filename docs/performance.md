@@ -63,5 +63,8 @@ matches all 281,567 target windows and every prepared array against the qualifie
 baseline; scientific outputs match the saved original under the M6 gates.
 The whole-row indexing regression includes bare names, cross-column matches,
 repeated tokens, punctuation, underscores and Unicode word boundaries. Existing
-BigWig threshold, precision and malformed-reference cases also pass. Final remote
-CI is pending; details are recorded in the benchmark report.
+BigWig threshold, precision and malformed-reference cases also pass. All seven
+[remote CI jobs](https://github.com/danilotat/excavator2-py/actions/runs/36242892970)
+passed for `2e75e61`, including Linux/macOS Python 3.11–3.13, installed wheels,
+native sanitizers and the complete live legacy concordance chain. M7.1 is
+complete; details are recorded in the benchmark report.
