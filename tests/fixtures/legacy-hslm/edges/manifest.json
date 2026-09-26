@@ -1,0 +1,37 @@
+{
+  "baseline": {
+    "config": ".test/config.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte",
+    "platform": "linux/amd64",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "samples": ".test/sample_sheet.yaml",
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc"
+  },
+  "files": {
+    "filter.tsv": {
+      "sha256": "f8167e5ff9774f58570670ac5d6261aa581c60e5a1f7f1d052fcf8a5cf618a70",
+      "size": 1247
+    },
+    "parameters.tsv": {
+      "sha256": "ea0dd63408452db5360b55cf3cd183a51baf98ae191b8006346f962a4367edd2",
+      "size": 208
+    },
+    "single-window-error.txt": {
+      "sha256": "d7a5f808a5b8337fd13b9df4b3461d6979267c070c70cdb2574165f2c855f60b",
+      "size": 38
+    }
+  },
+  "harness": {
+    "sha256": "4878ef9d9cfa54efff2095cc2da87b633afcab5efe31dfcf958df58383fcf236",
+    "size": 1619
+  },
+  "source": {
+    "sha256": "bce827f9ab27e2067804a493e28389556b0d5e898a32bfdc16edf768c249a747",
+    "size": 5284
+  }
+}

@@ -1,0 +1,5 @@
+Warning message:
+package ‘argparse’ was built under R version 4.4.2 
+Read 2 items
+Error in splitind2:length(seqChrom) : NA/NaN argument
+Execution halted

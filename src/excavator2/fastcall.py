@@ -146,6 +146,8 @@ class _RUniformReplay:
         raw = np.asarray(seed)
         if raw.shape != (626,) or raw.dtype.kind not in "iu":
             raise ValueError("expected the 626 integers of an R Mersenne-Twister .Random.seed")
+        if (raw < np.iinfo(np.int32).min).any() or (raw > np.iinfo(np.int32).max).any():
+            raise ValueError("R RNG state entries must be signed 32-bit integers")
         self.kind = int(raw[0])
         position = int(raw[1])
         if self.kind % 100 != 3 or not 0 <= position <= 624:

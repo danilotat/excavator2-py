@@ -40,6 +40,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--experiment", "-e", choices=("paired", "pooling", "pooled"), required=True
     )
     analyze.add_argument("--parameters", "-p", type=Path)
+    analyze.add_argument(
+        "--r-seed-states",
+        type=Path,
+        help="YAML/JSON mapping of each test sample to its original R .Random.seed before LabelAss",
+    )
 
     for command in (prepare, analyze):
         command.add_argument("--samples", "-s", type=Path, required=True)
@@ -87,6 +92,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.parameters,
                 args.threads,
                 args.force,
+                r_seed_states=args.r_seed_states,
             )
         except (ValueError, OSError, KeyError, FloatingPointError) as error:
             parser.exit(status=1, message=f"excavator2 analyze: {error}\n")

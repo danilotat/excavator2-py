@@ -69,6 +69,14 @@ jobs:
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/end_to_end.py \
             --output .oracle/ci-end-to-end
+      - name: Verify HSLM boundary evidence against pinned original R
+        run: |
+          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_hslm_edges.py \
+            --output .oracle/ci-hslm-edges --compare-fixtures
+      - name: Verify chromosome-arm inference boundaries
+        run: |
+          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_arms.py \
+            --output .oracle/ci-arms --compare-fixtures
       - name: Upload concordance reports, inputs, outputs and logs
         if: always()
         uses: actions/upload-artifact@v4
@@ -79,6 +87,8 @@ jobs:
             .oracle/ci-target-features/
             .oracle/ci-target-geometry/
             .oracle/ci-end-to-end/
+            .oracle/ci-hslm-edges/
+            .oracle/ci-arms/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14

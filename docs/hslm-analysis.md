@@ -136,3 +136,20 @@ logs are uploaded as the `legacy-concordance` artifact. See
 for reproduction and the exact gates. The job now also covers original versus current preparation on small BAMs;
 the large supplied BAM/reference run is not part of this per-PR job. The new harness passes locally; its first GitHub-hosted run
 will occur when these commits are pushed.
+
+## Replaying original FastCall random ties
+
+`analyze --r-seed-states states.yaml` accepts a YAML/JSON mapping from **every
+analyzed test sample name** to the 626 signed integers of its original R
+Mersenne-Twister `.Random.seed`, captured immediately before `LabelAss`.
+This is the complete R state, not the scalar passed to `set.seed()`. Capture it
+from the matching original sample invocation; independently executed samples
+must not be treated as one shared RNG stream.
+
+The CLI validates all states before analysis, replays each sample independently,
+and saves `r_seed_before` and `r_seed_after` in that sample's `checkpoints.npz`.
+The manifest records the state-file checksum and RNG policy. It does not alter
+HSLM, EM fitting, or the original tie rule. Without this option, unique decisions
+work as before and random ties fail explicitly. Replaying the same states and
+inputs produces the same labels; inventing a new state does not establish parity
+with an unrecorded original run.

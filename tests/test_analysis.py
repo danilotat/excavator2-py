@@ -118,6 +118,102 @@ def test_makedata_preserves_cross_chromosome_grouping():
     assert_array_equal(values, [0])
 
 
+def test_cli_records_per_sample_r_state_without_changing_unique_calls(tmp_path):
+    with np.load(FIXTURE.parent / "legacy-fastcall/edges/ties.npz") as data:
+        seed = data["seed_before"]
+    seeds = tmp_path / "seeds.json"
+    seeds.write_text(json.dumps({name: seed.tolist() for name in ("Test1", "Test2")}))
+    output = tmp_path / "results"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "excavator2",
+            "analyze",
+            "--samples",
+            str(FIXTURE / "samples.yaml"),
+            "--input",
+            str(FIXTURE / "inputs/prepared"),
+            "--target",
+            str(FIXTURE / "inputs/target"),
+            "--output",
+            str(output),
+            "--experiment",
+            "paired",
+            "--r-seed-states",
+            str(seeds),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    for sample in ("Test1", "Test2"):
+        for expected in (FIXTURE / "expected/paired" / sample).iterdir():
+            assert lines(output / "Results" / sample / expected.name) == lines(expected)
+        with np.load(output / "Results" / sample / "checkpoints.npz") as data:
+            assert_array_equal(data["r_seed_before"], seed)
+            assert data["r_seed_after"].shape == (626,)
+    manifest = json.loads((output / "manifest.json").read_text())
+    from excavator2.artifacts import digest
+
+    assert manifest["r_seed_states_sha256"] == digest(seeds)
+
+
+def test_analysis_replays_original_ties_independently_per_sample(tmp_path, monkeypatch):
+    from dataclasses import replace
+
+    from excavator2 import analyze
+
+    with np.load(FIXTURE.parent / "legacy-fastcall/edges/ties.npz") as archive:
+        expected = {key: archive[key] for key in archive.files}
+    real_fit = analyze.fit_fastcall
+
+    def tied_fit(*args, **kwargs):
+        fit = real_fit(*args, **kwargs)
+        assert len(fit.posterior) == 4
+        return replace(fit, posterior=expected["posterior"][:4])
+
+    monkeypatch.setattr(analyze, "fit_fastcall", tied_fit)
+    seeds = tmp_path / "seeds.json"
+    seeds.write_text(
+        json.dumps({name: expected["seed_before"].tolist() for name in ("Test1", "Test2")})
+    )
+    output = tmp_path / "results"
+    run_analysis(
+        FIXTURE / "samples.yaml",
+        FIXTURE / "inputs/prepared",
+        FIXTURE / "inputs/target",
+        output,
+        "paired",
+        r_seed_states=seeds,
+    )
+    for sample in ("Test1", "Test2"):
+        with np.load(output / "Results" / sample / "checkpoints.npz") as data:
+            assert_array_equal(data["labels"], expected["calls"][:4, 0])
+            from excavator2.fastcall import assign_labels
+
+            rest = assign_labels(expected["posterior"][4:], r_seed=data["r_seed_after"])
+            assert_array_equal(rest.labels, expected["calls"][4:, 0])
+            assert_array_equal(rest.r_seed, expected["seed_after"])
+
+
+@pytest.mark.parametrize("states", [{}, {"Unknown": []}, {"Test1": [], "Test2": []}])
+def test_invalid_r_states_do_not_publish_results(tmp_path, states):
+    seeds = tmp_path / "seeds.json"
+    seeds.write_text(json.dumps(states))
+    output = tmp_path / "results"
+    with pytest.raises(ValueError, match="R"):
+        run_analysis(
+            FIXTURE / "samples.yaml",
+            FIXTURE / "inputs/prepared",
+            FIXTURE / "inputs/target",
+            output,
+            "paired",
+            r_seed_states=seeds,
+        )
+    assert not output.exists()
+
+
 def test_legacy_converter_preserves_character_values(tmp_path):
     from excavator2.artifacts import convert_legacy
 

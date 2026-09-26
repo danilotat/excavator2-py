@@ -120,6 +120,14 @@ def test_unsupported_rng_kind_fails_explicitly():
         assign_labels(load_case("ties")["posterior"], r_seed=state)
 
 
+@pytest.mark.parametrize("word", [-(2**31) - 1, 2**31])
+def test_rng_state_rejects_out_of_range_words(word):
+    state = load_case("ties")["seed_before"].astype(np.int64)
+    state[2] = word
+    with pytest.raises(ValueError, match="signed 32-bit"):
+        assign_labels(load_case("ties")["posterior"], r_seed=state)
+
+
 def test_golden_fixture_checksums():
     original = json.loads((FIXTURES / "manifest.json").read_text())
     assert (

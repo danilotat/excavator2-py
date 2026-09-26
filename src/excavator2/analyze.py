@@ -136,6 +136,8 @@ def run_analysis(
     parameters=None,
     threads=1,
     force=False,
+    *,
+    r_seed_states=None,
 ):
     if threads != 1:
         raise ValueError("M3 supports --threads 1; parallel analysis is not yet qualified")
@@ -150,6 +152,17 @@ def run_analysis(
     if prepared["target_id"] != target["target_id"]:
         raise ValueError("prepared and target identities differ")
     design = experimental_design(read_yaml(samples), experiment)
+    seeds = {}
+    if r_seed_states is not None:
+        seeds = read_yaml(r_seed_states)
+        if set(seeds) != {test for test, _ in design}:
+            raise ValueError("R RNG states must contain exactly the analyzed test sample names")
+        # Validate every state before computing or publishing anything; empty
+        # posteriors consume no RNG words and return the canonical signed state.
+        seeds = {
+            name: assign_labels(np.empty((0, 5)), r_seed=state).r_seed
+            for name, state in seeds.items()
+        }
     params = read_yaml(parameters) if parameters else DEFAULTS
     if set(params) != set(DEFAULTS) or any(set(params[k]) != set(DEFAULTS[k]) for k in DEFAULTS):
         raise ValueError("parameters must contain the documented HSLM and FastCall fields")
@@ -182,7 +195,7 @@ def run_analysis(
                 upper=float(fc["u"]),
                 lower=float(fc["d"]),
             )
-            calls = assign_labels(fit.posterior)
+            calls = assign_labels(fit.posterior, r_seed=seeds.get(test))
             folder = temporary / "Results" / test
             folder.mkdir(parents=True)
             write_results(folder, test, rows, starts, ends, original, calls, target, target_folder)
@@ -196,6 +209,11 @@ def run_analysis(
                 posterior=fit.posterior,
                 labels=calls.labels,
                 fastcall_trace=fit.trace,
+                **(
+                    {"r_seed_before": seeds[test], "r_seed_after": calls.r_seed}
+                    if test in seeds
+                    else {}
+                ),
             )
             summaries[test] = {
                 "windows": len(rows),
@@ -215,6 +233,8 @@ def run_analysis(
             "sample_design_sha256": digest(samples),
             "backend": "scalar",
             "threads": 1,
+            "rng_policy": "per-sample-original-R-state" if seeds else "reject-random-ties",
+            "r_seed_states_sha256": digest(r_seed_states) if seeds else None,
         }
         (temporary / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         temporary.rename(output)
