@@ -14,6 +14,9 @@ def main():
     args = parser.parse_args()
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
+    # Docker writes root-owned files on Linux. Keep the directory host-owned
+    # so the invoking user can add the provenance manifest after the run.
+    (output / "edges").mkdir()
     source = output / "LibraryJSLMIn.R"
     source.write_bytes(
         subprocess.check_output(
