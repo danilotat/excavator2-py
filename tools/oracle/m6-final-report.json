@@ -1,0 +1,754 @@
+{
+  "milestone": "M6",
+  "date": "2026-09-26",
+  "status": "local acceptance complete; current-revision remote CI pending push approval",
+  "local_passed": true,
+  "remote_final_revision_passed": false,
+  "source_commit": "06ea804c56288acc6731248ba2f9b60b24ef5ea6",
+  "scope": "Scientific arrays, decisions, tables and VCFs; plotting explicitly deferred by user",
+  "tests": {
+    "editable_passed": 188,
+    "clean_wheel_passed": 188,
+    "clean_wheel_cwd": "/tmp",
+    "isolated_mode": true,
+    "lint": true,
+    "format": true,
+    "diff_check": true
+  },
+  "sanitizers": {
+    "kernels": [
+      "fastcall",
+      "hslm"
+    ],
+    "address": true,
+    "undefined_behavior": true,
+    "passed": true
+  },
+  "runtime": {
+    "platform": "macOS-15.7.9-arm64-arm-64bit",
+    "installed_package": "/tmp/excavator-m6-final-venv/lib/python3.12/site-packages/excavator2",
+    "production_python_matches_checkout": true,
+    "source_sha256": {
+      "__init__.py": "e0331acf58de4044cbea920d6b30afb4593654dd25c3922725b21f16fe2ee12a",
+      "__main__.py": "b160d175fff01ed2f41f09e5a37a843d4c8e8ba769a8dd02288702a79a3bf6e3",
+      "analyze.py": "b82c3548144035a4686c75e9dfe09af6e147548440e1087fe54d240dcee8b646",
+      "artifacts.py": "ed1c0d4b4ac146871cef05b7ae6a5411546b0a822a77ac0f6f8bd24ef7cbbc85",
+      "cli.py": "bd2caf02ee353174fcc0b936dc48e11c9248dfabfb11c52f935955e8d34ad39b",
+      "fastcall.py": "fbe3bca02758cd15902d8f7b6d3ddcac57631f7ad064d4dd0ced273099d6f8e6",
+      "hslm.py": "e57fefdef2b3a2c3440b79d7953195beb477e22779f7c9a41ddb317c841458d3",
+      "normalization.py": "b513d4dc3756da8131b9e7d222b86fca133ba591d83f073f411d8137c12141e8",
+      "prepare.py": "af575d8a6abeb343666c87f9f7b7b0fd1c70db5a2f63e3927ccacc9cf05fa4d7",
+      "reads.py": "2c10ed2ed62ad1bf88da54bb658f5732b57c9a3890de31862f948beec37fff21",
+      "reference/__init__.py": "25ad6d5612d1b31eb663af6b0a1232ee908e764d9853c7b266e512f3724d85af",
+      "reference/fastcall.py": "76a13d52e114693116a09f017b8fe71384b5ccabbbeb276d5fb5395d28638887",
+      "reference/hslm.py": "58703b3f924c3dac8ffbbeb887a8b899cc05272b202accb652b0022dfa487cf8",
+      "reference/reads.py": "ab114c70615f9c1eaa9c4ee005a93e84cc1b187dd6b9b2ce3b607efef6f3bd79",
+      "target.py": "0f8e39f261ed704cd3bcf08e486317a3604b18105c5d56084f15b5807d74283b",
+      "target_features.py": "d139628e5259cd15ad8badfe64d3aab57c361db7ec06f8a58e21e69d8822eb44",
+      "target_pipeline.py": "f55f637a9d6aca9f77c16c56f8b653359f09d8974c0b349deee5d150f73c61a4",
+      "writers.py": "72ce1d6ab0907bcecd02b05e99e93744a48dc6c2a938918611895cec3a0e85b7"
+    },
+    "dependencies": {
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "pysam": "0.24.1",
+      "pyBigWig": "0.3.26",
+      "PyYAML": "6.0.3"
+    }
+  },
+  "artifacts": [
+    {
+      "name": "excavator2-0.1.0.dev0-cp312-cp312-macosx_15_0_arm64.whl",
+      "sha256": "87988be47e88177baf10411f62b8378e31efdef649b2c527e287ae01a56302b7",
+      "bytes": 111342
+    },
+    {
+      "name": "excavator2-0.1.0.dev0.tar.gz",
+      "sha256": "4ba778377a7b32f965ef31c40f10ae823cb08267c4a435b6df62de3a0cc8e120",
+      "bytes": 524290
+    }
+  ],
+  "native_sources": {
+    "cpp/bindings/hslm.cpp": {
+      "name": "hslm.cpp",
+      "sha256": "4d1712509ab41f009ca77df13dbc2af1c7f4545e990cac785582ef9d502e96bb",
+      "bytes": 2888
+    },
+    "cpp/bindings/module.cpp": {
+      "name": "module.cpp",
+      "sha256": "a8ade4df4c787da1f048d91c6efda44da72a986f3d2436bd4d171e0df3c3fe11",
+      "bytes": 5148
+    },
+    "cpp/fastcall.cpp": {
+      "name": "fastcall.cpp",
+      "sha256": "7f9c414dad8dfe94ab3911640e872fd41f354b55100fc53df413d9c1fdc5eeac",
+      "bytes": 4432
+    },
+    "cpp/hslm.cpp": {
+      "name": "hslm.cpp",
+      "sha256": "05fbb1d7ce849e22218e8e7c55d9643dba40939d617a0638921b241181773e3b",
+      "bytes": 2820
+    },
+    "cpp/include/excavator2/fastcall.hpp": {
+      "name": "fastcall.hpp",
+      "sha256": "156d3f229674cb04646cb0dbe7435bdd3a201d2d7938234750c4a9534e9b19e2",
+      "bytes": 920
+    },
+    "cpp/include/excavator2/hslm.hpp": {
+      "name": "hslm.hpp",
+      "sha256": "0c67865ee14d5bd3ab29fdc6df7c5ad43c1c55bcc9dce95ebc9a10720f002840",
+      "bytes": 692
+    },
+    "cpp/tests/fastcall_smoke.cpp": {
+      "name": "fastcall_smoke.cpp",
+      "sha256": "9c6e49d212fe1f688521912d6e398153e1886d8f011e5aedb1a189aa55d3af96",
+      "bytes": 1373
+    },
+    "cpp/tests/hslm_smoke.cpp": {
+      "name": "hslm_smoke.cpp",
+      "sha256": "e8d229080293c322b6564fca694a9a73b6d26b0b2ba6d90a5bb6106118560993",
+      "bytes": 1141
+    }
+  },
+  "supplied_pipeline": {
+    "passed": true,
+    "target": {
+      "passed": true,
+      "target_id": "af57f48a9255b7b6295ae9f50b6fdcfc841880123886bd11d9634d8cb11eba50",
+      "arrays": {
+        "preparation/target": {
+          "shape": [
+            281567,
+            5
+          ],
+          "exact": true
+        },
+        "preparation/gc": {
+          "shape": [
+            281567
+          ],
+          "exact": true
+        },
+        "preparation/mappability": {
+          "shape": [
+            281567
+          ],
+          "exact": true
+        },
+        "chr1/matrix": {
+          "shape": [
+            26619,
+            2
+          ],
+          "exact": true
+        },
+        "chr2/matrix": {
+          "shape": [
+            22028,
+            2
+          ],
+          "exact": true
+        },
+        "chr3/matrix": {
+          "shape": [
+            17538,
+            2
+          ],
+          "exact": true
+        },
+        "chr4/matrix": {
+          "shape": [
+            12947,
+            2
+          ],
+          "exact": true
+        },
+        "chr5/matrix": {
+          "shape": [
+            14533,
+            2
+          ],
+          "exact": true
+        },
+        "chr6/matrix": {
+          "shape": [
+            14510,
+            2
+          ],
+          "exact": true
+        },
+        "chr7/matrix": {
+          "shape": [
+            13776,
+            2
+          ],
+          "exact": true
+        },
+        "chr8/matrix": {
+          "shape": [
+            10681,
+            2
+          ],
+          "exact": true
+        },
+        "chr9/matrix": {
+          "shape": [
+            11404,
+            2
+          ],
+          "exact": true
+        },
+        "chr10/matrix": {
+          "shape": [
+            11863,
+            2
+          ],
+          "exact": true
+        },
+        "chr11/matrix": {
+          "shape": [
+            14968,
+            2
+          ],
+          "exact": true
+        },
+        "chr12/matrix": {
+          "shape": [
+            14927,
+            2
+          ],
+          "exact": true
+        },
+        "chr13/matrix": {
+          "shape": [
+            6932,
+            2
+          ],
+          "exact": true
+        },
+        "chr14/matrix": {
+          "shape": [
+            8853,
+            2
+          ],
+          "exact": true
+        },
+        "chr15/matrix": {
+          "shape": [
+            9652,
+            2
+          ],
+          "exact": true
+        },
+        "chr16/matrix": {
+          "shape": [
+            11223,
+            2
+          ],
+          "exact": true
+        },
+        "chr17/matrix": {
+          "shape": [
+            14453,
+            2
+          ],
+          "exact": true
+        },
+        "chr18/matrix": {
+          "shape": [
+            5417,
+            2
+          ],
+          "exact": true
+        },
+        "chr19/matrix": {
+          "shape": [
+            13440,
+            2
+          ],
+          "exact": true
+        },
+        "chr20/matrix": {
+          "shape": [
+            6381,
+            2
+          ],
+          "exact": true
+        },
+        "chr21/matrix": {
+          "shape": [
+            3127,
+            2
+          ],
+          "exact": true
+        },
+        "chr22/matrix": {
+          "shape": [
+            5269,
+            2
+          ],
+          "exact": true
+        },
+        "chrX/matrix": {
+          "shape": [
+            11026,
+            2
+          ],
+          "exact": true
+        }
+      }
+    },
+    "prepared": {
+      "Control1": {
+        "windows": 281567,
+        "all_arrays_exact": true
+      },
+      "Test1": {
+        "windows": 281567,
+        "all_arrays_exact": true
+      }
+    },
+    "analysis": {
+      "files": {
+        "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+          "original_sha256": "1c06a3a46bc0dd2f77900d8d19b4d85ffa7d207e5491e05b6e26881b5da9cef4",
+          "rewritten_sha256": "9f0ab201d02bd1e1407721de85d9202b893e3223007e110b8f9fecac33b179b5",
+          "rows": 15,
+          "text_equal": true
+        },
+        "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+          "original_sha256": "412dc7d3960e8fc57451518d732c8d629b73d844ae89bb67f01f6f17f97349ec",
+          "rewritten_sha256": "958da27ac065439b5a05a69ff2478fe07063056c8caa4522c3c43a01559b8e0d",
+          "rows": 16,
+          "text_equal": true
+        },
+        "Results/Test1/FastCallResults_Test1.txt": {
+          "original_sha256": "c8b8c2a88f316493ec46993ed0ab48998d3f3f8facd7ba5961270addca7a2c05",
+          "rewritten_sha256": "c8b8c2a88f316493ec46993ed0ab48998d3f3f8facd7ba5961270addca7a2c05",
+          "rows": 1,
+          "text_equal": true
+        },
+        "Results/Test1/HSLMResults_Test1.txt": {
+          "original_sha256": "c2a424e6176eba040391dede225fffc8a971d4565e0922c91cff6c1db16fbeed",
+          "rewritten_sha256": "ee6b3c9481adafb71fed1a33b77cd28694cfddc8e1423adfbd79bbd5903ba270",
+          "rows": 281568,
+          "text_equal": false,
+          "max_absolute_error": 1.0061396160665481e-16,
+          "decision_mismatches": 0
+        }
+      },
+      "excluded_fields": [
+        "VCF fileDate"
+      ],
+      "passed": true
+    }
+  },
+  "fresh_non_normal_pipeline": {
+    "baseline": {
+      "config": ".test/config.yaml",
+      "design": ".test/sample_file_list.yaml",
+      "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+      "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte",
+      "platform": "linux/amd64",
+      "reference_urls": {
+        "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+        "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+      },
+      "samples": ".test/sample_sheet.yaml",
+      "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc"
+    },
+    "designs": {
+      "paired": {
+        "excluded_fields": [
+          "VCF fileDate"
+        ],
+        "files": {
+          "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+            "original_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "rewritten_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "rows": 19,
+            "text_equal": true
+          },
+          "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+            "original_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "rewritten_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "rows": 212,
+            "text_equal": true
+          },
+          "Results/Test1/FastCallResults_Test1.txt": {
+            "original_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+            "rewritten_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+            "rows": 5,
+            "text_equal": true
+          },
+          "Results/Test1/HSLMResults_Test1.txt": {
+            "decision_mismatches": 0,
+            "max_absolute_error": 0.0,
+            "original_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+            "rewritten_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+            "rows": 4114,
+            "text_equal": true
+          }
+        },
+        "non_normal_calls": 4,
+        "passed": true
+      },
+      "pooling": {
+        "excluded_fields": [
+          "VCF fileDate"
+        ],
+        "files": {
+          "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
+            "original_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "rewritten_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "rows": 19,
+            "text_equal": true
+          },
+          "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
+            "original_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "rewritten_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "rows": 212,
+            "text_equal": true
+          },
+          "Results/Test1/FastCallResults_Test1.txt": {
+            "original_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+            "rewritten_sha256": "fb5a66c53f4bd65d93db236dd7d8901571b3452ac12c1ec209c9ba0844f1ccda",
+            "rows": 5,
+            "text_equal": true
+          },
+          "Results/Test1/HSLMResults_Test1.txt": {
+            "decision_mismatches": 0,
+            "max_absolute_error": 0.0,
+            "original_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+            "rewritten_sha256": "4f3b940cf6b3a1ad1721cfb072d9d2bcc7182b6ad45c4895a4d6336aaa881c61",
+            "rows": 4114,
+            "text_equal": true
+          }
+        },
+        "non_normal_calls": 4,
+        "passed": true
+      }
+    },
+    "harness": {
+      "compare_analysis.py": {
+        "sha256": "bd0015a55fdb92003854a3e1147c4c99e3f0faf0d348d380a4e7a16f9009d7a9",
+        "size": 3618
+      },
+      "compare_target.py": {
+        "sha256": "722992507d87b48d5e1b204e41ffd296586fa7954885a1d5316a3c9e6de74369",
+        "size": 1735
+      },
+      "end_to_end.py": {
+        "sha256": "420b2f464d83bf7e7fcfd182ff3c7b794c6eea7f8471cdf42a128df0b0117f3a",
+        "size": 9853
+      },
+      "export.R": {
+        "sha256": "020ba4cde187711eee92ecf4fb11e3ddd63953a4a2403e709a5fa7c4e8c92f3a",
+        "size": 1833
+      },
+      "run_end_to_end.sh": {
+        "sha256": "5524b27729d538cd7c652b0b47edc16e0794509fdec538e3d2c6f2a28f8b2958",
+        "size": 1052
+      }
+    },
+    "inputs": {
+      "inputs/Control1.bam": {
+        "sha256": "99a23ac2854966bd2c20ac45a08e7fa200f37e6bc32611c274b53e7e0331e665",
+        "size": 422112
+      },
+      "inputs/Control1.bam.bai": {
+        "sha256": "bd63f9fca29312babffa5bb6dd503e88eb1ed38192726d9a262b3c4dfdc7e5a5",
+        "size": 2592
+      },
+      "inputs/Control2.bam": {
+        "sha256": "97fb3f7c60931da40b3172059fe7b2cecda3f2b75cd8e14e92533ba2b261a65b",
+        "size": 503741
+      },
+      "inputs/Control2.bam.bai": {
+        "sha256": "0f6f87a20198a6e06ad2b738488184b8fa87093ac3dbc650440a00907207a69c",
+        "size": 2592
+      },
+      "inputs/Test1.bam": {
+        "sha256": "7629db9f1784e1cb6170ee46f43c137e9caf4a293e010cb863b901ce4af5f073",
+        "size": 424346
+      },
+      "inputs/Test1.bam.bai": {
+        "sha256": "b56ed95d35bf9c4ce9ad42e742ba0343d43521eac7e148a7298cc2e68ee36425",
+        "size": 2592
+      },
+      "inputs/centromeres.tsv": {
+        "sha256": "9131fe779e7c21617927f2c73d00b8c17a460f781ce999b638a6a4063814c812",
+        "size": 397
+      },
+      "inputs/coordinates.tsv": {
+        "sha256": "04de7b8516c452251d76af7f5e57ff9833a4c5f5bd83da0ae220d9dd7d1c6312",
+        "size": 312
+      },
+      "inputs/gaps.tsv": {
+        "sha256": "1262078906bb2f26d9f6f6c6a7b3ba12210bdebb80eafc3d29e792b76e2f8cf3",
+        "size": 727
+      },
+      "inputs/reference.bw": {
+        "sha256": "ae5b2a3bf50aff918069524f3f1c1d3291f554350d6e26b9356e4b90085c059a",
+        "size": 2161
+      },
+      "inputs/reference.fa": {
+        "sha256": "ece9107696d00f1cab0fbd646573655caeefb8de3912d6d97d14130b3306d3da",
+        "size": 552174
+      },
+      "inputs/reference.fa.fai": {
+        "sha256": "19a331b0502ad0983eec0de4f5d366d151abd7003170d2785133a0a43c79b08a",
+        "size": 694
+      },
+      "inputs/target.bed": {
+        "sha256": "bb5f1678797555217d159afd5b43097c76a2d88b1eb92d2391ec24c223ba4939",
+        "size": 318
+      }
+    },
+    "legacy_plotting": {
+      "failed_modes": [
+        "paired",
+        "pooling"
+      ],
+      "qualified": false
+    },
+    "passed": true,
+    "prepared": {
+      "Control1": {
+        "exact": true,
+        "windows": 4113
+      },
+      "Control2": {
+        "exact": true,
+        "windows": 4113
+      },
+      "Test1": {
+        "exact": true,
+        "windows": 4113
+      }
+    },
+    "scope": "scientific data and calls; plots excluded",
+    "target": {
+      "arrays": {
+        "chr1/matrix": {
+          "exact": true,
+          "shape": [
+            175,
+            2
+          ]
+        },
+        "chr10/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr11/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr12/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr13/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr14/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr15/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr16/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr17/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr18/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr19/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr2/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr20/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr21/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr22/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr3/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr4/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr5/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr6/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr7/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr8/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chr9/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "chrX/matrix": {
+          "exact": true,
+          "shape": [
+            179,
+            2
+          ]
+        },
+        "preparation/gc": {
+          "exact": true,
+          "shape": [
+            4113
+          ]
+        },
+        "preparation/mappability": {
+          "exact": true,
+          "shape": [
+            4113
+          ]
+        },
+        "preparation/target": {
+          "exact": true,
+          "shape": [
+            4113,
+            5
+          ]
+        }
+      },
+      "passed": true,
+      "target_id": "860951e220373e8bffa50a616cf6c9ac0d9963b95d88da63a626574f678ce4c8"
+    }
+  },
+  "boundary_replays": {
+    "hslm_edges": {
+      "passed": true,
+      "evidence_manifest": {
+        "name": "manifest.json",
+        "sha256": "d2e6689687e7e6db3053b6d284e4514d48c01cd080171b05e25f92bb9f405db9",
+        "bytes": 1464
+      }
+    },
+    "arms": {
+      "passed": true,
+      "evidence_manifest": {
+        "name": "manifest.json",
+        "sha256": "48607536da3420b8db7c373fb1bc661c10f65778884cc709efad39194d4a9aef",
+        "bytes": 3820
+      }
+    }
+  },
+  "previous_remote_ci": {
+    "commit": "b08c9db1674874fb03c3633035540bfc53a12e05",
+    "passed": true,
+    "url": "https://github.com/danilotat/excavator2-py/actions/runs/36225567930",
+    "applies_to_final_revision": false
+  },
+  "remaining_gate": {
+    "action": "push dev/porting to https://github.com/danilotat/excavator2-py and verify Python port CI",
+    "reason": "Automatic approval review rejected repository egress to that destination; explicit approval requested and pending."
+  },
+  "unsupported_or_deferred": [
+    "plots",
+    "CRAM",
+    "analysis parallelism",
+    "alternative SIMD backends",
+    "arbitrary assemblies/contigs outside corpus",
+    "undefined original numerical domains"
+  ]
+}

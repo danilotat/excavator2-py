@@ -215,3 +215,25 @@ the live old/new full chain, native sanitizer smoke checks, and successful remot
 Linux/macOS Python 3.11–3.13 package/concordance jobs. Final evidence is recorded
 in `tools/oracle/m6-final-report.json`. Plotting remains deferred as requested;
 performance and release/distribution work remain M7 and M8 respectively.
+
+### Final local result — 2026-09-26
+
+Revision `06ea804` passes all 188 tests in both editable and isolated clean-wheel
+runs, lint/format checks, and native AddressSanitizer/UndefinedBehaviorSanitizer
+smoke tests. The installed Python sources match the committed production files.
+A fresh supplied-data target → prepare → analyze run matches all 281,567 windows
+and every prepared array against the qualified baseline; scientific outputs
+match the saved original under the existing field-specific gates. A fresh
+pinned-original synthetic run matches all target/preparation arrays and four
+non-normal calls in each of paired and pooling. The M6.4/M6.5 boundary evidence
+also reproduces independently. See `tools/oracle/m6-final-report.json` for artifact
+hashes, runtime, source identity and complete comparison results.
+
+**Local M6 acceptance is complete with plotting deferred. Final remote sign-off
+is pending.** The previous revision `b08c9db` passed
+[Python port CI](https://github.com/danilotat/excavator2-py/actions/runs/36225567930).
+It does not qualify the new code. Automatic approval review blocked the push to
+`danilotat/excavator2-py` because authorization for that destination was not
+established; permission has been requested. Once authorized, push `dev/porting`,
+require all package/concordance jobs to pass for the final code revision, and
+record that run before marking the remote gate complete.
