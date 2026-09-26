@@ -1,6 +1,6 @@
-# M6 compatibility qualification
+# M6 compatibility qualification — complete
 
-M6 qualifies the Python/C++ compatibility implementation for the supplied BAM
+M6 is complete as of 2026-09-26 for the Python/C++ compatibility implementation for the supplied BAM
 acceptance dataset and the committed differential corpus. The user explicitly
 deferred plotting on 2026-09-26; scientific arrays, decisions, tables and VCFs are
 the acceptance scope. No original scientific defect is repaired by this milestone.
@@ -60,7 +60,7 @@ not just final calls. See the M5 reports for the original comparison basis.
 | Area | Evidence established | Remaining gap |
 | --- | --- | --- |
 | Supplied paired pipeline | New target through final calls; 281,567 windows per sample | Supplied example has no non-normal calls |
-| Non-normal paired/pooling | Original fixtures, stage CI and M6.2 complete fresh-reference chain | Remote confirmation of the newly added full-chain CI step |
+| Non-normal paired/pooling | Original fixtures, stage CI and M6.2 complete fresh-reference chain | Final full-chain CI passed; larger real cohorts remain future validation |
 | Target geometry | Eight cases; live old/new comparison; supplied target exact | Additional assemblies, unusual contigs and broader interval edge cases |
 | Target features | Ten cases plus all supplied arrays; binary32/R decimal replay; exact parity immediately below/at UCSC's 3,000-block switch | Additional assemblies and broader missing-data patterns |
 | Read counting | Endpoints, overlaps, terminal/chunk cases; supplied exact counts | CRAM explicitly unsupported; empty streams rejected; unmapped/duplicate filtering and secondary/supplementary/QC-failed retention tested |
@@ -216,7 +216,7 @@ Linux/macOS Python 3.11–3.13 package/concordance jobs. Final evidence is recor
 in `tools/oracle/m6-final-report.json`. Plotting remains deferred as requested;
 performance and release/distribution work remain M7 and M8 respectively.
 
-### Final local result — 2026-09-26
+### Final acceptance — 2026-09-26
 
 Revision `06ea804` passes all 188 tests in both editable and isolated clean-wheel
 runs, lint/format checks, and native AddressSanitizer/UndefinedBehaviorSanitizer
@@ -229,11 +229,17 @@ non-normal calls in each of paired and pooling. The M6.4/M6.5 boundary evidence
 also reproduces independently. See `tools/oracle/m6-final-report.json` for artifact
 hashes, runtime, source identity and complete comparison results.
 
-**Local M6 acceptance is complete with plotting deferred. Final remote sign-off
-is pending.** The previous revision `b08c9db` passed
-[Python port CI](https://github.com/danilotat/excavator2-py/actions/runs/36225567930).
-It does not qualify the new code. Automatic approval review blocked the push to
-`danilotat/excavator2-py` because authorization for that destination was not
-established; permission has been requested. Once authorized, push `dev/porting`,
-require all package/concordance jobs to pass for the final code revision, and
-record that run before marking the remote gate complete.
+**M6 is complete with plotting explicitly deferred.** All seven jobs passed in
+[final Python port CI](https://github.com/danilotat/excavator2-py/actions/runs/36241672479)
+for revision `367275d7a804c4ded368d01618476be32c0cbe53`: Linux/macOS Python 3.11–3.13,
+installed wheels, native sanitizers, and live legacy concordance including the
+fresh full chain and both new boundary harnesses. The initial remote attempt
+exposed a Linux-only oracle-directory ownership problem after successful value
+comparison. Creating that directory on the host fixed provenance publication;
+no production scientific behavior changed. The successful rerun closes the gate.
+
+The evidence report identifies the production-code revision used locally and the
+final qualified revision including that harness fix. Subsequent documentation-only
+commits record these results; they do not widen the tested scientific domain.
+M7 performance work is next. Plotting and M8 release/distribution qualification
+remain separate work.

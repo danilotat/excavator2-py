@@ -4,6 +4,12 @@ Planning baseline: repository commit `92f9c6e79fdeae32a09b99fa6994edc9a53e4efc`,
 
 This is an implementation plan, not a claim that the port or equivalence tests already exist. The legacy pipeline was inspected but not executed for this document.
 
+Current milestone status (2026-09-26): **M6 scientific-output qualification is
+complete**, with plotting explicitly deferred by the user. See
+[the final qualification report](compatibility-qualification.md). M7 performance
+work and M8 release qualification remain. The historical plan below retains the
+broader original scope; M6 completion does not claim plot implementation.
+
 ## 1. Objective and release contract
 
 Build an installable, Python-first package with a small C++ acceleration core. Readability and maintainability for a Python developer are architectural requirements. Python owns the pipeline, target construction, file access through existing libraries, normalization, experimental design, algorithm setup/control, segment filtering, calling policy, outputs, and plots. Custom C++ is reserved for demanding numerical kernels, initially HSLM transitions/emissions/Viterbi and FastCall's repeated E/M calculations.

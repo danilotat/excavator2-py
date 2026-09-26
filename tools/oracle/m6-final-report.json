@@ -1,9 +1,9 @@
 {
   "milestone": "M6",
   "date": "2026-09-26",
-  "status": "local acceptance complete; current-revision remote CI pending push approval",
+  "status": "M6 complete for scientific-output compatibility; plotting deferred by user",
   "local_passed": true,
-  "remote_final_revision_passed": false,
+  "remote_final_revision_passed": true,
   "source_commit": "06ea804c56288acc6731248ba2f9b60b24ef5ea6",
   "scope": "Scientific arrays, decisions, tables and VCFs; plotting explicitly deferred by user",
   "tests": {
@@ -739,10 +739,7 @@
     "url": "https://github.com/danilotat/excavator2-py/actions/runs/36225567930",
     "applies_to_final_revision": false
   },
-  "remaining_gate": {
-    "action": "push dev/porting to https://github.com/danilotat/excavator2-py and verify Python port CI",
-    "reason": "Automatic approval review rejected repository egress to that destination; explicit approval requested and pending."
-  },
+  "remaining_gate": null,
   "unsupported_or_deferred": [
     "plots",
     "CRAM",
@@ -750,5 +747,53 @@
     "alternative SIMD backends",
     "arbitrary assemblies/contigs outside corpus",
     "undefined original numerical domains"
-  ]
+  ],
+  "qualified_revision": "367275d7a804c4ded368d01618476be32c0cbe53",
+  "final_remote_ci": {
+    "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479",
+    "revision": "367275d7a804c4ded368d01618476be32c0cbe53",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Live legacy concordance (paired and pooling)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243657"
+      },
+      {
+        "name": "package (ubuntu-latest, 3.13)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243778"
+      },
+      {
+        "name": "package (ubuntu-latest, 3.11)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243782"
+      },
+      {
+        "name": "package (ubuntu-latest, 3.12)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243791"
+      },
+      {
+        "name": "package (macos-latest, 3.12)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243806"
+      },
+      {
+        "name": "package (macos-latest, 3.13)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243816"
+      },
+      {
+        "name": "package (macos-latest, 3.11)",
+        "conclusion": "success",
+        "url": "https://github.com/danilotat/excavator2-py/actions/runs/36241672479/job/108403243839"
+      }
+    ]
+  },
+  "ci_harness_fix": {
+    "commit": "367275d7a804c4ded368d01618476be32c0cbe53",
+    "reason": "Host-create HSLM evidence directory before Docker so Linux CI can write provenance; boundary data already matched on the first run.",
+    "production_algorithm_changed": false
+  }
 }
