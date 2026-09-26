@@ -58,17 +58,24 @@ not just final calls. See the M5 reports for the original comparison basis.
 | Supplied paired pipeline | New target through final calls; 281,567 windows per sample | Supplied example has no non-normal calls |
 | Non-normal paired/pooling | Original fixtures, stage CI and M6.2 complete fresh-reference chain | Remote confirmation of the newly added full-chain CI step |
 | Target geometry | Eight cases; live old/new comparison; supplied target exact | Additional assemblies, unusual contigs and broader interval edge cases |
-| Target features | Eight cases plus all supplied arrays; binary32/R decimal replay | UCSC 3,000-block algorithm-switch boundary, additional missing-data patterns |
+| Target features | Ten cases plus all supplied arrays; binary32/R decimal replay; exact parity immediately below/at UCSC's 3,000-block switch | Additional assemblies and broader missing-data patterns |
 | Read counting | Endpoints, overlaps, terminal/chunk cases; supplied exact counts | CRAM, empty selected streams and broader alignment-flag combinations |
 | Numerical kernels | Original fixtures, native/reference comparison, sanitizer smoke checks | Broader tie/degenerate-arm cases and additional supported runtime configurations |
 | Reproducibility | One/four-worker preparation tests; pinned oracle; installed wheels | CLI RNG-state interface for random FastCall ties; analysis parallelism remains unsupported |
 | Plots and diagnostics | Scientific data tables/VCF comparisons | Plots remain unimplemented and unqualified; no visual parity claim |
 | Packaging | Linux/macOS Python 3.11–3.13 CI and independent clean-wheel run | Release notices, migration guide and distribution qualification belong to M8 |
 
-Next bounded step: **M6.3, target-feature boundary qualification**, starting with
-the UCSC 3,000-block algorithm switch and its rounding implications. Then address
-remaining numerical edge cases and explicitly resolve plot scope before signing
-off M6. Keep scientific bug fixes
+## M6.3 reference-feature boundary qualification
+
+M6.3 qualifies the UCSC 3,000-block algorithm switch with generated 2,999- and
+3,000-row inputs. The pinned original log proves that the cases exercise the
+per-interval and chromosome-buffer paths respectively. Both use the same cycle of
+fully covered, partially covered, zero-valued and uncovered intervals; their 2,999
+shared MAP values are identical, and the port exactly matches every GC, MAP and
+FRB value on both sides of the switch.
+
+Next, address remaining numerical edge cases and explicitly resolve plot scope
+before signing off M6. Keep scientific bug fixes
 and performance changes separate from qualification.
 
 

@@ -59,9 +59,12 @@ def run(output, compare=False):
         ("chr1", 71, 99),
         ("chr2", 1, 99),
     ]
+    threshold_intervals = [row for row in intervals if row[0] == "chr1"]
     cases = {
         "standard": intervals,
         "precision": [("chr4", 1, 89)],
+        "blocks_2999": [threshold_intervals[i % len(threshold_intervals)] for i in range(2999)],
+        "blocks_3000": [threshold_intervals[i % len(threshold_intervals)] for i in range(3000)],
         "bare_names": [(c.removeprefix("chr"), s, e) for c, s, e in intervals],
         "past_end": [("chr1", 95, 105)],
         "last_base": [("chr1", 100, 100)],
@@ -97,7 +100,14 @@ def run(output, compare=False):
                 stdout=log,
                 stderr=subprocess.STDOUT,
             )
-        expected_success = name in {"standard", "bare_names", "past_end", "precision"}
+        expected_success = name in {
+            "standard",
+            "precision",
+            "blocks_2999",
+            "blocks_3000",
+            "bare_names",
+            "past_end",
+        }
         if (result.returncode == 0) != expected_success:
             raise ValueError(f"unexpected legacy status for {name}: {result.returncode}")
         records[name] = {"status": result.returncode}

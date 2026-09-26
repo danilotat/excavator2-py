@@ -143,10 +143,11 @@ python tools/oracle/characterize_features.py --output .oracle/target-features --
 ```
 
 This generates tiny FASTA/BigWig references and runs the pinned original
-`TargetCreate.sh` plus its R save scripts unchanged. Four success cases compare
+`TargetCreate.sh` plus its R save scripts unchanged. Six success cases compare
 all GC, mappability and first-base arrays exactly; four cases require matching
-failure outcomes. The eight cases include ambiguous/lowercase sequence, uncovered
-BigWig bases, decimal rounding, bare-name grep behavior and boundary failures.
+failure outcomes. The ten cases include ambiguous/lowercase sequence, uncovered
+BigWig bases, decimal rounding, bare-name grep behavior, boundary failures and
+the 2,999/3,000-block UCSC algorithm switch.
 Without `--compare-current`, the tool only captures original outputs.
 
 The CI concordance job runs this against the installed wheel on every workflow

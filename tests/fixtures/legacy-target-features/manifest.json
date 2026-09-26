@@ -16,6 +16,12 @@
     "bare_names": {
       "status": 0
     },
+    "blocks_2999": {
+      "status": 0
+    },
+    "blocks_3000": {
+      "status": 0
+    },
     "last_base": {
       "status": 1
     },
@@ -50,6 +56,30 @@
     "bare_names/target.tsv": {
       "sha256": "f01c145e68a3be8224f9ea97b76f459b1c256f00fadd3324f46aa88f49c75622",
       "size": 117
+    },
+    "blocks_2999/expected.npz": {
+      "sha256": "5d073eaef13015e8b8c07868fde9fd9ed1f189a542785d309fcfa15d4087d7bf",
+      "size": 1097
+    },
+    "blocks_2999/legacy.log": {
+      "sha256": "264c3330fb1feb9e80232ea565fd07ec6885547f1163c89bb3c57622eee6e131",
+      "size": 258
+    },
+    "blocks_2999/target.tsv": {
+      "sha256": "d8b189e1fb4dc508100465544ca75f8c46007e7a044be001f45464e2a20d776f",
+      "size": 55873
+    },
+    "blocks_3000/expected.npz": {
+      "sha256": "8937e8167bbd3c36a6b68aba90133209ef260a401357770a5653f02aa00bac1c",
+      "size": 1099
+    },
+    "blocks_3000/legacy.log": {
+      "sha256": "0ebdaafb7d71b6e8b592f49d8c9704ee6cb3575e4bd1467de37b9247a731209d",
+      "size": 281
+    },
+    "blocks_3000/target.tsv": {
+      "sha256": "3c8c6a1fcef30db5454d245723b82f229a3053e782733068d737f91d72388cb8",
+      "size": 55893
     },
     "last_base/legacy.log": {
       "sha256": "91b7608f2538664d08fad6fefcfa31b2465d69f77229f6f774cecbea52226e28",
@@ -133,8 +163,8 @@
     }
   },
   "harness": {
-    "sha256": "f2afdd4c8ee48af6de0d071694e324eb59b5c5fe4eecb1ac749d6c868f32c3dd",
-    "size": 7367
+    "sha256": "09ed9060e6744437e6c761c5ce1a1d2bf71b8cc5175c802b5500b5f51d64c871",
+    "size": 7747
   },
   "source": {
     "excavator2/lib/R/SaveFRB.R": {

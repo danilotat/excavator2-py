@@ -130,10 +130,14 @@ The unchanged legacy scripts confirm these additional rules:
   can consequently differ. No silent padding or truncation is performed.
 - A zero target start produces a negative GC/MAP BED coordinate and fails.
 
-Eight cases in `tests/fixtures/legacy-target-features` cover fractional GC and
+Ten cases in `tests/fixtures/legacy-target-features` cover fractional GC and
 mapping values, lowercase and ambiguous bases, partial/missing/zero BigWig
 coverage, bare chromosome names, and reference boundaries. Four cases succeed
-with exact array comparisons; four reproduce legacy failures. Small FASTA,
+with exact array comparisons; four reproduce legacy failures. Two additional
+successful cases contain 2,999 and 3,000 rows, proving exact parity across UCSC's
+switch from per-interval queries to chromosome-buffer accumulation. Their shared
+MAP values are identical after the legacy six-significant-digit and R decimal
+roundtrips. Small FASTA,
 index, BigWig, target inputs, expected arrays, logs and hashes are committed.
 
 Reproduce live original-versus-current feature comparison with:

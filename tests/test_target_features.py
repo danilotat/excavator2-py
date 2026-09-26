@@ -21,7 +21,10 @@ def test_feature_fixture_integrity():
         assert hashlib.sha256(content).hexdigest() == record["sha256"]
 
 
-@pytest.mark.parametrize("name", ["standard", "bare_names", "past_end", "precision"])
+@pytest.mark.parametrize(
+    "name",
+    ["standard", "bare_names", "past_end", "precision", "blocks_2999", "blocks_3000"],
+)
 def test_features_match_original(name):
     target = np.loadtxt(FIXTURES / name / "target.tsv", dtype=str, ndmin=2)
     actual = target_features(target, FIXTURES / "reference.fa", FIXTURES / "reference.bw")
@@ -32,6 +35,18 @@ def test_features_match_original(name):
         for chrom, features in actual.items():
             for kind, key in [("GCC", "gc"), ("MAP", "mappability"), ("FRB", "first_base")]:
                 assert_array_equal(features[key], expected[f"{kind}_{chrom}"])
+
+
+def test_bigwig_3000_block_algorithm_switch_preserves_values():
+    below = FIXTURES / "blocks_2999"
+    boundary = FIXTURES / "blocks_3000"
+    assert "processing chromosomes" not in (below / "legacy.log").read_text()
+    assert "processing chromosomes" in (boundary / "legacy.log").read_text()
+    with (
+        np.load(below / "expected.npz", allow_pickle=False) as expected_below,
+        np.load(boundary / "expected.npz", allow_pickle=False) as expected_boundary,
+    ):
+        assert_array_equal(expected_below["MAP_chr1"], expected_boundary["MAP_chr1"][:2999])
 
 
 @pytest.mark.parametrize("name", ["zero_start", "last_base", "missing_contig", "partial_skips"])
