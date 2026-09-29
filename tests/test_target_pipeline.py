@@ -70,6 +70,9 @@ def test_target_cli_publishes_compatible_artifact(config, tmp_path):
         text=True,
     )
     assert result.returncode == 0, result.stderr
+    assert "excavator2 target: [1/4] Loading" in result.stderr
+    assert "excavator2 target: [3/4] Extracting reference features" in result.stderr
+    assert "excavator2 target: Complete:" in result.stderr
     manifest = load_manifest(output, "target")
     with np.load(output / manifest["preparation"], allow_pickle=False) as data:
         target = data["target"]

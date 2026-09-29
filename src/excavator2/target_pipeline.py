@@ -13,12 +13,14 @@ from .target import target_geometry
 from .target_features import target_features
 
 
-def run_target(config, output, force=False):
+def run_target(config, output, force=False, progress=None):
     output = Path(output)
     if force or output.exists():
         raise ValueError(
             "target generation requires a new output directory; --force is not supported"
         )
+    if progress:
+        progress("[1/4] Loading configuration and reference inputs")
     settings = read_yaml(config)
     reference, target_settings = settings.get("Reference"), settings.get("Target")
     if not isinstance(reference, dict) or not isinstance(target_settings, dict):
@@ -38,6 +40,8 @@ def run_target(config, output, force=False):
         raise ValueError("Target.BED must be a path")
     paths["BED"] = Path(target_settings["BED"]).resolve(strict=True)
     # As with the original CLI, relative reference paths use the working directory.
+    if progress:
+        progress("[2/4] Building target windows")
     target = target_geometry(
         paths["BED"], paths["Chromosomes"], paths["Gaps"], target_settings.get("Window")
     )
@@ -49,6 +53,8 @@ def run_target(config, output, force=False):
     }
     if any(chrom not in centers for chrom in chromosomes):
         raise ValueError("centromere table is missing target chromosomes")
+    if progress:
+        progress(f"[3/4] Extracting reference features for {len(target):,} windows")
     features = target_features(target, paths["FASTA"], paths["BigWig"])
     # A malformed legacy target may contain skipped or duplicated feature rows.
     # Preserve extraction behavior, but do not publish a falsely usable artifact.
@@ -62,6 +68,8 @@ def run_target(config, output, force=False):
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix=".excavator2-target-", dir=output.parent))
     try:
+        if progress:
+            progress("[4/4] Writing target artifacts")
         manifest = {
             "schema": 1,
             "kind": "target",
@@ -97,6 +105,8 @@ def run_target(config, output, force=False):
         manifest["files"]["Filtered.txt"] = digest(temporary / "Filtered.txt")
         (temporary / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
         temporary.rename(output)
+        if progress:
+            progress(f"Complete: {output}")
     except BaseException:
         shutil.rmtree(temporary)
         raise

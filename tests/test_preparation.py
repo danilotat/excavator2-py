@@ -134,6 +134,10 @@ def test_prepare_cli_matches_legacy_and_is_thread_independent(tmp_path, threads)
         text=True,
     )
     assert result.returncode == 0, result.stderr
+    assert "excavator2 prepare: Preparing 2 samples" in result.stderr
+    assert "1/2 Prepared" in result.stderr
+    assert "2/2 Prepared" in result.stderr
+    assert "excavator2 prepare: Complete:" in result.stderr
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["threads"] == threads
     with np.load(fixture / "expected.npz") as old:

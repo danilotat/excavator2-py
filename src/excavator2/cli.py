@@ -1,6 +1,7 @@
 """CLI contract for the port. Commands never pretend to run unfinished stages."""
 
 import argparse
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
@@ -65,7 +66,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         from .target_pipeline import run_target
 
         try:
-            run_target(args.config, args.output, args.force)
+            run_target(
+                args.config,
+                args.output,
+                args.force,
+                progress=lambda message: print(
+                    f"excavator2 target: {message}", file=sys.stderr, flush=True
+                ),
+            )
         except (ValueError, OSError, KeyError, RuntimeError) as error:
             parser.exit(status=1, message=f"excavator2 target: {error}\n")
         return 0
@@ -74,7 +82,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         try:
             run_preparation(
-                args.samples, args.target, args.output, args.threads, args.mapq, args.force
+                args.samples,
+                args.target,
+                args.output,
+                args.threads,
+                args.mapq,
+                args.force,
+                progress=lambda message: print(
+                    f"excavator2 prepare: {message}", file=sys.stderr, flush=True
+                ),
             )
         except (ValueError, OSError, KeyError, FloatingPointError) as error:
             parser.exit(status=1, message=f"excavator2 prepare: {error}\n")
