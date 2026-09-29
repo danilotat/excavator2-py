@@ -38,7 +38,7 @@ def test_counts_match_original_chunk_policy(name):
             assert_array_equal(count_positions(chunks, f["starts"], f["ends"]), f["counts"])
 
 
-def test_normalization_trace_matches_original():
+def test_preparation_preserves_raw_density():
     with np.load(FIXTURES / "normalization.npz") as f:
         n = len(f["counts"])
         target = np.column_stack(
@@ -51,14 +51,8 @@ def test_normalization_trace_matches_original():
             ]
         )
         result = normalize(f["counts"], target, f["gc"], f["mappability"])
-        for name, original in [
-            ("weighted", "weighted"),
-            ("size", "size"),
-            ("map", "mapped"),
-            ("gc", "corrected"),
-            ("normalized", "normalized"),
-        ]:
-            assert_allclose(result[name], f[original], rtol=1e-14, atol=1e-15)
+        assert_allclose(result["normalized"], f["counts"] / f["lengths"])
+        assert_array_equal(result["normalized"] == 0, f["counts"] == 0)
 
 
 def test_selection_keeps_mapq_secondary_supplementary_and_mates(tmp_path):
@@ -104,7 +98,7 @@ def test_numpy_counter_matches_literal_state_machine_on_overlapping_windows():
 
 
 @pytest.mark.parametrize("threads", [1, 4])
-def test_prepare_cli_matches_legacy_and_is_thread_independent(tmp_path, threads):
+def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, threads):
     import json
     import subprocess
     import sys
@@ -144,15 +138,12 @@ def test_prepare_cli_matches_legacy_and_is_thread_independent(tmp_path, threads)
         for filename in manifest["samples"].values():
             with np.load(output / filename) as new:
                 assert_array_equal(new["counts"], old["counts"])
-                assert_array_equal(new["matrix"], old["matrix"])
-                for field, legacy in [
-                    ("weighted", "weighted"),
-                    ("size", "size"),
-                    ("map", "mapped"),
-                    ("gc", "corrected"),
-                    ("normalized", "normalized"),
-                ]:
-                    assert_allclose(new[field], old[legacy], rtol=1e-13, atol=2e-15)
+                assert manifest["depth_policy"] == "raw-counts-v1"
+                assert_array_equal(
+                    new["matrix"][:, [0, 1, 2, 3, 4, 6]], old["matrix"][:, [0, 1, 2, 3, 4, 6]]
+                )
+                assert_allclose(new["normalized"], old["weighted"])
+                assert_allclose(new["matrix"][:, 5].astype(float), old["weighted"])
 
 
 def test_failed_preparation_does_not_publish_output(tmp_path):

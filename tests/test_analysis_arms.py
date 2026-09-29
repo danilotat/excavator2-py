@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
-from excavator2.analyze import DEFAULTS, ratios, segment_profile
+from excavator2.analyze import DEFAULTS, segment_profile
 from excavator2.artifacts import load_manifest
 
 FIXTURE = Path(__file__).parent / "fixtures/legacy-analysis"
@@ -39,7 +39,11 @@ def test_arm_geometry_against_original_inference(case, sample):
             return data["matrix"]
 
     test = matrix(sample)
-    values = ratios(test, [matrix(sample.replace("Test", "Control"))])
+    values = np.loadtxt(
+        FIXTURE / "expected/paired" / sample / f"HSLMResults_{sample}.txt",
+        dtype=str,
+        skiprows=1,
+    )[:, 4].astype(float)
     if case["case"] in ERRORS:
         port_error, legacy_error = ERRORS[case["case"]]
         assert int(case["status"]) != 0

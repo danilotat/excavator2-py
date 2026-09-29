@@ -1,4 +1,4 @@
-"""Analysis from exported legacy prepared counts; scientific policy stays in Python."""
+"""Analysis from calibrated raw counts; scientific policy stays in Python."""
 
 import json
 import re
@@ -7,10 +7,12 @@ import tempfile
 from pathlib import Path
 
 import numpy as np
+from scipy.special import logsumexp
 
 from .artifacts import digest, load_manifest, read_yaml
 from .fastcall import assign_labels, correct_cellularity, fit_fastcall
 from .hslm import estimate_parameters, segment
+from .normalization import DEPTH_POLICY
 from .writers import number, write_results
 
 DEFAULTS = {
@@ -48,27 +50,61 @@ def experimental_design(samples, experiment):
     raise ValueError("unsupported experimental design")
 
 
-def ratios(test, controls):
-    """Legacy ordered pooling, character roundtrip, then separate IN/OUT centering."""
-    counts = controls[0][:, 5].astype(float)
-    for control in controls[1:]:
-        counts = counts + control[:, 5].astype(float)
-    if len(controls) > 1:
-        counts /= len(controls)
-        # PoolingCreateControl cbind converts the new vector to character.
-        counts = np.array([float(format(x, ".15g")) for x in counts])
-    with np.errstate(divide="ignore", invalid="ignore"):
-        result = np.log2(test[:, 5].astype(float) / counts)
-    if not np.isfinite(result).all():
-        raise ValueError("legacy ratios contain non-finite values")
-    classes = test[:, 6]
-    if not np.isin(classes, ["IN", "OUT"]).all():
-        raise ValueError("unrecognized target class")
-    for kind in ["IN", "OUT"]:
-        mask = classes == kind
-        if mask.any():
-            result[mask] -= np.median(result[mask])
-    return result
+def calibration_policy(path, names):
+    """Require an independently established diploid depth scale."""
+    if path is None:
+        raise ValueError("analysis requires --calibration with independent sample exposures")
+    policy = read_yaml(path)
+    if set(policy) != {"baseline", "bias", "exposure_source", "exposures"}:
+        raise ValueError("calibration requires baseline, bias, exposure_source and exposures")
+    if policy["baseline"] != "diploid-reference" or policy["bias"] != "shared":
+        raise ValueError(
+            "supported calibration requires diploid-reference baseline and shared bias"
+        )
+    if policy["exposure_source"] != "independent":
+        raise ValueError("sample exposures must be independent of the analyzed CN profile")
+    exposures = policy["exposures"]
+    if not isinstance(exposures, dict) or set(exposures) != set(names):
+        raise ValueError("calibration exposures must cover exactly the analyzed samples")
+    for value in exposures.values():
+        if (
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not np.isfinite(value)
+            or value <= 0
+        ):
+            raise ValueError("sample exposures must be finite positive numbers")
+    return policy
+
+
+def ratios(test, controls, *, test_exposure, control_exposures):
+    """Calibrated raw-depth ratios with a half-read prior and no centering."""
+    test, controls = np.asarray(test, dtype=float), np.asarray(controls, dtype=float)
+    exposure = np.asarray([test_exposure, *control_exposures], dtype=float)
+    if (
+        test.ndim != 1
+        or not test.size
+        or controls.ndim != 2
+        or controls.shape[1:] != test.shape
+        or not len(controls)
+        or exposure.shape != (len(controls) + 1,)
+    ):
+        raise ValueError("raw counts and exposures require matching nonempty shapes")
+    if not np.isfinite(exposure).all() or (exposure <= 0).any():
+        raise ValueError("sample exposures must be finite positive numbers")
+    for counts in (test, controls):
+        if (
+            not np.isfinite(counts).all()
+            or (counts < 0).any()
+            or (counts != np.floor(counts)).any()
+        ):
+            raise ValueError("missing or invalid raw counts; expected nonnegative integers")
+    if (controls == 0).any():
+        raise ValueError("zero-depth reference windows are unsupported (including both-zero)")
+    # Equal-weight controls after exposure calibration; matching window lengths cancel.
+    reference = logsumexp(np.log(controls + 0.5) - np.log(exposure[1:, None]), axis=0)
+    reference -= np.log(len(controls))
+    return (np.log(test + 0.5) - np.log(exposure[0]) - reference) / np.log(2)
 
 
 def segment_profile(matrix, values, target, parameters):
@@ -138,6 +174,7 @@ def run_analysis(
     force=False,
     *,
     r_seed_states=None,
+    calibration=None,
 ):
     if threads != 1:
         raise ValueError("M3 supports --threads 1; parallel analysis is not yet qualified")
@@ -166,8 +203,12 @@ def run_analysis(
     params = read_yaml(parameters) if parameters else DEFAULTS
     if set(params) != set(DEFAULTS) or any(set(params[k]) != set(DEFAULTS[k]) for k in DEFAULTS):
         raise ValueError("parameters must contain the documented HSLM and FastCall fields")
-    matrices = {}
-    for name in dict.fromkeys(name for test, controls in design for name in [test, *controls]):
+    names = list(dict.fromkeys(name for test, controls in design for name in [test, *controls]))
+    policy = calibration_policy(calibration, names)
+    if prepared.get("depth_policy") != DEPTH_POLICY:
+        raise ValueError("analysis requires raw-counts-v1 preparation; re-prepare BAMs")
+    matrices, raw_counts = {}, {}
+    for name in names:
         if name not in prepared["samples"]:
             raise ValueError(f"missing prepared sample: {name}")
         filename = prepared["samples"][name]
@@ -175,8 +216,15 @@ def run_analysis(
             raise ValueError("sample file is not covered by manifest checksum")
         with np.load(input_folder / filename, allow_pickle=False) as archive:
             matrix = archive["matrix"]
+            if "counts" not in archive:
+                raise ValueError("prepared sample lacks raw counts; re-prepare BAMs")
+            raw_counts[name] = archive["counts"]
         if matrix.ndim != 2 or matrix.shape[1] != 7:
             raise ValueError("expected seven-column prepared matrix")
+        if raw_counts[name].shape != (len(matrix),):
+            raise ValueError("raw counts and prepared windows differ")
+        if not np.isin(matrix[:, 6], ["IN", "OUT"]).all():
+            raise ValueError("unrecognized target class")
         matrices[name] = matrix
     metadata = next(iter(matrices.values()))[:, [0, 1, 2, 3, 4, 6]]
     if any(not np.array_equal(m[:, [0, 1, 2, 3, 4, 6]], metadata) for m in matrices.values()):
@@ -186,7 +234,12 @@ def run_analysis(
     try:
         summaries = {}
         for test, controls in design:
-            values = ratios(matrices[test], [matrices[c] for c in controls])
+            values = ratios(
+                raw_counts[test],
+                [raw_counts[c] for c in controls],
+                test_exposure=policy["exposures"][test],
+                control_exposures=[policy["exposures"][c] for c in controls],
+            )
             rows, path, indices = segment_profile(matrices[test], values, target, params)
             starts, ends, original = summarize(rows)
             fc = params["FastCall"]
@@ -226,6 +279,11 @@ def run_analysis(
             "kind": "analysis",
             "target_id": target["target_id"],
             "experiment": experiment,
+            "calibration": policy,
+            "calibration_sha256": digest(calibration),
+            "depth_policy": DEPTH_POLICY,
+            "pseudocount_reads": 0.5,
+            "centering": "none",
             "parameters": params,
             "samples": summaries,
             "input_manifest_sha256": digest(input_folder / "manifest.json"),

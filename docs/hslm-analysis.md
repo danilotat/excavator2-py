@@ -1,5 +1,11 @@
 # M3: HSLM and analysis from legacy prepared data
 
+> Historical parity record. Current preparation and analysis follow the
+> [signal calibration contract](signal-calibration.md): preserve raw counts,
+> require `--calibration`, and apply no covariate correction or median centering.
+> Legacy prepared inputs and the analysis commands below are superseded.
+
+
 M3 is implemented for single-profile paired and pooled analysis from converted
 legacy normalized counts. Python owns the experimental design, ratios, global
 parameter estimation, chromosome arms, filtering, segment summaries, FastCall

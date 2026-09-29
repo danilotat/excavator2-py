@@ -1,5 +1,11 @@
 # M4: BAM preparation with legacy parity
 
+> Historical parity record. Current preparation and analysis follow the
+> [signal calibration contract](signal-calibration.md): preserve raw counts,
+> require `--calibration`, and apply no covariate correction or median centering.
+> Legacy prepared inputs and the analysis commands below are superseded.
+
+
 M4 adds the `prepare` command against an exported original target. BAM decoding
 uses pysam/HTSlib; batched counting uses NumPy searches, and size/MAP/GC correction
 remains readable Python/NumPy. No custom C++ was added. Existing HSLM/FastCall kernels

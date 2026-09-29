@@ -39,7 +39,7 @@ jobs:
           "$RUNNER_TEMP/wheel-venv/bin/excavator2" --help
 
   concordance:
-    name: Live legacy concordance (paired and pooling)
+    name: Signal contract and retained legacy kernel concordance
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -52,11 +52,11 @@ jobs:
       - name: Install current wheel in a separate environment
         run: |
           uv venv --python 3.12 "$RUNNER_TEMP/concordance-venv"
-          uv pip install --python "$RUNNER_TEMP/concordance-venv/bin/python" dist/*.whl
-      - name: Run pinned old version and current wheel on fresh shared inputs
+          uv pip install --python "$RUNNER_TEMP/concordance-venv/bin/python" dist/*.whl pytest
+      - name: Verify calibrated analysis and raw preparation contracts
         run: |
-          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/concordance.py \
-            --output .oracle/ci-concordance
+          "$RUNNER_TEMP/concordance-venv/bin/python" -m pytest \
+            tests/test_signal_preservation.py tests/test_preparation.py tests/test_analysis.py
       - name: Compare target geometry against the pinned legacy script
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_target.py \
@@ -65,10 +65,6 @@ jobs:
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_features.py \
             --output .oracle/ci-target-features --compare-current
-      - name: Compare the complete pipeline on fresh non-normal inputs
-        run: |
-          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/end_to_end.py \
-            --output .oracle/ci-end-to-end
       - name: Verify HSLM boundary evidence against pinned original R
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_hslm_edges.py \
@@ -77,75 +73,16 @@ jobs:
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_arms.py \
             --output .oracle/ci-arms --compare-fixtures
-      - name: Benchmark comparable original and port stages
-        run: |
-          "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/benchmark_versions.py \
-            --concordance .oracle/ci-end-to-end --repeats 3
-          python tools/update_benchmark_readme.py \
-            --report .oracle/ci-end-to-end/benchmark/report.json \
-            --expected-sha "$GITHUB_SHA" --summary "$GITHUB_STEP_SUMMARY"
-      - name: Upload benchmark result
-        uses: actions/upload-artifact@v4
-        with:
-          name: version-benchmark
-          path: .oracle/ci-end-to-end/benchmark/report.json
-          include-hidden-files: true
-          retention-days: 30
       - name: Upload concordance reports, inputs, outputs and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: legacy-concordance
           path: |
-            .oracle/ci-concordance/
             .oracle/ci-target-features/
             .oracle/ci-target-geometry/
-            .oracle/ci-end-to-end/
             .oracle/ci-hslm-edges/
             .oracle/ci-arms/
           include-hidden-files: true
           if-no-files-found: warn
           retention-days: 14
-
-  publish-benchmark:
-    name: Update README benchmark
-    needs: [package, concordance]
-    if: github.event_name == 'push' && github.repository == 'danilotat/excavator2-py' && github.ref == 'refs/heads/dev/porting'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    concurrency:
-      group: benchmark-readme-dev-porting
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: dev/porting
-      - uses: actions/download-artifact@v4
-        with:
-          name: version-benchmark
-          path: ${{ runner.temp }}/version-benchmark
-      - name: Publish only if the tested revision is still current
-        run: |
-          git fetch origin dev/porting
-          if [ "$(git rev-parse HEAD)" != "$GITHUB_SHA" ] || [ "$(git rev-parse origin/dev/porting)" != "$GITHUB_SHA" ]; then
-            echo "A newer revision exists; leaving its README untouched."
-            exit 0
-          fi
-          python tools/update_benchmark_readme.py \
-            --report "$RUNNER_TEMP/version-benchmark/report.json" \
-            --expected-sha "$GITHUB_SHA" --readme README.md
-          cp "$RUNNER_TEMP/version-benchmark/report.json" benchmarks/reports/ci-latest.json
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add README.md benchmarks/reports/ci-latest.json
-          if git diff --cached --quiet; then exit 0; fi
-          git commit -m 'docs: refresh CI performance comparison [skip ci]'
-          if ! git push origin HEAD:dev/porting; then
-            git fetch origin dev/porting
-            if [ "$(git rev-parse origin/dev/porting)" != "$GITHUB_SHA" ]; then
-              echo "A newer revision won the race; skipping this result."
-              exit 0
-            fi
-            exit 1
-          fi

@@ -1,5 +1,10 @@
 # EXCAVATOR2 Python/C++ port
 
+Current analysis requires [independent signal calibration](docs/signal-calibration.md)
+and newly prepared raw-count artifacts. Per-sample covariate correction, zero
+replacement and IN/OUT median centering have been removed (P14, P13, A17).
+
+
 [![Python port CI](https://github.com/danilotat/excavator2-py/actions/workflows/python-port.yml/badge.svg?branch=dev%2Fporting)](https://github.com/danilotat/excavator2-py/actions/workflows/python-port.yml)
 
 This project reimplements **EXCAVATOR2**, a copy-number variant caller that uses
