@@ -1,4 +1,4 @@
-"""Prepare legacy-compatible normalized BAM counts using Python and NumPy."""
+"""Prepare observed BAM counts without sample-specific signal correction."""
 
 import json
 import re
@@ -17,13 +17,11 @@ from .artifacts import (
     read_yaml,
     window_metadata,
 )
-from .normalization import normalize
+from .normalization import DEPTH_POLICY, normalize
 from .reads import count_bam
 
 
-def run_preparation(
-    samples, target_folder, output, threads=1, mapq=20, force=False, progress=None
-):
+def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=False, progress=None):
     target_folder, output = Path(target_folder), Path(output)
     if force or output.exists():
         raise ValueError("preparation requires a new output directory; --force is not supported")
@@ -88,6 +86,7 @@ def run_preparation(
         result = {
             "schema": 1,
             "kind": "prepared",
+            "depth_policy": DEPTH_POLICY,
             "target_id": manifest["target_id"],
             "samples": {name: filename for name, filename, _, _ in results},
             "files": {filename: checksum for _, filename, checksum, _ in results},

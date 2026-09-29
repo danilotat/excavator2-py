@@ -1,8 +1,4 @@
-"""Python FastCall policy and iteration loop, preserving the original R behavior.
-
-This API accepts already constructed segment values. Segmentation, segment-table
-construction, CN/VCF rendering, and CLI integration are separate future stages.
-"""
+"""Fit and classify segment values with truncated FastCall components."""
 
 from dataclasses import dataclass
 
@@ -18,13 +14,14 @@ FloatArray = NDArray[np.float64]
 @dataclass(frozen=True)
 class FastCallFit:
     means: FloatArray
+    # Positive infinity denotes a uniform density within the class bounds.
     deviations: FloatArray
     priors: FloatArray
     bounds: FloatArray
     iterations: int
     converged: bool
     posterior: FloatArray
-    # Each row: five deviations, five priors, legacy stopping statistic.
+    # Each row: five deviations, five priors, truncated log-likelihood.
     trace: FloatArray
 
 
@@ -72,34 +69,19 @@ def start_conditions(
     return means, deviations
 
 
-def stopping_statistic(posterior: FloatArray, priors: FloatArray) -> float:
-    """R sum(PosteriorP(...) * prior), including column-major vector recycling.
-
-    This is intentionally NOT a log likelihood or a column-weighted sum.
-    """
-    flat = posterior.ravel(order="F")
-    recycled = np.resize(priors, flat.size)
-    return float(np.sum(flat * recycled))
-
-
 def fit_fastcall(
-    values: ArrayLike, *, upper: float = 0.35, lower: float = 0.5, backend: str = "native"
+    values: ArrayLike,
+    *,
+    upper: float = 0.35,
+    lower: float = 0.5,
+    backend: str = "native",
 ) -> FastCallFit:
-    """Fit the legacy five-state model to one value per segment.
-
-    Use backend="python" for the readable reference; "native" runs only the
-    E/M and posterior kernels in C++. Both share this control loop.
-
-    `lower` is the positive magnitude d in the legacy YAML; the normal state's
-    lower bound is -d. No segment-length weighting or learned means are added.
-    """
+    """Fit five states; the normal interval is [-lower, upper]."""
     values = np.require(segment_values(values), dtype=np.float64, requirements=["C", "A"])
     if backend == "native":
-        posterior = _core.fastcall_posterior
         expectation = _core.fastcall_expectation
         maximization = _core.fastcall_maximization
     elif backend == "python":
-        posterior = reference_kernels.posterior
         expectation = reference_kernels.expectation
         maximization = reference_kernels.maximization
     else:
@@ -110,28 +92,35 @@ def fit_fastcall(
     priors = np.array([0.05, 0.1, 0.7, 0.1, 0.05])
     edges = [-20.0, -1.3, -lower, upper, 0.9, 20.0]
     bounds = np.column_stack([edges[:-1], edges[1:]])
-    probabilities = posterior(values, means, deviations, priors)
-    statistic = stopping_statistic(probabilities, priors)
+    probabilities, likelihood = expectation(values, means, deviations, priors, bounds)
     trace = []
     converged = False
     for iteration in range(1, 1001):
-        responsibilities = expectation(values, means, deviations, priors, bounds)
-        if not np.isfinite(responsibilities).all():
-            raise FloatingPointError("legacy FastCall produced non-finite responsibilities")
-        deviations, priors = maximization(values, responsibilities, means, deviations)
-        if not np.isfinite(deviations).all() or not np.isfinite(priors).all():
-            raise FloatingPointError("legacy FastCall produced non-finite parameters")
-        probabilities = posterior(values, means, deviations, priors)
-        previous = statistic
-        statistic = stopping_statistic(probabilities, priors)
-        if not np.isfinite(statistic):
-            raise FloatingPointError("legacy FastCall produced a non-finite stopping statistic")
-        trace.append(np.r_[deviations, priors, statistic])
-        if abs(statistic - previous) < 1e-5:
+        old_precision, old_priors, previous = 1 / deviations**2, priors, likelihood
+        deviations, priors = maximization(values, probabilities, means, deviations, bounds)
+        probabilities, likelihood = expectation(values, means, deviations, priors, bounds)
+        if not np.isfinite(likelihood):
+            raise FloatingPointError("non-finite truncated log-likelihood")
+        if likelihood < previous - 1e-10 * (1 + abs(previous)):
+            raise FloatingPointError("truncated log-likelihood decreased")
+        trace.append(np.r_[deviations, priors, likelihood])
+        precision_change = np.max(np.abs(1 / deviations**2 - old_precision) / (1 + old_precision))
+        if (
+            abs(likelihood - previous) <= 1e-8 * (1 + abs(previous))
+            and precision_change <= 1e-8
+            and np.max(np.abs(priors - old_priors)) <= 1e-8
+        ):
             converged = True
             break
     return FastCallFit(
-        means, deviations, priors, bounds, iteration, converged, probabilities, np.array(trace)
+        means,
+        deviations,
+        priors,
+        bounds,
+        iteration,
+        converged,
+        probabilities,
+        np.array(trace),
     )
 
 

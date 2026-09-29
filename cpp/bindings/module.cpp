@@ -14,7 +14,7 @@ using Array = py::array_t<double, py::array::c_style>;
 
 namespace {
 void check_array(const Array& array, const char* name, py::ssize_t rows,
-                 py::ssize_t columns = 0) {
+                 py::ssize_t columns = 0, bool finite = true) {
     const bool shape_ok = columns == 0
         ? array.ndim() == 1 && array.shape(0) == rows
         : array.ndim() == 2 && array.shape(0) == rows && array.shape(1) == columns;
@@ -23,22 +23,25 @@ void check_array(const Array& array, const char* name, py::ssize_t rows,
         throw py::value_error(std::string(name) + " must be aligned for binary64");
     }
     for (py::ssize_t i = 0; i < array.size(); ++i) {
-        if (!std::isfinite(array.data()[i])) {
+        if (finite && !std::isfinite(array.data()[i])) {
             throw py::value_error(std::string(name) + " must contain finite values");
         }
     }
 }
 
-py::ssize_t check_inputs(const Array& values, const Array& means, const Array& deviations) {
+py::ssize_t check_inputs(const Array& values, const Array& means, const Array& deviations,
+                        bool uniform = false) {
     if (values.ndim() != 1 || values.size() == 0) {
         throw py::value_error("values must be a nonempty vector");
     }
     const auto n = values.size();
     check_array(values, "values", n);
     check_array(means, "means", fc::states);
-    check_array(deviations, "deviations", fc::states);
+    check_array(deviations, "deviations", fc::states, 0, !uniform);
     for (py::ssize_t j = 0; j < static_cast<py::ssize_t>(fc::states); ++j) {
-        if (deviations.data()[j] <= 0) throw py::value_error("deviations must be positive");
+        if (std::isnan(deviations.data()[j]) || deviations.data()[j] <= 0) {
+            throw py::value_error("deviations must be positive");
+        }
     }
     return n;
 }
@@ -65,38 +68,47 @@ Array posterior(const Array& values, const Array& means, const Array& deviations
     return result;
 }
 
-Array expectation(const Array& values, const Array& means, const Array& deviations,
-                  const Array& priors, const Array& bounds) {
-    const auto n = check_inputs(values, means, deviations);
-    check_array(priors, "priors", fc::states);
-    check_nonnegative(priors, "priors");
+void check_bounds(const Array& bounds) {
     check_array(bounds, "bounds", fc::states, 2);
     for (std::size_t j = 0; j < fc::states; ++j) {
-        if (bounds.data()[2*j] > bounds.data()[2*j+1]) throw py::value_error("unordered bounds");
+        if (!(bounds.data()[2*j] < bounds.data()[2*j+1])) {
+            throw py::value_error("bounds must have positive width");
+        }
     }
+}
+
+py::tuple expectation(const Array& values, const Array& means, const Array& deviations,
+                  const Array& priors, const Array& bounds) {
+    const auto n = check_inputs(values, means, deviations, true);
+    check_array(priors, "priors", fc::states);
+    check_nonnegative(priors, "priors");
+    check_bounds(bounds);
     Array result({n, static_cast<py::ssize_t>(fc::states)});
     const auto* x = values.data(); const auto* mu = means.data();
     const auto* sd = deviations.data(); const auto* p = priors.data();
     const auto* limits = bounds.data(); auto* output = result.mutable_data();
+    double likelihood;
     {
         py::gil_scoped_release release;
-        fc::expectation(n, x, mu, sd, p, limits, output);
+        likelihood = fc::expectation(n, x, mu, sd, p, limits, output);
     }
-    return result;
+    return py::make_tuple(result, likelihood);
 }
 
 py::tuple maximization(const Array& values, const Array& responsibilities,
-                       const Array& means, const Array& deviations) {
-    const auto n = check_inputs(values, means, deviations);
+                       const Array& means, const Array& deviations, const Array& bounds) {
+    const auto n = check_inputs(values, means, deviations, true);
+    check_bounds(bounds);
     check_array(responsibilities, "responsibilities", n, fc::states);
     check_nonnegative(responsibilities, "responsibilities");
     Array sd_out(fc::states), priors_out(fc::states);
     const auto* x = values.data(); const auto* weights = responsibilities.data();
     const auto* mu = means.data(); const auto* sd = deviations.data();
+    const auto* limits = bounds.data();
     auto* new_sd = sd_out.mutable_data(); auto* new_priors = priors_out.mutable_data();
     {
         py::gil_scoped_release release;
-        fc::maximization(n, x, weights, mu, sd, new_sd, new_priors);
+        fc::maximization(n, x, weights, mu, sd, limits, new_sd, new_priors);
     }
     return py::make_tuple(sd_out, priors_out);
 }
@@ -106,6 +118,7 @@ void bind_hslm(py::module_& module);
 
 PYBIND11_MODULE(_core, module) {
     bind_hslm(module);
+    py::register_exception<fc::NumericalError>(module, "FastCallNumericalError", PyExc_FloatingPointError);
     module.doc() = "Scalar HSLM and FastCall numerical kernels; algorithm control remains in Python";
     module.def("fastcall_posterior", &posterior, py::arg("values").noconvert(),
                py::arg("means").noconvert(), py::arg("deviations").noconvert(),
@@ -115,5 +128,5 @@ PYBIND11_MODULE(_core, module) {
                py::arg("priors").noconvert(), py::arg("bounds").noconvert());
     module.def("fastcall_maximization", &maximization, py::arg("values").noconvert(),
                py::arg("responsibilities").noconvert(), py::arg("means").noconvert(),
-               py::arg("deviations").noconvert());
+               py::arg("deviations").noconvert(), py::arg("bounds").noconvert());
 }
