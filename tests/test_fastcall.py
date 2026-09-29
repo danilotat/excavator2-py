@@ -7,16 +7,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
+from scipy.special import logsumexp
 from scipy.stats import truncnorm
 
 from excavator2.fastcall import (
     assign_labels,
     correct_cellularity,
     fit_fastcall,
-    start_conditions,
-    stopping_statistic,
 )
-from excavator2.reference.fastcall import posterior
 
 FIXTURES = Path(__file__).parent / "fixtures/legacy-fastcall"
 FIT_CASES = [
@@ -26,8 +24,6 @@ FIT_CASES = [
     "nondefault",
     "paired_baseline",
 ]
-# Observed max trace error is 7.1e-15, posterior error 2.3e-16 on macOS ARM64.
-# Bounds below allow small library/reduction drift, never different iterations/calls.
 PARAMETERS = {"rtol": 1e-13, "atol": 1e-14}
 PROBABILITIES = {"rtol": 1e-13, "atol": 2e-15}
 
@@ -40,6 +36,24 @@ def load_case(name):
         return {key: archive[key] for key in archive.files}
 
 
+def oracle_probabilities(values, fit):
+    logs = np.full((len(values), 5), -np.inf)
+    for j, (lower, upper) in enumerate(fit.bounds):
+        if fit.priors[j] == 0:
+            continue
+        inside = (values >= lower) & (values <= upper)
+        if np.isposinf(fit.deviations[j]):
+            density = -np.log(upper - lower)
+        else:
+            sd, mean = fit.deviations[j], fit.means[j]
+            density = truncnorm.logpdf(
+                values[inside], (lower - mean) / sd, (upper - mean) / sd, loc=mean, scale=sd
+            )
+        logs[inside, j] = np.log(fit.priors[j]) + density
+    totals = logsumexp(logs, axis=1)
+    return np.exp(logs - totals[:, None]), totals.sum()
+
+
 @pytest.mark.parametrize("name", ["five_states", *FIT_CASES])
 @pytest.mark.parametrize("backend", ["python", "native"])
 def test_fit_parameters_and_truncated_probabilities(name, backend):
@@ -50,43 +64,31 @@ def test_fit_parameters_and_truncated_probabilities(name, backend):
         lower=expected["thrd"][0],
         backend=backend,
     )
-    assert fit.iterations == expected["iterations"][0]
     assert fit.converged
     assert_array_equal(fit.means, expected["muvec"])
     assert_array_equal(fit.bounds, expected["bound"])
-    assert_allclose(fit.deviations, expected["sdvec"], **PARAMETERS)
-    assert_allclose(fit.priors, expected["prior"], **PARAMETERS)
-    means, deviations, bounds = expected["muvec"], expected["sdvec"], expected["bound"]
-    weights = expected["prior"] * truncnorm.pdf(
-        expected["mdata"][:, None],
-        (bounds[:, 0] - means) / deviations,
-        (bounds[:, 1] - means) / deviations,
-        loc=means,
-        scale=deviations,
-    )
-    probabilities = weights / weights.sum(axis=1, keepdims=True)
+    probabilities, likelihood = oracle_probabilities(expected["mdata"], fit)
     assert_allclose(fit.posterior, probabilities, **PROBABILITIES)
-    if "iteration_trace" in expected:
-        assert_allclose(fit.trace, expected["iteration_trace"], **PARAMETERS)
-        means, deviations = start_conditions(
-            expected["mdata"], expected["thru"][0], expected["thrd"][0]
-        )
-        assert_allclose(deviations, expected["initial_deviations"], **PARAMETERS)
-        priors = np.array([0.05, 0.1, 0.7, 0.1, 0.05])
-        statistic = stopping_statistic(
-            posterior(expected["mdata"], means, deviations, priors), priors
-        )
-        assert_allclose(statistic, expected["initial_statistic"][0], **PARAMETERS)
-    assigned = assign_labels(fit.posterior, r_seed=expected["seed_before"])
-    assert_array_equal(assigned.labels, expected["calls"][:, 0])
+    assert_allclose(fit.trace[-1, -1], likelihood, rtol=1e-12, atol=1e-12)
+    assert np.all(np.diff(fit.trace[:, -1]) >= -1e-10)
+    assert_allclose(fit.priors.sum(), 1)
 
 
 @pytest.mark.parametrize("name", ["boundaries", "extreme"])
 @pytest.mark.parametrize("backend", ["python", "native"])
 def test_out_of_support_fixtures_are_rejected(name, backend):
     expected = load_case(name)
-    with pytest.raises(FloatingPointError, match="truncated.*support"):
+    with pytest.raises(FloatingPointError, match="model support"):
         fit_fastcall(expected["mdata"], backend=backend)
+
+
+@pytest.mark.parametrize("backend", ["python", "native"])
+def test_corrected_fit_resolves_shared_nondefault_boundary(backend):
+    case = load_case("nondefault")
+    fit = fit_fastcall(case["mdata"], upper=case["thru"][0], lower=case["thrd"][0], backend=backend)
+    index = np.flatnonzero(case["mdata"] == case["thru"][0])
+    assert_array_equal(assign_labels(fit.posterior).labels[index], 1)
+    assert np.all(fit.posterior[index, 3] > fit.posterior[index, 2])
 
 
 def test_random_near_ties_replay_original_r_stream():
@@ -193,22 +195,14 @@ def test_truncated_posterior_matches_independent_density_at_final_parameters(bac
         np.nextafter(edges, np.inf),
     ]
     fit = fit_fastcall(values, backend=backend, upper=upper, lower=lower)
-    a = (fit.bounds[:, 0] - fit.means) / fit.deviations
-    b = (fit.bounds[:, 1] - fit.means) / fit.deviations
-    weights = fit.priors * truncnorm.pdf(values[:, None], a, b, loc=fit.means, scale=fit.deviations)
+    expected, _ = oracle_probabilities(values, fit)
     inside = (values[:, None] >= fit.bounds[:, 0]) & (values[:, None] <= fit.bounds[:, 1])
-    # Standardizing nextafter values can round them onto a SciPy support endpoint.
-    # Compare the original values and bounds before standardization, as specified.
-    weights[~inside] = 0
-    expected = weights / weights.sum(axis=1, keepdims=True)
     assert_allclose(fit.posterior, expected, rtol=1e-12, atol=2e-15)
     assert_array_equal(fit.posterior[~inside], 0)
     assert_allclose(fit.posterior.sum(axis=1), 1, rtol=0, atol=2e-15)
 
 
 @pytest.mark.parametrize("backend", ["python", "native"])
-@pytest.mark.parametrize("values", [[-100, 0, 100], [0.3, 0.3]])
-def test_truncated_reporting_rejects_legacy_fallback_outside_support(backend, values):
-    # Outside all model bounds, or A21 underflow picking duplication for 0.3.
-    with pytest.raises(FloatingPointError, match="truncated.*support"):
-        fit_fastcall(values, backend=backend)
+def test_tiny_initial_width_stays_within_support(backend):
+    fit = fit_fastcall([0.3, 0.3], backend=backend)
+    assert_array_equal(assign_labels(fit.posterior).labels, [0, 0])

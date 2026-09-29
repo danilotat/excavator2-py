@@ -50,6 +50,7 @@ def test_cli_matches_original_non_normal_outputs(tmp_path, experiment):
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["samples"]["Test1"]["calls"] == 4
     assert manifest["fastcall_posterior"] == "truncated"
+    assert manifest["fastcall_trace_statistic"] == "truncated_log_likelihood"
 
 
 @pytest.mark.parametrize("experiment", ["paired", "pooling"])
@@ -127,7 +128,7 @@ def test_truncated_support_failure_does_not_publish_partial_samples(tmp_path, mo
 
     monkeypatch.setattr(analyze, "segment_profile", unsupported_second_sample)
     output = tmp_path / "results"
-    with pytest.raises(FloatingPointError, match="truncated.*support"):
+    with pytest.raises(FloatingPointError, match="model support"):
         run_analysis(
             FIXTURE / "samples.yaml",
             FIXTURE / "inputs/prepared",

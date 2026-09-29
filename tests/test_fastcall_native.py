@@ -5,6 +5,8 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
+from scipy.special import logsumexp
+from scipy.stats import truncnorm
 
 from excavator2 import _core
 from excavator2.fastcall import fit_fastcall
@@ -29,12 +31,15 @@ def test_kernels_match_python_and_leave_inputs_unchanged(size):
     original = [array.copy() for array in inputs]
     for array in inputs:
         array.flags.writeable = False
-    actual = _core.fastcall_expectation(values, means, deviations, priors, bounds)
-    expected = reference.expectation(values, means, deviations, priors, bounds)
+    actual, actual_ll = _core.fastcall_expectation(values, means, deviations, priors, bounds)
+    expected, expected_ll = reference.expectation(values, means, deviations, priors, bounds)
     assert_allclose(actual, expected, rtol=1e-13, atol=2e-15)
-    actual_sd, actual_prior = _core.fastcall_maximization(values, actual, means, deviations)
-    expected_sd, expected_prior = reference.maximization(values, expected, means, deviations)
-    assert_allclose(actual_sd, expected_sd, rtol=1e-13, atol=1e-14)
+    assert_allclose(actual_ll, expected_ll, rtol=1e-12, atol=1e-12)
+    actual_sd, actual_prior = _core.fastcall_maximization(values, actual, means, deviations, bounds)
+    expected_sd, expected_prior = reference.maximization(
+        values, expected, means, deviations, bounds
+    )
+    assert_allclose(actual_sd, expected_sd, rtol=1e-10, atol=1e-12)
     assert_allclose(actual_prior, expected_prior, rtol=1e-13, atol=1e-14)
     assert_allclose(
         _core.fastcall_posterior(values, means, deviations, priors),
@@ -46,29 +51,28 @@ def test_kernels_match_python_and_leave_inputs_unchanged(size):
         assert_array_equal(array, before)
 
 
-def test_underflow_uses_first_nearest_component():
+def test_underflow_preserves_competing_components():
     means = np.array([-3.0, -1.0, 0.0, 0.58, 1.0])
     deviations = np.full(5, 0.001)
     priors = np.full(5, 0.2)
     values = np.array([-2.0, -100.0, 100.0])
     result = _core.fastcall_posterior(values, means, deviations, priors)
-    assert_array_equal(result, np.eye(5)[[0, 0, 4]])
+    assert_array_equal(result, [[0.5, 0.5, 0, 0, 0], [1, 0, 0, 0, 0], [0, 0, 0, 0, 1]])
 
 
-def test_truncated_infinity_and_nan_follow_legacy_fallback():
-    # Both upper-tail CDFs round to one: inside density/0 -> Inf -> 100;
-    # outside 0/0 remains NaN. Do not "fix" this with a stable tail formula.
-    values = np.array([9.5, 0.0])
-    means = np.zeros(5)
+def test_truncated_tails_are_normalized_and_unsupported_values_fail():
+    values = np.array([9.5])
+    means = np.linspace(-1, 1, 5)
     deviations = np.ones(5)
     priors = np.full(5, 0.2)
     bounds = np.tile([9.0, 10.0], (5, 1))
-    actual = _core.fastcall_expectation(values, means, deviations, priors, bounds)
-    expected = reference.expectation(values, means, deviations, priors, bounds)
-    assert_array_equal(actual, expected)
-    assert_array_equal(actual[0], np.full(5, 0.2))
-    assert actual[1, 0] == 1
-    assert np.isnan(actual[1, 1:]).all()
+    actual, likelihood = _core.fastcall_expectation(values, means, deviations, priors, bounds)
+    logs = np.log(priors) + truncnorm.logpdf(values[:, None], 9 - means, 10 - means, loc=means)
+    totals = logsumexp(logs, axis=1)
+    assert_allclose(actual, np.exp(logs - totals[:, None]), rtol=1e-12, atol=1e-14)
+    assert_allclose(likelihood, totals.sum(), rtol=1e-12)
+    with pytest.raises(FloatingPointError, match="model support"):
+        _core.fastcall_expectation(np.array([0.0]), means, deviations, priors, bounds)
 
 
 @pytest.mark.parametrize("values", [np.arange(6.0)[::2], np.arange(3, dtype=np.float32), [0.0]])
@@ -126,7 +130,7 @@ def test_native_boundary_rejects_invalid_inputs(case):
         weights[0, 0] = -1
     with pytest.raises(ValueError):
         if case in ("weights", "negative_weights"):
-            _core.fastcall_maximization(values, weights, means, deviations)
+            _core.fastcall_maximization(values, weights, means, deviations, bounds)
         else:
             _core.fastcall_expectation(values, means, deviations, priors, bounds)
 

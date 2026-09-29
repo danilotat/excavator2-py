@@ -233,6 +233,7 @@ def run_analysis(
             "sample_design_sha256": digest(samples),
             "backend": "scalar",
             "fastcall_posterior": "truncated",
+            "fastcall_trace_statistic": "truncated_log_likelihood",
             "threads": 1,
             "rng_policy": "per-sample-original-R-state" if seeds else "reject-random-ties",
             "r_seed_states_sha256": digest(r_seed_states) if seeds else None,

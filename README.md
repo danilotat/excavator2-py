@@ -9,8 +9,9 @@ accelerates HSLM segmentation and FastCall numerical calculations.
 
 `main` preserves the original scientific results, including observed legacy quirks.
 On `dev/improvements`, scientific corrections are introduced independently.
-The first correction, [A19](docs/fastcall-a19.md), makes final FastCall probabilities
-respect the fitted class boundaries. The original implementation is preserved
+FastCall corrections keep [fitting and reporting consistent](docs/fastcall-a19.md),
+[optimize the truncated objective, and stabilize probabilities](docs/fastcall-fitting.md).
+The original implementation is preserved
 in `excavator2/`; the port lives in `src/excavator2/` and `cpp/`.
 
 The three-stage pipeline on `main` was qualified against the original on the

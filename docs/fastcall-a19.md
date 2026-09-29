@@ -38,13 +38,12 @@ support assumption, not calibrated certainty about biological copy number.
 The API and CLI use the correction directly, without a compatibility option.
 The analysis manifest records `fastcall_posterior: truncated`.
 
-Initialization, M-step, stopping statistic, iteration count, fitted parameters,
-and trace are unchanged. A20's truncated M-step objective and A08's stopping
-statistic remain open. A21's ordinary-space arithmetic is also unchanged: the
-corrected reporting path rejects non-finite probabilities and any fallback that
-places mass outside support. This includes values beyond the outer bounds and
-the `[0.3, 0.3]` underflow example. Analysis fails without publishing partial results.
-Fallbacks inside support and probability calibration are not solved by this patch.
+The initial A19 patch changed only reporting and rejected numerical fallbacks
+outside support. The subsequent [A20/A21 correction](fastcall-fitting.md) fits
+the truncated objective and removes that fallback entirely. `[0.3, 0.3]` now fits
+successfully as normal; values outside the bounds still fail explicitly.
+The evidence below describes the A19-only comparison. Probability calibration
+remains a separate modeling question.
 
 ## Evidence
 

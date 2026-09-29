@@ -16,8 +16,9 @@ int main() {
         for (std::size_t i = 0; i < n; ++i) values[i] = means[i % states];
         expectation(n, values.data(), means.data(), sd.data(), priors.data(), bounds.data(), weights.data());
         std::array<double, 5> next_sd{}, next_priors{};
-        maximization(n, values.data(), weights.data(), means.data(), sd.data(), next_sd.data(), next_priors.data());
-        posterior(n, values.data(), means.data(), next_sd.data(), next_priors.data(), probabilities.data());
+        maximization(n, values.data(), weights.data(), means.data(), sd.data(), bounds.data(), next_sd.data(), next_priors.data());
+        const double likelihood = expectation(n, values.data(), means.data(), next_sd.data(), next_priors.data(), bounds.data(), probabilities.data());
+        assert(std::isfinite(likelihood));
         for (std::size_t i = 0; i < n; ++i) {
             double sum = 0;
             for (std::size_t j = 0; j < states; ++j) sum += probabilities[states * i + j];
