@@ -49,6 +49,47 @@ def test_cli_matches_original_non_normal_outputs(tmp_path, experiment):
             assert lines(output / "Results" / sample / expected.name) == lines(expected)
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["samples"]["Test1"]["calls"] == 4
+    assert manifest["fastcall_posterior"] == "truncated"
+
+
+@pytest.mark.parametrize("experiment", ["paired", "pooling"])
+def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment):
+    output = tmp_path / "results"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "excavator2",
+            "analyze",
+            "--samples",
+            str(FIXTURE / "samples.yaml"),
+            "--input",
+            str(FIXTURE / "inputs/prepared"),
+            "--target",
+            str(FIXTURE / "inputs/target"),
+            "--output",
+            str(output),
+            "--experiment",
+            experiment,
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["fastcall_posterior"] == "truncated"
+    for sample in ("Test1", "Test2"):
+        folder = output / "Results" / sample
+        hslm = f"HSLMResults_{sample}.txt"
+        assert lines(folder / hslm) == lines(FIXTURE / "expected" / experiment / sample / hslm)
+        with np.load(folder / "checkpoints.npz") as data:
+            table = np.loadtxt(folder / hslm, dtype=str, skiprows=1)
+            values = table[data["segment_starts"], 5].astype(float)
+            labels = np.searchsorted([-1.3, -0.5, 0.35, 0.9], values) - 2
+            assert_array_equal(data["labels"], labels)
+            assert_array_equal(data["posterior"], np.eye(5)[labels + 2])
+        calls = np.loadtxt(folder / f"FastCallResults_{sample}.txt", dtype=str, skiprows=1)
+        assert_array_equal(calls[:, -1].astype(float), 1)
 
 
 def test_failed_analysis_does_not_publish_partial_results(tmp_path):
@@ -67,6 +108,34 @@ def test_failed_analysis_does_not_publish_partial_results(tmp_path):
             "paired",
             parameters,
         )
+    assert not output.exists()
+    assert not list(tmp_path.glob(".excavator2-*"))
+
+
+def test_truncated_support_failure_does_not_publish_partial_samples(tmp_path, monkeypatch):
+    from excavator2 import analyze
+
+    original_segment_profile = analyze.segment_profile
+    processed = []
+
+    def unsupported_second_sample(*args):
+        rows, path, indices = original_segment_profile(*args)
+        processed.append(True)
+        if len(processed) == 2:
+            rows[0, 5] = "100"
+        return rows, path, indices
+
+    monkeypatch.setattr(analyze, "segment_profile", unsupported_second_sample)
+    output = tmp_path / "results"
+    with pytest.raises(FloatingPointError, match="truncated.*support"):
+        run_analysis(
+            FIXTURE / "samples.yaml",
+            FIXTURE / "inputs/prepared",
+            FIXTURE / "inputs/target",
+            output,
+            "paired",
+        )
+    assert len(processed) == 2
     assert not output.exists()
     assert not list(tmp_path.glob(".excavator2-*"))
 

@@ -31,6 +31,11 @@ with np.load("tests/fixtures/legacy-fastcall/expected.npz", allow_pickle=False) 
     print(fit.iterations)
 ```
 
+On `dev/improvements`, final probabilities use the E-step's truncated densities
+at the returned fitted parameters. This corrects the A19 support mismatch.
+The analysis manifest records `fastcall_posterior: truncated`. See the
+[A19 rationale, examples and comparison](fastcall-a19.md).
+
 `fit.trace` records five deviations, five priors, and the legacy stopping statistic
 at each iteration. Means remain fixed. The initial and E-step bounds differ, as
 in the original. Empty-component priors, inclusive truncation endpoints, tiny-SD
@@ -61,7 +66,8 @@ ties that later lose still consume random draws when replay is requested.
 
 ## Verification and limits
 
-The default test suite compares against the original pinned R code for:
+The tests use original fixtures to check fitting parameters and independently
+verify the corrected truncated probabilities. The saved cases include:
 
 - The original five-state fixture.
 - Unequal state populations, with a segment count not divisible by five.
@@ -70,8 +76,8 @@ The default test suite compares against the original pinned R code for:
 - Segment values reconstructed from the saved real paired HSLM result.
 - Exact and near ties, RNG-state continuation, and cellularity correction.
 
-Labels, iteration counts, and final RNG states match exactly on these fixtures.
-On the local Python 3.12/macOS ARM64 run, the largest absolute iteration-trace
+Historical qualification on `main` matched labels, iteration counts, and final
+RNG states exactly. On that Python 3.12/macOS ARM64 run, the largest absolute iteration-trace
 error was approximately 7.1e-15; the largest posterior error was approximately
 2.3e-16. Parameter/trace tests use rtol=1e-13 and atol=1e-14; posterior/probability
 tests use rtol=1e-13 and atol=2e-15. These tolerances cover observed floating-point
@@ -88,8 +94,10 @@ directory and rejects unexpected missing values.
 The current fit API requires finite, nonempty 1-D data, positive cellularity up to
 one, and ordered model bounds (`0 < upper < 0.9`, `0 < lower < 1.3`). It fails
 explicitly on non-finite iteration results; it does not add numerical stabilization
-to repair legacy failures. This is fixture-backed numerical parity for FastCall,
-not proof of universal equivalence or an end-to-end CNV calling release.
+to repair legacy failures. Final reporting also rejects non-finite
+probabilities or nonzero probability outside class support, including
+nearest-mean fallbacks outside `[-20, 20]`. The saved `boundaries` and `extreme`
+cases exercise that rejection. See A19 for deliberate differences from `main`.
 
 ## Backend and array contract
 
@@ -103,8 +111,8 @@ all matrices are C-contiguous. Outputs own their storage and inputs are not muta
 The GIL is released only during numerical work. Callers must not mutate shared
 input arrays while a kernel is running.
 
-Both backends pass the same original-R fixture tests, including exact labels,
-iteration counts and RNG states. The local M2 suite has 56 passing tests, including
+Both backends were qualified against original-R fixture tests on `main`, including
+exact labels, iteration counts and RNG states. The historical M2 suite had 56 passing tests, including
 native boundary rejection, independent concurrent calls, and underflow/CDF edge
 cases. The standalone kernel smoke test also passes AddressSanitizer and
 UndefinedBehaviorSanitizer; see `cpp/tests/README.md` for the command.

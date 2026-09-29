@@ -7,13 +7,14 @@ both in-target and off-target reads from whole-exome sequencing. Python owns the
 workflow, reference and BAM access, normalization and reporting; a small C++ core
 accelerates HSLM segmentation and FastCall numerical calculations.
 
-The goal is to preserve the original scientific results while making the code
-installable, readable and maintainable. Compatibility includes observed legacy
-quirks: this is not a revised calling model. The original implementation is
-preserved in `excavator2/`; the port lives in `src/excavator2/` and `cpp/`.
+`main` preserves the original scientific results, including observed legacy quirks.
+On `dev/improvements`, scientific corrections are introduced independently.
+The first correction, [A19](docs/fastcall-a19.md), makes final FastCall probabilities
+respect the fitted class boundaries. The original implementation is preserved
+in `excavator2/`; the port lives in `src/excavator2/` and `cpp/`.
 
-The three-stage pipeline is implemented and qualified against the original on
-the supplied dataset and a differential test corpus. **Plotting is deferred.**
+The three-stage pipeline on `main` was qualified against the original on the
+supplied dataset and a differential test corpus. **Plotting is deferred.**
 See the [compatibility report](docs/compatibility-qualification.md),
 [performance results](docs/performance.md) and [roadmap](docs/python-cpp-porting-roadmap.md).
 
@@ -155,6 +156,9 @@ writes:
 The result manifest records inputs, parameters and execution settings. Random
 FastCall ties require the original per-sample R RNG state via `--r-seed-states`;
 see [the replay contract](docs/hslm-analysis.md#replaying-original-fastcall-random-ties).
+Final probabilities use truncated class support, recorded in the manifest.
+Probabilities of 1 inside a single allowed class express a hard model boundary,
+not calibrated biological certainty. See [A19 and its remaining limits](docs/fastcall-a19.md).
 Each command provides `--help`.
 
 ## Citation and license
@@ -216,7 +220,8 @@ the runner extracts the pinned source commit from Git history.
 ### Compare existing results, including your own data
 
 Run the original and the port with identical BAMs, references, targets, parameters
-and experimental design, keeping their output directories separate. Once both
+and experimental design, keeping their output directories separate. Use `main`
+when checking exact legacy equivalence; improvements may deliberately differ. Once both
 runs have finished:
 
 ```sh

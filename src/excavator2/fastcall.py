@@ -1,8 +1,4 @@
-"""Python FastCall policy and iteration loop, preserving the original R behavior.
-
-This API accepts already constructed segment values. Segmentation, segment-table
-construction, CN/VCF rendering, and CLI integration are separate future stages.
-"""
+"""Fit and classify segment values with truncated FastCall components."""
 
 from dataclasses import dataclass
 
@@ -83,16 +79,13 @@ def stopping_statistic(posterior: FloatArray, priors: FloatArray) -> float:
 
 
 def fit_fastcall(
-    values: ArrayLike, *, upper: float = 0.35, lower: float = 0.5, backend: str = "native"
+    values: ArrayLike,
+    *,
+    upper: float = 0.35,
+    lower: float = 0.5,
+    backend: str = "native",
 ) -> FastCallFit:
-    """Fit the legacy five-state model to one value per segment.
-
-    Use backend="python" for the readable reference; "native" runs only the
-    E/M and posterior kernels in C++. Both share this control loop.
-
-    `lower` is the positive magnitude d in the legacy YAML; the normal state's
-    lower bound is -d. No segment-length weighting or learned means are added.
-    """
+    """Fit five states; the normal interval is [-lower, upper]."""
     values = np.require(segment_values(values), dtype=np.float64, requirements=["C", "A"])
     if backend == "native":
         posterior = _core.fastcall_posterior
@@ -130,8 +123,22 @@ def fit_fastcall(
         if abs(statistic - previous) < 1e-5:
             converged = True
             break
+    probabilities = expectation(values, means, deviations, priors, bounds)
+    inside = (values[:, None] >= bounds[:, 0]) & (values[:, None] <= bounds[:, 1])
+    if not np.isfinite(probabilities).all() or np.any(probabilities[~inside] != 0):
+        raise FloatingPointError(
+            "truncated FastCall probabilities violate model support; "
+            "check input bounds and density underflow"
+        )
     return FastCallFit(
-        means, deviations, priors, bounds, iteration, converged, probabilities, np.array(trace)
+        means,
+        deviations,
+        priors,
+        bounds,
+        iteration,
+        converged,
+        probabilities,
+        np.array(trace),
     )
 
 

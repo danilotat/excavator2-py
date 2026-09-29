@@ -232,6 +232,7 @@ def run_analysis(
             "target_manifest_sha256": digest(target_folder / "manifest.json"),
             "sample_design_sha256": digest(samples),
             "backend": "scalar",
+            "fastcall_posterior": "truncated",
             "threads": 1,
             "rng_policy": "per-sample-original-R-state" if seeds else "reject-random-ties",
             "r_seed_states_sha256": digest(r_seed_states) if seeds else None,

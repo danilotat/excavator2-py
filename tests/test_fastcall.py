@@ -1,4 +1,4 @@
-"""Numerical contracts measured against the pinned, unmodified R implementation."""
+"""FastCall fitting, truncated probabilities, and label assignment."""
 
 import hashlib
 import json
@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
+from scipy.stats import truncnorm
 
 from excavator2.fastcall import (
     assign_labels,
@@ -20,10 +21,8 @@ from excavator2.reference.fastcall import posterior
 FIXTURES = Path(__file__).parent / "fixtures/legacy-fastcall"
 FIT_CASES = [
     "uneven",
-    "boundaries",
     "all_normal",
     "single",
-    "extreme",
     "nondefault",
     "paired_baseline",
 ]
@@ -43,10 +42,13 @@ def load_case(name):
 
 @pytest.mark.parametrize("name", ["five_states", *FIT_CASES])
 @pytest.mark.parametrize("backend", ["python", "native"])
-def test_fit_matches_original_r(name, backend):
+def test_fit_parameters_and_truncated_probabilities(name, backend):
     expected = load_case(name)
     fit = fit_fastcall(
-        expected["mdata"], upper=expected["thru"][0], lower=expected["thrd"][0], backend=backend
+        expected["mdata"],
+        upper=expected["thru"][0],
+        lower=expected["thrd"][0],
+        backend=backend,
     )
     assert fit.iterations == expected["iterations"][0]
     assert fit.converged
@@ -54,7 +56,16 @@ def test_fit_matches_original_r(name, backend):
     assert_array_equal(fit.bounds, expected["bound"])
     assert_allclose(fit.deviations, expected["sdvec"], **PARAMETERS)
     assert_allclose(fit.priors, expected["prior"], **PARAMETERS)
-    assert_allclose(fit.posterior, expected["posterior"], **PROBABILITIES)
+    means, deviations, bounds = expected["muvec"], expected["sdvec"], expected["bound"]
+    weights = expected["prior"] * truncnorm.pdf(
+        expected["mdata"][:, None],
+        (bounds[:, 0] - means) / deviations,
+        (bounds[:, 1] - means) / deviations,
+        loc=means,
+        scale=deviations,
+    )
+    probabilities = weights / weights.sum(axis=1, keepdims=True)
+    assert_allclose(fit.posterior, probabilities, **PROBABILITIES)
     if "iteration_trace" in expected:
         assert_allclose(fit.trace, expected["iteration_trace"], **PARAMETERS)
         means, deviations = start_conditions(
@@ -68,8 +79,14 @@ def test_fit_matches_original_r(name, backend):
         assert_allclose(statistic, expected["initial_statistic"][0], **PARAMETERS)
     assigned = assign_labels(fit.posterior, r_seed=expected["seed_before"])
     assert_array_equal(assigned.labels, expected["calls"][:, 0])
-    assert_allclose(assigned.probabilities, expected["calls"][:, 1], **PROBABILITIES)
-    assert_array_equal(assigned.r_seed, expected["seed_after"])
+
+
+@pytest.mark.parametrize("name", ["boundaries", "extreme"])
+@pytest.mark.parametrize("backend", ["python", "native"])
+def test_out_of_support_fixtures_are_rejected(name, backend):
+    expected = load_case(name)
+    with pytest.raises(FloatingPointError, match="truncated.*support"):
+        fit_fastcall(expected["mdata"], backend=backend)
 
 
 def test_random_near_ties_replay_original_r_stream():
@@ -140,3 +157,58 @@ def test_golden_fixture_checksums():
             hashlib.sha256((FIXTURES / "edges" / f"{name}.npz").read_bytes()).hexdigest()
             == record["sha256"]
         )
+
+
+@pytest.mark.parametrize("backend", ["python", "native"])
+@pytest.mark.parametrize("case", ["false_amplification", "missed_amplification"])
+def test_a19_uses_fitted_support_for_final_calls(backend, case):
+    if case == "false_amplification":
+        values = np.r_[np.zeros(10), -0.4, 0.4, 1, 2, 3, 4, 5]
+        labels = np.r_[np.zeros(11, dtype=int), 1, np.full(5, 2)]
+    else:
+        values = np.r_[np.tile([-0.3, 0.3], 50), 0.91, 5.0]
+        labels = np.r_[np.zeros(100, dtype=int), 2, 2]
+    fit = fit_fastcall(values, backend=backend)
+    calls = assign_labels(fit.posterior)
+    assert_array_equal(calls.labels, labels)
+    assert_array_equal(calls.probabilities, 1)
+
+
+@pytest.mark.parametrize("backend", ["python", "native"])
+@pytest.mark.parametrize("upper, lower", [(0.35, 0.5), (0.2, 0.7)])
+def test_truncated_posterior_matches_independent_density_at_final_parameters(backend, upper, lower):
+    edges = np.array([-1.3, -lower, upper, 0.9])
+    values = np.r_[
+        -3.2,
+        -3,
+        -2.8,
+        -1,
+        -0.2,
+        0,
+        0.58,
+        1,
+        2,
+        np.nextafter(edges, -np.inf),
+        edges,
+        np.nextafter(edges, np.inf),
+    ]
+    fit = fit_fastcall(values, backend=backend, upper=upper, lower=lower)
+    a = (fit.bounds[:, 0] - fit.means) / fit.deviations
+    b = (fit.bounds[:, 1] - fit.means) / fit.deviations
+    weights = fit.priors * truncnorm.pdf(values[:, None], a, b, loc=fit.means, scale=fit.deviations)
+    inside = (values[:, None] >= fit.bounds[:, 0]) & (values[:, None] <= fit.bounds[:, 1])
+    # Standardizing nextafter values can round them onto a SciPy support endpoint.
+    # Compare the original values and bounds before standardization, as specified.
+    weights[~inside] = 0
+    expected = weights / weights.sum(axis=1, keepdims=True)
+    assert_allclose(fit.posterior, expected, rtol=1e-12, atol=2e-15)
+    assert_array_equal(fit.posterior[~inside], 0)
+    assert_allclose(fit.posterior.sum(axis=1), 1, rtol=0, atol=2e-15)
+
+
+@pytest.mark.parametrize("backend", ["python", "native"])
+@pytest.mark.parametrize("values", [[-100, 0, 100], [0.3, 0.3]])
+def test_truncated_reporting_rejects_legacy_fallback_outside_support(backend, values):
+    # Outside all model bounds, or A21 underflow picking duplication for 0.3.
+    with pytest.raises(FloatingPointError, match="truncated.*support"):
+        fit_fastcall(values, backend=backend)

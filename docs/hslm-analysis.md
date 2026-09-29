@@ -32,6 +32,9 @@ only T-labelled samples are analyzed, matching the original job splitter.
 Paired analysis sorts numeric suffixes and requires matching C/T pairs. Sample
 names must be plain path components; duplicate YAML keys/names are rejected.
 `--parameters` accepts the original HSLM/FastCall YAML fields and defaults.
+On `dev/improvements`, FastCall uses the fitted truncation for final calls,
+fixing A19. The analysis manifest records `fastcall_posterior: truncated`;
+see [A19](fastcall-a19.md) for probability interpretation and numerical limits.
 This initial implementation requires `--threads 1` and a new output directory;
 `--force` is explicitly unsupported. Results are assembled in a temporary sibling
 and published after every sample succeeds. Plots are not generated.
@@ -125,7 +128,8 @@ windows or lack a long arm, and random FastCall ties without a recorded R state.
 The lower-level FastCall API can replay an exported R RNG state; the CLI does not
 yet accept one. Multi-profile HSLM, CRAM/preparation, plots, arbitrary malformed
 legacy inputs and cross-platform numerical qualification remain outside this
-M3 acceptance scope. No known scientific bug has been intentionally repaired.
+M3 acceptance scope. Those compatibility claims apply to `main`; the
+improvements branch changes final FastCall probabilities as documented above.
 
 ## Live CI concordance
 
