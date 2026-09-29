@@ -1,0 +1,100 @@
+{
+  "baseline": {
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "platform": "linux/amd64",
+    "config": ".test/config.yaml",
+    "samples": ".test/sample_sheet.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte"
+  },
+  "description": "Synthetic 15-segment original FastCall fixture; not biological truth or full-pipeline acceptance data.",
+  "R_version": "4.4.1",
+  "seed": 20260924,
+  "source_sha256": "a3daa010eee4bc7172d0c7398d1816529e9e03c099fccb030c39b5c57e85ad3e",
+  "wrapper_sha256": "ae94c46522a82e870d224a54b7c3c119a9604d5de7d38719d1c834ee40cc1965",
+  "exporter_sha256": "020ba4cde187711eee92ecf4fb11e3ddd63953a4a2403e709a5fa7c4e8c92f3a",
+  "expected_npz_sha256": "a9cc26ab97c3ef781c506ef9456922ed8a0bb59bad0df359ecea7196ebb9ecf8",
+  "conversion": "Copied binary R exports into NumPy arrays using recorded dtype and Fortran-order shape; no decimal conversion.",
+  "arrays": {
+    "bound": {
+      "dtype": "float64",
+      "shape": [
+        5,
+        2
+      ]
+    },
+    "calls": {
+      "dtype": "float64",
+      "shape": [
+        15,
+        2
+      ]
+    },
+    "iterations": {
+      "dtype": "int32",
+      "shape": [
+        1
+      ]
+    },
+    "mdata": {
+      "dtype": "float64",
+      "shape": [
+        15
+      ]
+    },
+    "muvec": {
+      "dtype": "float64",
+      "shape": [
+        5
+      ]
+    },
+    "posterior": {
+      "dtype": "float64",
+      "shape": [
+        15,
+        5
+      ]
+    },
+    "prior": {
+      "dtype": "float64",
+      "shape": [
+        5
+      ]
+    },
+    "sdvec": {
+      "dtype": "float64",
+      "shape": [
+        5
+      ]
+    },
+    "seed_after": {
+      "dtype": "int32",
+      "shape": [
+        626
+      ]
+    },
+    "seed_before": {
+      "dtype": "int32",
+      "shape": [
+        626
+      ]
+    },
+    "thrd": {
+      "dtype": "float64",
+      "shape": [
+        1
+      ]
+    },
+    "thru": {
+      "dtype": "float64",
+      "shape": [
+        1
+      ]
+    }
+  }
+}

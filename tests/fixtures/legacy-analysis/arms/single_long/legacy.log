@@ -1,0 +1,6 @@
+Warning message:
+package ‘argparse’ was built under R version 4.4.2 
+Read 2 items
+Error in if (s[k] != s[k + 1]) { : missing value where TRUE/FALSE needed
+Calls: JointSegIn -> SortState
+Execution halted

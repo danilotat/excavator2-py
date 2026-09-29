@@ -1,0 +1,76 @@
+{
+  "status": "repeatable_legacy_baseline",
+  "baseline": {
+    "config": ".test/config.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte",
+    "platform": "linux/amd64",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "samples": ".test/sample_sheet.yaml",
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc"
+  },
+  "runs": [
+    {
+      "path": ".oracle/run-02",
+      "threads": 1,
+      "status": "complete",
+      "started_utc": "2026-09-24T10:55:55.825503+00:00",
+      "finished_utc": "2026-09-24T11:07:07.724572+00:00",
+      "manifest_sha256": "3d03ab6c68d60c55e0641a92dce3b64f70b0fd9ca75e195b10cb8fb192a73394"
+    },
+    {
+      "path": ".oracle/run-03",
+      "threads": 1,
+      "status": "complete",
+      "started_utc": "2026-09-24T10:58:03.740855+00:00",
+      "finished_utc": "2026-09-24T11:09:15.645185+00:00",
+      "manifest_sha256": "ec7d33c016a7e642e821dd1dc3e04342784a534a5a4ef0ef6d163b12ddfc00a5"
+    }
+  ],
+  "comparison": {
+    "compared_files": 476,
+    "differences": [],
+    "equal": true,
+    "ignored_fields": [
+      "VCF ##fileDate"
+    ],
+    "scope": "exported RData objects and final txt/vcf; plots/logs excluded"
+  },
+  "fixture_results": {
+    "sample": "Test1",
+    "hslm_window_rows": 281567,
+    "non_normal_calls": 0,
+    "prepared_samples": [
+      "Control1",
+      "Test1"
+    ],
+    "chromosomes_per_sample": 23
+  },
+  "native_binary_hashes": [
+    "5180ab7fb013e8aa56882be402d9a91afa03a68d13d09deb34140d33ab967e25  /work/source/excavator2/lib/F77/F4R.so",
+    "003ca775ad027dda784836ec52885b0ecc5b43277b3493f1dddce01c85ee7368  /work/source/excavator2/lib/F77/FastJointSLMLibraryI.so"
+  ],
+  "synthetic_fastcall_fixture": {
+    "path": "tests/fixtures/legacy-fastcall",
+    "segment_count": 15,
+    "labels": [
+      -2,
+      -1,
+      0,
+      1,
+      2
+    ],
+    "seed": 20260924
+  },
+  "limitations": [
+    "Only supplied paired BAM fixture at threads=1 qualified; pooled, CRAM and other thread counts remain future coverage.",
+    "No non-normal calls in the full paired fixture; synthetic FastCall fixture supplies five-state coverage only.",
+    "Image compiler lacks a required specs file; exact-source-matched bundled libraries used. Rebuilding legacy binaries is not qualified.",
+    "Saved-stage RData arrays exported; per-iteration HSLM/EM traces not yet captured.",
+    "No scientific Python/C++ implementation or cross-language parity claim yet."
+  ]
+}

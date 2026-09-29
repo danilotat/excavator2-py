@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "samples": {
+    "Test1": {
+      "windows": 281567,
+      "arrays": [
+        "matrix",
+        "counts",
+        "weighted",
+        "size",
+        "map",
+        "gc",
+        "normalized"
+      ],
+      "exact": true
+    },
+    "Control1": {
+      "windows": 281567,
+      "arrays": [
+        "matrix",
+        "counts",
+        "weighted",
+        "size",
+        "map",
+        "gc",
+        "normalized"
+      ],
+      "exact": true
+    }
+  },
+  "provenance": {
+    "original_manifest_sha256": "df893576d4fa54176c95998a0b822cdb545a31e7b6d62e6430e3e46916f2406b",
+    "rewritten_manifest_sha256": "f151e4fdebd525b1c8b008c37cfad16583edd8a1d5a1a2acc0d47e203196f64f",
+    "original_baseline_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "comparison_basis": "M4 original-qualified artifacts",
+    "config_sha256": "00b59339855e232d2a2ef8301cf4009a4546311fd610262619b91ad7213ff055"
+  }
+}

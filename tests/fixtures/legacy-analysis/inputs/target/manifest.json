@@ -1,0 +1,28 @@
+{
+  "schema": 1,
+  "kind": "target",
+  "target_id": "b69430b1d3cf0c51f67748afa60ff249702e64c8c241c965cc96f22204116441",
+  "assembly": "synthetic",
+  "chromosomes": [
+    "chr1",
+    "chr2"
+  ],
+  "centromeres": {
+    "chr1": [
+      7000,
+      11000
+    ],
+    "chr2": [
+      7000,
+      11000
+    ]
+  },
+  "references": {
+    "chr1": "reference-0.npz",
+    "chr2": "reference-1.npz"
+  },
+  "files": {
+    "reference-0.npz": "dd0f9cfda4d9cee10a2725abbf77f579c622675726de2eb01739d075c9f694dc",
+    "reference-1.npz": "dd0f9cfda4d9cee10a2725abbf77f579c622675726de2eb01739d075c9f694dc"
+  }
+}

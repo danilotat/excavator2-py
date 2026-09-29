@@ -1,0 +1,48 @@
+{
+  "baseline": {
+    "source_commit": "92f9c6e79fdeae32a09b99fa6994edc9a53e4efc",
+    "image": "ctglabcnr/excavator2@sha256:781ef8fd01f3b13e4893a1ca1bea58879fba4bdda061e18f348d58c4218c2c16",
+    "platform": "linux/amd64",
+    "config": ".test/config.yaml",
+    "samples": ".test/sample_sheet.yaml",
+    "design": ".test/sample_file_list.yaml",
+    "reference_urls": {
+      "BigWig": "https://hgdownload.soe.ucsc.edu/gbdb/hg38/hoffmanMappability/k100.Bismap.MultiTrackMappability.bw",
+      "FASTA_gzip": "https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/release/references/GRCh38/GRCh38_GIABv3_no_alt_analysis_set_maskedGRC_decoys_MAP2K3_KMT2C_KCNJ18.fasta.gz"
+    },
+    "native_policy": "bundled binaries from pinned image; accompanying Fortran sources must match snapshot byte-for-byte"
+  },
+  "files": {
+    "tools/oracle/characterize_analysis.R": "944a15dd0cbd83c28f2e3df1cd92b9dc191505490f54bb99680ded8fe3d6c360",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test1/HSLMResults_Test1.txt": "be7125a8221c345b584081d0742d33a49580766f061ce6c5573214f92e49b872",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test1/FastCallResults_Test1.txt": "5b79f4902a9147898dd573ae50e9340a5012a64f042ebdbf3dbf8b6060402346",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test2/HSLMResults_Test2.txt": "07c32b61644fe144536d267ccf7f485b00c8757c5b3e0e914c6642d4a4c41402",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test2/FastCallResults_Test2.txt": "24a7a64b0c954019963cab0db963e80c6147b9c736ada9214a28e38c349e2d08",
+    "tests/fixtures/legacy-analysis/expected/paired/Test1/HSLMResults_Test1.txt": "ce7c60174ee2958f23e87236c54cbe7974fc1fddc437749e745d73a21839a486",
+    "tests/fixtures/legacy-analysis/expected/paired/Test1/FastCallResults_Test1.txt": "5b79f4902a9147898dd573ae50e9340a5012a64f042ebdbf3dbf8b6060402346",
+    "tests/fixtures/legacy-analysis/expected/paired/Test2/HSLMResults_Test2.txt": "0414aa9504c4f6f2ecb94e764bce2a90138842095369ee1b16425b290505a30b",
+    "tests/fixtures/legacy-analysis/expected/paired/Test2/FastCallResults_Test2.txt": "ec214ce41649c32950448e01804152e3bd12e1febb1560f0858ff962790eefda",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test1/EXCAVATORWindowCall_Test1.vcf": "4c4fd3989983900384fd3744e1ab066172609deb6940a2a4922a371b7dcddc4f",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test1/EXCAVATORRegionCall_Test1.vcf": "58d8082b5ce1bf3a7dbbb6dbffc0f0295f6155f51a025281f8fd3c381fa0519c",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test2/EXCAVATORWindowCall_Test2.vcf": "0c61beae7df0ea4bf8b2bcdc56e914419b9194d2bf9abc18c9d52e539bf5edac",
+    "tests/fixtures/legacy-analysis/expected/pooling/Test2/EXCAVATORRegionCall_Test2.vcf": "ef6ecf1922e7080f741426c1561ab7f189c97f40a584747405756c5f153002e1",
+    "tests/fixtures/legacy-analysis/expected/paired/Test1/EXCAVATORWindowCall_Test1.vcf": "27b872fd42abbd116d423c3c3bbe69faf2d229d762bfcd52ba7458056951261f",
+    "tests/fixtures/legacy-analysis/expected/paired/Test1/EXCAVATORRegionCall_Test1.vcf": "58d8082b5ce1bf3a7dbbb6dbffc0f0295f6155f51a025281f8fd3c381fa0519c",
+    "tests/fixtures/legacy-analysis/expected/paired/Test2/EXCAVATORWindowCall_Test2.vcf": "1d6f6428a889896cf07922eb87e54b0083900904f2ddc17f8eec1baf297edcb5",
+    "tests/fixtures/legacy-analysis/expected/paired/Test2/EXCAVATORRegionCall_Test2.vcf": "ef6ecf1922e7080f741426c1561ab7f189c97f40a584747405756c5f153002e1",
+    "tests/fixtures/legacy-analysis/inputs/prepared/sample-1.npz": "7991be99119bd4a64420aab5d2f9de9f015a7eda746ab606b76c757435fe3828",
+    "tests/fixtures/legacy-analysis/inputs/prepared/sample-0.npz": "e39dd098d3f55d0af0116c62fbdc73c7e0b57cb38dd296f40a898d4ff939c2d7",
+    "tests/fixtures/legacy-analysis/inputs/prepared/sample-2.npz": "be6e3e05f96d0802ab431afd6fbb4eda166c47d79074879afcbe86a1dd1c6b32",
+    "tests/fixtures/legacy-analysis/inputs/prepared/sample-3.npz": "37fb91be9395bc743a69e9292fa263b3391002d625d0779a529b503ec74c0161",
+    "tests/fixtures/legacy-analysis/inputs/target/reference-0.npz": "dd0f9cfda4d9cee10a2725abbf77f579c622675726de2eb01739d075c9f694dc",
+    "tests/fixtures/legacy-analysis/inputs/target/reference-1.npz": "dd0f9cfda4d9cee10a2725abbf77f579c622675726de2eb01739d075c9f694dc",
+    "excavator2/lib/R/EXCAVATORInferenceExome.R": "59deca7acea73aae3067b78bb7dae6f9006dbaa0fcfe7445e477c31248a2823c",
+    "excavator2/lib/R/LibraryFastCall.R": "a3daa010eee4bc7172d0c7398d1816529e9e03c099fccb030c39b5c57e85ad3e",
+    "excavator2/lib/R/LibraryJSLMIn.R": "bce827f9ab27e2067804a493e28389556b0d5e898a32bfdc16edf768c249a747",
+    "excavator2/lib/F77/FastJointSLMLibraryI.f": "e96d37427ebca457e2c872c04a184dfbe19e080b5395bfc6145704f2975cccc4",
+    "excavator2/parameters.yaml": "ad8e78ab7b10103800824ed54d552a1c92242757c3a8d2f84fc92832adb5f6f9",
+    "tools/convert_legacy.py": "ddfe02316a758be84c43bdb8649ca395c04a6a9af6fe32b6b873c34fe98db82a",
+    "src/excavator2/artifacts.py": "9c21fa5783865e9ac7f9da674d461eaf4d8957ccbba3a183060ffef0ab5d04f7"
+  },
+  "generator_source": "Pinned source snapshot .oracle/run-03/source/excavator2; original .so from pinned image, accompanying Fortran source verified identical."
+}
