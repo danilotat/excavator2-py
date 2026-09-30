@@ -1,4 +1,4 @@
-"""Readable single-profile HSLM setup, segmentation and legacy filtering policy."""
+"""Single-profile HSLM setup, segmentation and minimum-support filtering."""
 
 from dataclasses import dataclass
 
@@ -14,6 +14,7 @@ class Parameters:
     mi: float
     smu: float
     sepsilon: float
+    deviations: NDArray[np.float64] | None = None
 
 
 @dataclass(frozen=True)
@@ -35,24 +36,38 @@ def vector(values, name):
     return result
 
 
-def estimate_parameters(values, omega=0.1):
-    """R ParamEstSeq: global 1–99% inclusive trimming and sample variance."""
+def estimate_parameters(values, omega=0.1, classes=None):
+    """Estimate arm noise from robust adjacent differences."""
     values = vector(values, "values")
     if not 0 < omega < 1:
         raise ValueError("omega must lie strictly between zero and one")
-    low, high = np.quantile(values, [0.01, 0.99], method="linear")
-    selected = values[(values >= low) & (values <= high)]
-    if len(selected) < 2:
-        raise ValueError("legacy parameter estimation requires two retained values")
-    variance = np.var(selected, ddof=1)
-    if not np.isfinite(variance) or variance <= 0:
-        raise ValueError("legacy HSLM requires positive finite global variance")
-    return Parameters(0.0, float(np.sqrt(omega * variance)), float(np.sqrt((1 - omega) * variance)))
+
+    def noise_estimate(observations):
+        differences = np.abs(np.diff(observations))
+        noise = np.median(differences) / 0.9538725524089398 if len(differences) else 0.0
+        return float(max(noise, 0.001))
+
+    noise = noise_estimate(values)
+    deviations = None
+    if classes is not None:
+        classes = np.asarray(classes)
+        if classes.shape != values.shape or not np.isin(classes, ["IN", "OUT"]).all():
+            raise ValueError("classes must contain IN/OUT labels matching values")
+        deviations = np.full(len(values), noise)
+        for label in np.unique(classes):
+            selected = classes == label
+            if selected.sum() >= 3:
+                deviations[selected] = noise_estimate(values[selected])
+        noise = float(deviations.min())
+    return Parameters(0.0, float(np.sqrt(omega)), noise, deviations)
 
 
-def state_grid():
-    """R seq(-1, 1, by=0.1), including the binary64 operation order."""
-    return -1.0 + np.arange(21, dtype=np.float64) * 0.1
+def state_grid(values, noise):
+    """Use occupied noise-scaled bins, with zero and no amplitude clipping."""
+    if not np.isfinite(noise) or noise <= 0:
+        raise ValueError("noise must be positive and finite")
+    step = max(0.001, min(0.05, noise / 2))
+    return np.unique(np.r_[0.0, np.round(vector(values, "values") / step) * step])
 
 
 def distance_covariates(positions, theta, distance):
@@ -70,18 +85,35 @@ def distance_covariates(positions, theta, distance):
         return theta + (1 - theta) * np.exp(np.log(theta) / (delta / distance))
 
 
-def filter_breaks(breaks, min_windows):
-    """FilterSeg removes starts of short segments, with its first-segment quirk.
-
-    If the sole segment is short, the final endpoint is removed and reconstruction
-    remains zero. Preserve this surprising legacy behavior until compatibility.
-    """
-    result = np.asarray(breaks, dtype=np.int64)
-    short = np.flatnonzero(np.diff(result) <= min_windows)
-    if len(short) and short[0] == 0:
-        short[0] = 1
-        short = np.unique(short)
-    return np.delete(result, short)
+def filter_breaks(breaks, min_windows, values, support=None):
+    """Merge insufficient-support segments toward the closest median."""
+    values = vector(values, "values")
+    if isinstance(min_windows, bool) or int(min_windows) != min_windows or min_windows < 0:
+        raise ValueError("min_windows must be a nonnegative integer")
+    result = np.asarray(breaks, dtype=np.int64).copy()
+    if (
+        result.ndim != 1
+        or len(result) < 2
+        or result[0] != 0
+        or result[-1] != len(values)
+        or (np.diff(result) <= 0).any()
+    ):
+        raise ValueError("breaks must partition all values")
+    support = np.ones(len(values), dtype=bool) if support is None else np.asarray(support)
+    if support.shape != values.shape or support.dtype != np.bool_:
+        raise ValueError("support must be a boolean vector matching values")
+    while len(result) > 2:
+        counts = np.array([support[a:b].sum() for a, b in zip(result[:-1], result[1:])])
+        short = counts < min_windows
+        eligible = short[:-1] | short[1:]
+        if not eligible.any():
+            break
+        medians = np.array([np.median(values[a:b]) for a, b in zip(result[:-1], result[1:])])
+        costs = np.abs(np.diff(medians))
+        # Remove all equally good boundaries together, including symmetric ties.
+        chosen = eligible & (costs == costs[eligible].min())
+        result = np.delete(result, np.flatnonzero(chosen) + 1)
+    return result
 
 
 def reconstruct(values, breaks):
@@ -99,18 +131,12 @@ def segment(
     theta=1e-5,
     distance=1e6,
     min_windows=2,
+    support=None,
     backend="native",
     trace=False,
 ):
-    """Segment one arm using parameters estimated over the complete profile.
-
-    Trace matrices are optional; the native recurrence uses rolling scores and
-    on-demand transition blocks for ordinary calls. A single-window arm is rejected
-    because legacy SortState fails on it; no new scientific behavior is substituted.
-    """
+    """Segment one arm with an explicit stationary boundary prior."""
     values = vector(values, "values")
-    if len(values) < 2:
-        raise ValueError("legacy SortState does not support a single-window arm")
     positions = vector(positions, "positions")
     if len(positions) != len(values):
         raise ValueError("values and positions must have the same length")
@@ -119,20 +145,31 @@ def segment(
     p = parameters
     if not np.isfinite([p.mi, p.smu, p.sepsilon]).all() or p.smu <= 0 or p.sepsilon <= 0:
         raise ValueError("parameters require finite means and positive deviations")
+    deviations = None
+    if p.deviations is not None:
+        deviations = vector(p.deviations, "deviations")
+        if len(deviations) != len(values) or (deviations <= 0).any():
+            raise ValueError("deviations must be positive and match values")
     eta = distance_covariates(positions, theta, distance)
-    means = state_grid()
-    initial = np.full(len(means), np.log(1 / len(means)))
+    means = state_grid(values, p.sepsilon)
+    initial = -((means - p.mi) ** 2 / (2 * p.smu**2))
+    norm = float(initial[0])
+    for value in initial[1:]:
+        norm = reference.elnsum(norm, float(value))
+    initial -= norm
     if backend == "python":
-        transitions, emissions = reference.matrices(values, means, p.mi, p.smu, p.sepsilon, eta)
+        transitions, emissions = reference.matrices(
+            values, means, p.mi, p.smu, p.sepsilon, eta, deviations
+        )
         path, scores, predecessors = reference.viterbi(initial, transitions, emissions)
     elif backend == "native":
         path, transitions, emissions, scores, predecessors = _core.hslm_segment(
-            values, means, p.mi, p.smu, p.sepsilon, eta, initial, trace
+            values, means, p.mi, p.smu, p.sepsilon, eta, initial, trace, deviations
         )
     else:
         raise ValueError("backend must be 'native' or 'python'")
     breaks = np.r_[0, np.flatnonzero(np.diff(path)) + 1, len(path)]
-    filtered = filter_breaks(breaks, min_windows)
+    filtered = filter_breaks(breaks, min_windows, values, support)
     return Segmentation(
         path,
         breaks,

@@ -188,15 +188,27 @@ def load_preparation_exports(folder, chromosomes):
     if len(targets) != 1:
         raise ValueError("expected one exported MyTarget")
     target = read_export(targets[0])
-    gcfiles = sorted((folder / "GCC").glob("*.RData"))
-    mapfiles = sorted((folder / "MAP").glob("*.RData"))
+    if target.ndim != 2 or target.shape[1] != 5:
+        raise ValueError("expected a five-column MyTarget")
+    if not chromosomes or len(set(chromosomes)) != len(chromosomes):
+        raise ValueError("require nonempty unique target chromosomes")
+    selected_order = np.concatenate([np.flatnonzero(target[:, 0] == c) for c in chromosomes])
+    if not np.array_equal(selected_order, np.arange(len(target))):
+        raise ValueError("exported target rows must follow declared chromosome order")
     gc, maps = [], []
     for chromosome in chromosomes:
-        gi = [f.name for f in gcfiles].index(f"GCC.{chromosome}.RData")
-        mi = [f.name for f in mapfiles].index(f"Map.{chromosome}.RData")
-        # Preserve loadTarget's crossed indices, including its directory ordering.
-        gc.append(read_export(gcfiles[mi] / "GCContent"))
-        maps.append(read_export(mapfiles[gi] / "MapMed"))
+        count = np.count_nonzero(target[:, 0] == chromosome)
+        for directory, prefix, object_name, destination in [
+            ("GCC", "GCC", "GCContent", gc),
+            ("MAP", "Map", "MapMed", maps),
+        ]:
+            path = folder / directory / f"{prefix}.{chromosome}.RData" / object_name
+            if not path.is_dir():
+                raise ValueError(f"missing {directory} export for {chromosome}: {path}")
+            values = read_export(path)
+            if values.shape != (count,) or not count or not np.isfinite(values).all():
+                raise ValueError(f"{directory} export does not align with {chromosome} windows")
+            destination.append(values)
     return {"target": target, "gc": np.concatenate(gc), "mappability": np.concatenate(maps)}
 
 

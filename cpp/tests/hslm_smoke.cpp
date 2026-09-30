@@ -19,5 +19,15 @@ int main() {
         assert(path==traced);
         for (auto state:path) assert(state>=1 && state<=21);
         for (auto score:scores) assert(std::isfinite(score));
+        std::vector<double> noise(n);
+        for (std::size_t i=0;i<n;++i) noise[i]=i%2 ? 0.2 : 0.4;
+        excavator2::hslm::segment(n,k,values.data(),means.data(),0,0.1,0.3,eta.data(),
+                                 initial.data(),path.data(),nullptr,nullptr,nullptr,nullptr,
+                                 noise.data());
+        excavator2::hslm::segment(n,k,values.data(),means.data(),0,0.1,0.3,eta.data(),
+                                 initial.data(),traced.data(),transitions.data(),emissions.data(),
+                                 scores.data(),predecessors.data(),noise.data());
+        assert(path==traced);
+        for (auto score:scores) assert(std::isfinite(score));
     }
 }

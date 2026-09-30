@@ -17,56 +17,12 @@ FIXTURE = Path(__file__).parent / "fixtures" / "legacy-analysis"
 
 
 @pytest.fixture
-def calibrated(tmp_path):
-    from excavator2.artifacts import digest
-
-    prepared = tmp_path / "raw-prepared"
-    shutil.copytree(FIXTURE / "inputs/prepared", prepared)
-    manifest = json.loads((prepared / "manifest.json").read_text())
-    for name, filename in manifest["samples"].items():
-        with np.load(prepared / filename) as archive:
-            matrix = archive["matrix"]
-        counts = np.full(len(matrix), 100_000_000, dtype=np.int64)
-        if name.startswith("Test"):
-            rows = np.loadtxt(
-                FIXTURE / "expected/paired" / name / f"HSLMResults_{name}.txt",
-                dtype=str,
-                skiprows=1,
-            )
-            counts = np.rint(counts * 2 ** rows[:, 4].astype(float)).astype(np.int64)
-        np.savez_compressed(prepared / filename, matrix=matrix, counts=counts)
-        manifest["files"][filename] = digest(prepared / filename)
-    manifest["depth_policy"] = "raw-counts-v1"
-    (prepared / "manifest.json").write_text(json.dumps(manifest))
-    calibration = tmp_path / "calibration.json"
-    calibration.write_text(
-        json.dumps(
-            {
-                "baseline": "diploid-reference",
-                "bias": "shared",
-                "exposure_source": "independent",
-                "exposures": dict.fromkeys(manifest["samples"], 1),
-            }
-        )
-    )
-    return prepared, calibration
-
-
-def test_legacy_prepared_data_is_rejected(tmp_path, calibrated):
-    with pytest.raises(ValueError, match="re-prepare"):
-        run_analysis(
-            FIXTURE / "samples.yaml",
-            FIXTURE / "inputs/prepared",
-            FIXTURE / "inputs/target",
-            tmp_path / "results",
-            "paired",
-            calibration=calibrated[1],
-        )
-    assert not (tmp_path / "results").exists()
+def prepared_data():
+    return FIXTURE / "inputs/prepared"
 
 
 @pytest.mark.parametrize("experiment", ["paired", "pooling"])
-def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, calibrated):
+def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, prepared_data):
     output = tmp_path / "results"
     result = subprocess.run(
         [
@@ -77,13 +33,11 @@ def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, 
             "--samples",
             str(FIXTURE / "samples.yaml"),
             "--input",
-            str(calibrated[0]),
+            str(prepared_data),
             "--target",
             str(FIXTURE / "inputs/target"),
             "--output",
             str(output),
-            "--calibration",
-            str(calibrated[1]),
             "--experiment",
             experiment,
         ],
@@ -96,11 +50,13 @@ def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, 
     for sample in ("Test1", "Test2"):
         folder = output / "Results" / sample
         hslm = f"HSLMResults_{sample}.txt"
-        assert manifest["centering"] == "none"
-        assert manifest["pseudocount_reads"] == 0.5
+        assert manifest["centering"] == "separate-IN-OUT-medians"
+        assert "calibration" not in manifest
+        assert "calibration_sha256" not in manifest
+        assert "pseudocount_reads" not in manifest
         with np.load(folder / "checkpoints.npz") as data:
             expected = np.loadtxt(
-                FIXTURE / "expected/paired" / sample / hslm, dtype=str, skiprows=1
+                FIXTURE / "expected" / experiment / sample / hslm, dtype=str, skiprows=1
             )
             assert_allclose(data["ratios"], expected[:, 4].astype(float), atol=2e-8)
             table = np.loadtxt(folder / hslm, dtype=str, skiprows=1)
@@ -112,7 +68,7 @@ def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, 
         assert_array_equal(calls[:, -1].astype(float), 1)
 
 
-def test_failed_analysis_does_not_publish_partial_results(tmp_path, calibrated):
+def test_failed_analysis_does_not_publish_partial_results(tmp_path, prepared_data):
     parameters = tmp_path / "parameters.yaml"
     parameters.write_text(
         "HSLM: {Omega: 0, Theta: 0.1, D_norm: 100}\n"
@@ -122,19 +78,18 @@ def test_failed_analysis_does_not_publish_partial_results(tmp_path, calibrated):
     with pytest.raises(ValueError, match="omega"):
         run_analysis(
             FIXTURE / "samples.yaml",
-            calibrated[0],
+            prepared_data,
             FIXTURE / "inputs/target",
             output,
             "paired",
             parameters,
-            calibration=calibrated[1],
         )
     assert not output.exists()
     assert not list(tmp_path.glob(".excavator2-*"))
 
 
 def test_truncated_support_failure_does_not_publish_partial_samples(
-    tmp_path, monkeypatch, calibrated
+    tmp_path, monkeypatch, prepared_data
 ):
     from excavator2 import analyze
 
@@ -142,29 +97,28 @@ def test_truncated_support_failure_does_not_publish_partial_samples(
     processed = []
 
     def unsupported_second_sample(*args):
-        rows, path, indices = original_segment_profile(*args)
+        rows, path, indices, ids = original_segment_profile(*args)
         processed.append(True)
         if len(processed) == 2:
             rows[0, 5] = "100"
-        return rows, path, indices
+        return rows, path, indices, ids
 
     monkeypatch.setattr(analyze, "segment_profile", unsupported_second_sample)
     output = tmp_path / "results"
     with pytest.raises(FloatingPointError, match="model support"):
         run_analysis(
             FIXTURE / "samples.yaml",
-            calibrated[0],
+            prepared_data,
             FIXTURE / "inputs/target",
             output,
             "paired",
-            calibration=calibrated[1],
         )
     assert len(processed) == 2
     assert not output.exists()
     assert not list(tmp_path.glob(".excavator2-*"))
 
 
-def test_manifest_checksums_and_target_identity(tmp_path, calibrated):
+def test_manifest_checksums_and_target_identity(tmp_path, prepared_data):
     prepared = tmp_path / "prepared"
     shutil.copytree(FIXTURE / "inputs/prepared", prepared)
     manifest = json.loads((prepared / "manifest.json").read_text())
@@ -177,7 +131,6 @@ def test_manifest_checksums_and_target_identity(tmp_path, calibrated):
             FIXTURE / "inputs/target",
             tmp_path / "output",
             "paired",
-            calibration=calibrated[1],
         )
     (prepared / next(iter(manifest["files"]))).write_bytes(b"corrupted")
     with pytest.raises(ValueError, match="checksum"):
@@ -202,17 +155,17 @@ def test_design_order_and_duplicate_yaml(tmp_path):
         read_yaml(path)
 
 
-def test_makedata_preserves_cross_chromosome_grouping():
+def test_summary_preserves_cross_chromosome_boundary():
     rows = np.array(
         [["chr1", "1", "1", "2", "0", "0", "IN"], ["chr2", "3", "3", "4", "0", "0", "OUT"]]
     )
-    starts, ends, values = summarize(rows)
-    assert_array_equal(starts, [0])
-    assert_array_equal(ends, [2])
-    assert_array_equal(values, [0])
+    starts, ends, values = summarize(rows, [0, 0])
+    assert_array_equal(starts, [0, 1])
+    assert_array_equal(ends, [1, 2])
+    assert_array_equal(values, [0, 0])
 
 
-def test_cli_records_per_sample_r_state_without_changing_unique_calls(tmp_path, calibrated):
+def test_cli_records_per_sample_r_state_without_changing_unique_calls(tmp_path, prepared_data):
     with np.load(FIXTURE.parent / "legacy-fastcall/edges/ties.npz") as data:
         seed = data["seed_before"]
     seeds = tmp_path / "seeds.json"
@@ -227,13 +180,11 @@ def test_cli_records_per_sample_r_state_without_changing_unique_calls(tmp_path, 
             "--samples",
             str(FIXTURE / "samples.yaml"),
             "--input",
-            str(calibrated[0]),
+            str(prepared_data),
             "--target",
             str(FIXTURE / "inputs/target"),
             "--output",
             str(output),
-            "--calibration",
-            str(calibrated[1]),
             "--experiment",
             "paired",
             "--r-seed-states",
@@ -253,7 +204,9 @@ def test_cli_records_per_sample_r_state_without_changing_unique_calls(tmp_path, 
     assert manifest["r_seed_states_sha256"] == digest(seeds)
 
 
-def test_analysis_replays_original_ties_independently_per_sample(tmp_path, monkeypatch, calibrated):
+def test_analysis_replays_original_ties_independently_per_sample(
+    tmp_path, monkeypatch, prepared_data
+):
     from dataclasses import replace
 
     from excavator2 import analyze
@@ -264,8 +217,11 @@ def test_analysis_replays_original_ties_independently_per_sample(tmp_path, monke
 
     def tied_fit(*args, **kwargs):
         fit = real_fit(*args, **kwargs)
-        assert len(fit.posterior) == 4
-        return replace(fit, posterior=expected["posterior"][:4])
+        assert len(fit.posterior) >= 4
+        posterior = np.zeros_like(fit.posterior)
+        posterior[:, 2] = 1
+        posterior[:4] = expected["posterior"][:4]
+        return replace(fit, posterior=posterior)
 
     monkeypatch.setattr(analyze, "fit_fastcall", tied_fit)
     seeds = tmp_path / "seeds.json"
@@ -275,36 +231,34 @@ def test_analysis_replays_original_ties_independently_per_sample(tmp_path, monke
     output = tmp_path / "results"
     run_analysis(
         FIXTURE / "samples.yaml",
-        calibrated[0],
+        prepared_data,
         FIXTURE / "inputs/target",
         output,
         "paired",
-        calibration=calibrated[1],
         r_seed_states=seeds,
     )
     for sample in ("Test1", "Test2"):
         with np.load(output / "Results" / sample / "checkpoints.npz") as data:
-            assert_array_equal(data["labels"], expected["calls"][:4, 0])
+            assert_array_equal(data["labels"][:4], expected["calls"][:4, 0])
             from excavator2.fastcall import assign_labels
 
-            rest = assign_labels(expected["posterior"][4:], r_seed=data["r_seed_after"])
-            assert_array_equal(rest.labels, expected["calls"][4:, 0])
-            assert_array_equal(rest.r_seed, expected["seed_after"])
+            replay = assign_labels(data["posterior"], r_seed=expected["seed_before"])
+            assert_array_equal(data["labels"], replay.labels)
+            assert_array_equal(data["r_seed_after"], replay.r_seed)
 
 
 @pytest.mark.parametrize("states", [{}, {"Unknown": []}, {"Test1": [], "Test2": []}])
-def test_invalid_r_states_do_not_publish_results(tmp_path, states, calibrated):
+def test_invalid_r_states_do_not_publish_results(tmp_path, states, prepared_data):
     seeds = tmp_path / "seeds.json"
     seeds.write_text(json.dumps(states))
     output = tmp_path / "results"
     with pytest.raises(ValueError, match="R"):
         run_analysis(
             FIXTURE / "samples.yaml",
-            calibrated[0],
+            prepared_data,
             FIXTURE / "inputs/target",
             output,
             "paired",
-            calibration=calibrated[1],
             r_seed_states=seeds,
         )
     assert not output.exists()
@@ -353,3 +307,46 @@ def test_legacy_converter_preserves_character_values(tmp_path):
     assert prepared["target_id"] == target["target_id"]
     with np.load(output / "prepared/sample-0.npz") as f:
         assert_array_equal(f["matrix"], matrix)
+
+
+@pytest.mark.parametrize("purity", [0.5, 0.05])
+def test_analysis_passes_corrected_values_to_all_outputs(tmp_path, prepared_data, purity):
+    from excavator2.analyze import DEFAULTS
+    from excavator2.fastcall import correct_cellularity
+
+    parameters = tmp_path / "parameters.json"
+    params = {key: dict(value) for key, value in DEFAULTS.items()}
+    params["FastCall"]["Cellularity"] = purity
+    parameters.write_text(json.dumps(params))
+    output = tmp_path / "corrected"
+    run_analysis(
+        FIXTURE / "samples.yaml",
+        prepared_data,
+        FIXTURE / "inputs/target",
+        output,
+        "paired",
+        parameters,
+    )
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["absolute_copy_number"] is False
+    for sample in ("Test1", "Test2"):
+        folder = output / "Results" / sample
+        with np.load(folder / "checkpoints.npz") as data:
+            corrected = correct_cellularity(data["mixture_segments"], purity)
+            assert_allclose(data["corrected_segments"], corrected)
+            selected = data["labels"] != 0
+            table = np.genfromtxt(
+                folder / f"FastCallResults_{sample}.txt", names=True, dtype=None, encoding="utf-8"
+            )
+            assert_allclose(table["DECNF"], 2 * np.exp2(corrected[selected]))
+            assert_allclose(table["CorrectedSegment"], corrected[selected])
+
+
+def test_analysis_help_has_no_calibration_option():
+    result = subprocess.run(
+        [sys.executable, "-m", "excavator2", "analyze", "--help"],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0
+    assert "--calibration" not in result.stdout

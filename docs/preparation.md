@@ -1,8 +1,9 @@
 # M4: BAM preparation with legacy parity
 
 > Historical parity record. Current preparation and analysis follow the
-> [signal calibration contract](signal-calibration.md): preserve raw counts,
-> require `--calibration`, and apply no covariate correction or median centering.
+> [original normalization contract](analysis-normalization.md): size/MAP/GC
+> correction, zero replacement, normalized-control pooling and separate IN/OUT
+> median centering, without a calibration file.
 > Legacy prepared inputs and the analysis commands below are superseded.
 
 
@@ -50,36 +51,33 @@ new conversion containing `preparation.npz` with target rows, GC and mappability
 The converter verifies the shared ordered-window identity when both original
 prepared samples and target features are supplied.
 
-## Compatibility decisions
+## Current counting policy
 
-`reads.py` preserves the source's behavior, including its known defects:
+Preparation excludes flags 4 and 1024 and requires MAPQ >= `--mapq` (default 20).
+Other alignment flags retain their existing treatment. Positions are one-based
+SAM starts, counted independently in each inclusive `[start,end]` interval.
+Overlapping/nested windows can count the same read. Operational chunks contain
+500,000 selected records, but partitioning does not change counts. Empty streams
+produce zeros; terminal windows and exact multiples of the chunk size are handled.
 
-- Only flags 4 and 1024 are excluded. Secondary/supplementary alignments, mate
-  records and QC-failed records are retained. Coordinates use one-based SAM POS.
-- The original awk expression retains every MAPQ. The CLI accepts `--mapq` and
-  records it, but does not silently introduce a quality filter in compatibility mode.
-- Chunks contain 500,000 selected records. A wholly contained chunk replaces the
-  residual count instead of adding to it. An exact full final chunk can lead to
-  the original empty-read failure; the port reports an error in that case too.
-- A window is committed only when a later read advances beyond its end. An
-  unflushed final window stays zero. Starts/ends are inclusive for counting.
-- Overlapping/nested target windows are not repaired. Running maximum ends and
-  search bounds preserve the original forward-only assignment. A literal Python
-  state-machine reference is in `reference/reads.py` for debugging.
-- The original Fortran accesses beyond its arrays after the last window. The port
-  stops once all defined counts are written. This avoids unsafe memory access;
-  all defined counts agree on the supplied data and fixtures.
+These replace P01/P04/P05/P08 (#21–#23, #25). `reference/reads.py` is retained only
+as a historical legacy oracle, not a supported counting mode. Regenerate prepared
+artifacts to obtain corrected counts. Manifests record the filtering and counting
+policies. Worker failures include the sample name and cause a nonzero CLI exit;
+no partial preparation is published (P12, #27).
 
-`normalization.py` divides by `end-start`, then applies size correction to IN
-windows, MAP correction separately to IN/OUT, and finally GC correction separately.
-Bins are `[0,5]`, `(5,10]`, etc. A partial last size bin is omitted, matching R's
-`seq`. Non-positive bin medians leave values unchanged. Final zeros are replaced
-with the smallest nonzero value within the same IN/OUT class. The saved matrix
-uses the original 15-significant-digit character conversion with `scipen=20`.
-No pseudocount, alternative normalization, quality policy or scientific bug fix
-is introduced.
+`normalization.py` applies the original size/MAP/GC corrections and class-wise
+minimum-nonzero replacement after dividing counts by `end-start`. Analysis uses
+normalized prepared values. See
+[target corrections](target-porting.md) for geometry and feature changes.
 
-## Verification
+## Current verification
+
+Tests compare counts with an independent interval-membership calculation across
+legacy defect fixtures and arbitrary partitions, verify MAPQ filtering through the
+CLI, and exercise atomic failure with both sequential and concurrent workers.
+
+## Historical verification
 
 - All 281,567 integer counts agree exactly for each supplied BAM (563,134 window
   comparisons). Final prepared matrices agree exactly, including numeric strings.
