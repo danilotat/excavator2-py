@@ -17,7 +17,9 @@ its installation/workflow instructions remain in the root README.
   CMake/Ninja when required; no global CMake installation is necessary.
 
 Python dependencies: NumPy, SciPy, PyYAML, pysam, and pyBigWig. Plotting is an
-optional extra. Our own native extension contains scalar FastCall and HSLM kernels. R, Perl, Fortran and samtools executables
+optional extra. Our native extension contains FastCall and HSLM kernels and the BAM counter.
+The counter links to HTSlib bundled with pysam; build and runtime pysam versions
+are pinned together to keep its native ABI consistent. R, Perl, Fortran and samtools executables
 are needed only for legacy-oracle regeneration. Target generation requires the
 FASTA, BigWig and coordinate annotations referenced by the input YAML.
 
@@ -69,7 +71,7 @@ The pip route respects dependency bounds but does not consume `uv.lock`.
 `target_pipeline.py` owns target orchestration, `target.py` geometry, and
 `target_features.py` reference extraction. Preparation, normalization, HSLM and
 FastCall policy remain in their Python stage modules. Keep algorithm policy in Python. Custom C++ starts with
-HSLM and FastCall hot kernels; further additions require evidence.
+HSLM, FastCall, and BAM counting hot kernels.
 
 ## Build and validation
 
@@ -99,3 +101,48 @@ See [the detailed roadmap](python-cpp-porting-roadmap.md).
 Build follows the official [scikit-build-core guide](https://scikit-build-core.readthedocs.io/en/latest/guide/getting_started.html)
 and [pybind11 CMake documentation](https://pybind11.readthedocs.io/en/stable/compiling.html).
 Existing attribution and the root LICENSE are retained.
+
+## Native preparation counting
+
+BAM decoding, MAPQ/flag filtering, and inclusive window counting run in C++ with
+the GIL released. A sorted boundary sweep computes independent counts for
+overlapping windows without buffering read positions. Normalization is unchanged.
+The manifest identifies this backend as `cpp.htslib-prefix-counts`.
+
+`--threads` controls one shared pool of sample–region jobs, so a single BAM can
+use multiple workers. Adjacent target windows are batched (up to 1,024 rows and
+a 1 Mb span between window starts, with smaller batches to expose parallel work).
+Each job queries the BAM index over its windows' extent. Each window belongs to
+exactly one job; overlapping windows retain independent inclusive counts. Reads
+that merely overlap a window but start before it are not counted in that window.
+Boundary plans (sorted endpoints and query extents) are constructed once per
+batch and shared read-only across samples. Each worker reuses one BAM handle,
+header, index, and read buffer; switching input closes the previous reader.
+Worker shutdown releases its cached reader, including on failed runs.
+
+Normalization runs after all of a sample's counts have been assembled in target
+order, using the same pool without nested worker pools.
+
+Preparation no longer hashes BAMs or records input-provenance hashes. Output
+artifact checksums and target identity validation remain part of the artifact
+format. Disk throughput, repeated decompression around batch boundaries,
+normalization, and uneven region sizes can limit end-to-end scaling.
+
+Run `uv run python benchmarks/prepare_counts.py` for a synthetic comparison
+against the Python/NumPy counting reference, including concurrent native calls.
+On the development Mac, one million reads and 20,000 overlapping windows took
+0.222 s in Python versus 0.031 s in C++ (7.2×; median of five warm runs). Eight
+native counts took 0.245 s with one worker and 0.074 s with four (3.3×). These
+measure counting on a cached synthetic BAM, not whole-stage preparation speed.
+
+With region scheduling, the same single-BAM benchmark took 0.041 s with one
+worker, 0.016 s with four, and 0.015 s with sixteen (median of five runs). The
+previous whole-chromosome native call took 0.031 s. This small input already
+shows diminishing returns beyond four workers; benchmark representative BAMs
+before choosing a worker count.
+
+After adding reader reuse and shared boundary plans, the same small synthetic
+benchmark measured 0.040/0.017/0.016 s at 1/4/16 workers, respectively. This
+does not demonstrate a further speedup on that input; the changes remove
+per-batch file/index setup and repeated per-sample boundary construction, which
+should be evaluated on larger indexes and multi-sample workloads.

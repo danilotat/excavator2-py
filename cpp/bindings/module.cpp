@@ -115,9 +115,11 @@ py::tuple maximization(const Array& values, const Array& responsibilities,
 }  // namespace
 
 void bind_hslm(py::module_& module);
+void bind_reads(py::module_& module);
 
 PYBIND11_MODULE(_core, module) {
     bind_hslm(module);
+    bind_reads(module);
     py::register_exception<fc::NumericalError>(module, "FastCallNumericalError", PyExc_FloatingPointError);
     module.doc() = "Scalar HSLM and FastCall numerical kernels; algorithm control remains in Python";
     module.def("fastcall_posterior", &posterior, py::arg("values").noconvert(),

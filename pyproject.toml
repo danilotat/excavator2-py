@@ -1,5 +1,5 @@
 [build-system]
-requires = ["scikit-build-core==0.11.6", "pybind11==3.0.1"]
+requires = ["scikit-build-core==0.11.6", "pybind11==3.0.1", "pysam==0.24.1"]
 build-backend = "scikit_build_core.build"
 
 [project]
@@ -13,7 +13,7 @@ dependencies = [
     "numpy>=1.26,<3",
     "scipy>=1.12,<2",
     "PyYAML>=6,<7",
-    "pysam>=0.22,<1",
+    "pysam==0.24.1",
     "pyBigWig>=0.3.22,<1",
 ]
 

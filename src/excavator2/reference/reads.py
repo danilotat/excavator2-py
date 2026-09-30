@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from excavator2.reads import CHUNK_SIZE
+from .bam_counts import CHUNK_SIZE
 
 
 def count_positions(chunks, starts, ends):
