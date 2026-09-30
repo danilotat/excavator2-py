@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
-from excavator2.analyze import ratios
 from excavator2.fastcall import assign_labels, correct_cellularity, fit_fastcall
 from excavator2.writers import write_results
 
@@ -58,21 +57,6 @@ def test_corrected_reporting_and_floor(tmp_path, purity, chromosome):
         assert_allclose([float(v["DECNF"]) for v in values], table["DECNF"])
         assert_allclose([float(v["DECN"]) for v in values], table["DECN"])
         assert all(v["GT"] == "." for v in values)
-
-
-def test_pool_outlier_influence_after_tenfold_exposure_change():
-    test = np.full(100, 100)
-    controls = np.full((2, 100), 100)
-    controls[1, :10] *= 2
-    before = ratios(test, controls, test_exposure=1, control_exposures=[1, 1])
-    controls[1] *= 10
-    after = ratios(test, controls, test_exposure=1, control_exposures=[1, 10])
-    # Remaining difference is the fixed half-read prior, not depth weighting.
-    assert_allclose(before[:10], np.log2(100.5 / 150.5))
-    assert_allclose(after[:10], np.log2(100.5 / 150.275))
-    assert_allclose(after, before, atol=0.004)
-    uncalibrated = ratios(test, controls, test_exposure=1, control_exposures=[1, 1])
-    assert abs(uncalibrated[0] - after[0]) > 2
 
 
 @pytest.mark.parametrize("backend", ["python", "native"])

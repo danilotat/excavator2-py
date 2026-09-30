@@ -1,8 +1,9 @@
 # M4: BAM preparation with legacy parity
 
 > Historical parity record. Current preparation and analysis follow the
-> [signal calibration contract](signal-calibration.md): preserve raw counts,
-> require `--calibration`, and apply no covariate correction or median centering.
+> [original normalization contract](analysis-normalization.md): size/MAP/GC
+> correction, zero replacement, normalized-control pooling and separate IN/OUT
+> median centering, without a calibration file.
 > Legacy prepared inputs and the analysis commands below are superseded.
 
 
@@ -65,8 +66,9 @@ artifacts to obtain corrected counts. Manifests record the filtering and countin
 policies. Worker failures include the sample name and cause a nonzero CLI exit;
 no partial preparation is published (P12, #27).
 
-`normalization.py` preserves raw density (`counts / (end-start)`), including zeros.
-Calibration belongs to the test/reference analysis stage. See
+`normalization.py` applies the original size/MAP/GC corrections and class-wise
+minimum-nonzero replacement after dividing counts by `end-start`. Analysis uses
+normalized prepared values. See
 [target corrections](target-porting.md) for geometry and feature changes.
 
 ## Current verification

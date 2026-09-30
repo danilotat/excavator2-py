@@ -1,4 +1,4 @@
-"""Prepare observed BAM counts without sample-specific signal correction."""
+"""Prepare BAM counts with original size, MAP and GC normalization."""
 
 import json
 import re
@@ -17,7 +17,7 @@ from .artifacts import (
     read_yaml,
     window_metadata,
 )
-from .normalization import DEPTH_POLICY, normalize
+from .normalization import normalize
 from .reads import count_bam
 
 
@@ -90,7 +90,7 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
         result = {
             "schema": 1,
             "kind": "prepared",
-            "depth_policy": DEPTH_POLICY,
+            "depth_policy": "size-map-gc-normalized-v1",
             "target_id": manifest["target_id"],
             "samples": {name: filename for name, filename, _, _ in results},
             "files": {filename: checksum for _, filename, checksum, _ in results},

@@ -38,7 +38,7 @@ def test_counts_correct_original_chunk_defects(name):
         assert_array_equal(count_positions(chunks, f["starts"], f["ends"]), expected)
 
 
-def test_preparation_preserves_raw_density():
+def test_normalization_trace_matches_original():
     with np.load(FIXTURES / "normalization.npz") as f:
         n = len(f["counts"])
         target = np.column_stack(
@@ -51,8 +51,14 @@ def test_preparation_preserves_raw_density():
             ]
         )
         result = normalize(f["counts"], target, f["gc"], f["mappability"])
-        assert_allclose(result["normalized"], f["counts"] / f["lengths"])
-        assert_array_equal(result["normalized"] == 0, f["counts"] == 0)
+        for name, original in [
+            ("weighted", "weighted"),
+            ("size", "size"),
+            ("map", "mapped"),
+            ("gc", "corrected"),
+            ("normalized", "normalized"),
+        ]:
+            assert_allclose(result[name], f[original], rtol=1e-14, atol=1e-15)
 
 
 def test_selection_filters_mapq_and_retains_other_flag_semantics(tmp_path):
@@ -150,12 +156,12 @@ def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, thread
                             )
                         )
                 assert_array_equal(new["counts"], expected)
-                assert manifest["depth_policy"] == "raw-counts-v1"
+                assert manifest["depth_policy"] == "size-map-gc-normalized-v1"
                 assert_array_equal(
                     new["matrix"][:, [0, 1, 2, 3, 4, 6]], old["matrix"][:, [0, 1, 2, 3, 4, 6]]
                 )
                 assert_allclose(
-                    new["normalized"],
+                    new["weighted"],
                     np.array(expected)
                     / (old["matrix"][:, 3].astype(float) - old["matrix"][:, 2].astype(float)),
                 )

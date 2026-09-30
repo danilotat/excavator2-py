@@ -53,7 +53,7 @@ jobs:
         run: |
           uv venv --python 3.12 "$RUNNER_TEMP/concordance-venv"
           uv pip install --python "$RUNNER_TEMP/concordance-venv/bin/python" dist/*.whl pytest
-      - name: Verify calibrated analysis and raw preparation contracts
+      - name: Verify original normalization and corrected analysis contracts
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" -m pytest \
             tests/test_signal_preservation.py tests/test_preparation.py tests/test_analysis.py \

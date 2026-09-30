@@ -30,43 +30,31 @@ since FastCall does not infer allele genotypes. There is no compatibility mode.
 Consumers must update their field selection; historical output equality is no
 longer an acceptance criterion.
 
-The calibration assertion `diploid-reference` applies to **every analyzed
-window in every control**, including sex chromosomes and PAR. The contaminating
-component in the cellularity inversion must also match that baseline. Chromosome
-names cannot establish these facts. Absolute sample ploidy, sex, PAR boundaries
-and allele counts are not inferred or accepted as metadata by this pipeline.
-Non-diploid or unknown reference assertions are rejected. A falsely declared
-diploid reference cannot be detected from these counts alone.
-
-| Reference domain | Interpretation / support |
-| --- | --- |
-| Validated diploid autosome | A twofold ratio gives DECNF 4 at p = 1 |
-| Haploid X outside PAR | Unsupported reference; a twofold ratio would give diploid-equivalent 4, not absolute 2 |
-| Validated two-copy PAR in all controls | Satisfies the diploid baseline assertion; no automatic PAR detection |
-| PAR with unknown or mixed reference dosage | Unsupported; chromosome-level sex alone is insufficient |
-| Three-copy aneuploid reference | Unsupported; a twofold ratio would give equivalent 4, not absolute 6 |
+Reference ploidy, sex and PAR boundaries are not inferred or validated by the
+pipeline. DECNF/DECN are diploid-equivalent relative values, not absolute copy
+numbers. For example, a twofold ratio relative to a haploid X reference produces
+DECNF 4, not absolute CN 2. No user declaration of a diploid reference is required.
+The contaminating component assumed by cellularity correction also affects how
+its corrected values should be interpreted.
 
 This addresses misleading absolute naming, not general ploidy-aware inference.
 Adding absolute CN later requires region-specific reference and contaminant
 ploidy, sample context, validated PAR handling, and an appropriate calling model.
 The fixed FastCall means and class thresholds retain their diploid-relative meaning.
 
-## P15 assessment: equal weighting is already implemented
+## P15 assessment: control depth still affects arithmetic pooling
 
-The current `ratios` function averages `(control_count + 0.5) / exposure` equally
-across controls. Independent exposure calibration removes the original depth
-weighting. In the audit-shaped probe (100 reads, one flat control, another with
-a twofold gain in ten windows), the affected ratio is `log2(100.5/150.5)`.
-Increasing only the second control's depth and exposure tenfold gives
-`log2(100.5/150.275)`. The difference is below 0.004 log2 units across all windows;
-it comes from applying the half-read prior before exposure scaling. Exact scale
-invariance is intentionally not claimed at low depth.
+Analysis averages normalized counts across selected controls without a pseudocount,
+and median-centers the resulting log ratios separately for IN and OUT. This is
+the selected original automatic normalization method; no exposure file is used.
 
-The control gain still distorts the reference: equal weighting does not remove
-control CNVs. There is no quality weighting, outlier rejection, or robust
-aggregation. Controls must satisfy the stated baseline; automatic CNV handling
-and alternative weights require validation on independently characterized
-controls. No pooling algorithm change is justified by this probe alone.
+A deeper control has greater influence on local deviations in the pooled
+reference. With one flat control and another carrying a twofold gain in ten of
+100 windows, increasing only the second control's depth changes the local ratio
+even after median centering. The regression test records this limitation rather
+than claiming depth-invariant pooling. Control CNVs, quality weighting and outlier
+handling remain unresolved modeling questions; no replacement pooling rule is
+introduced. See [automatic normalization](analysis-normalization.md).
 
 ## H07 assessment: probabilities are not calibrated event confidence
 

@@ -42,12 +42,6 @@ def build_parser() -> argparse.ArgumentParser:
     )
     analyze.add_argument("--parameters", "-p", type=Path)
     analyze.add_argument(
-        "--calibration",
-        type=Path,
-        required=True,
-        help="Independent exposures, diploid reference and shared-bias declaration",
-    )
-    analyze.add_argument(
         "--r-seed-states",
         type=Path,
         help="YAML/JSON mapping of each test sample to its original R .Random.seed before LabelAss",
@@ -115,7 +109,6 @@ def main(argv: Sequence[str] | None = None) -> int:
                 args.threads,
                 args.force,
                 r_seed_states=args.r_seed_states,
-                calibration=args.calibration,
             )
         except (ValueError, OSError, KeyError, FloatingPointError) as error:
             parser.exit(status=1, message=f"excavator2 analyze: {error}\n")

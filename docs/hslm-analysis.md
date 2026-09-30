@@ -4,8 +4,9 @@
 > [segmentation policy](segmentation-policy.md), replacing the state grid, noise
 > estimation, initial prior, filtering, and cross-boundary grouping described below.
 > Current preparation and analysis follow the
-> [signal calibration contract](signal-calibration.md): preserve raw counts,
-> require `--calibration`, and apply no covariate correction or median centering.
+> [original normalization contract](analysis-normalization.md): size/MAP/GC
+> correction, zero replacement, normalized-control pooling and separate IN/OUT
+> median centering, without a calibration file.
 > Legacy prepared inputs and the analysis commands below are superseded.
 
 
