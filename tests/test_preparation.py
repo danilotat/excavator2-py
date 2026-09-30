@@ -8,7 +8,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 from excavator2.normalization import normalize
-from excavator2.reads import CHUNK_SIZE, count_positions, selected_chunks
+from excavator2.reference.bam_counts import CHUNK_SIZE, count_positions, selected_chunks
 
 FIXTURES = Path(__file__).parent / "fixtures/legacy-preparation"
 
@@ -219,3 +219,76 @@ def test_cli_worker_failure_is_nonzero_and_atomic(tmp_path, threads):
     assert "Complete:" not in result.stderr
     assert not output.exists()
     assert not list(tmp_path.glob(".excavator2-prepare-*"))
+
+
+def test_one_sample_uses_region_workers_without_input_hashes(tmp_path, monkeypatch):
+    import json
+    import threading
+
+    from excavator2 import prepare
+
+    fixture = FIXTURES / "pipeline"
+    samples = tmp_path / "samples.yaml"
+    samples.write_text(f"Test1: {fixture / 'Test1.bam'}\n")
+    output = tmp_path / "prepared"
+    barrier = threading.Barrier(4)
+    lock = threading.Lock()
+    entered = 0
+    thread_ids = set()
+    original_count = prepare.RegionCounter.__call__
+    original_digest = prepare.digest
+
+    def count(*args):
+        nonlocal entered
+        with lock:
+            entered += 1
+            first_wave = entered <= 4
+            thread_ids.add(threading.get_ident())
+        if first_wave:
+            barrier.wait(timeout=10)
+        return original_count(*args)
+
+    def digest(path):
+        assert Path(path).suffix == ".npz", "preparation must not hash input files"
+        return original_digest(path)
+
+    monkeypatch.setattr(prepare.RegionCounter, "__call__", count)
+    monkeypatch.setattr(prepare, "digest", digest)
+    prepare.run_preparation(samples, fixture / "target", output, threads=4)
+    assert len(thread_ids) == 4
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert not {"bam_sha256", "target_manifest_sha256", "samples_sha256"} & manifest.keys()
+    serial = tmp_path / "serial"
+    monkeypatch.setattr(prepare.RegionCounter, "__call__", original_count)
+    prepare.run_preparation(samples, fixture / "target", serial, threads=1)
+    with np.load(output / "sample-0.npz") as parallel, np.load(serial / "sample-0.npz") as single:
+        for name in parallel.files:
+            assert_array_equal(parallel[name], single[name])
+
+
+def test_boundary_plans_are_built_once_for_all_samples(tmp_path, monkeypatch):
+    from excavator2 import _core, prepare
+
+    fixture = FIXTURES / "pipeline"
+    samples = tmp_path / "samples.yaml"
+    samples.write_text(f"First: {fixture / 'Test1.bam'}\nSecond: {fixture / 'Test1.bam'}\n")
+    factory = _core.RegionPlan
+    plans = []
+    uses = []
+    count = prepare.RegionCounter.__call__
+
+    def plan(*args):
+        result = factory(*args)
+        plans.append(result)
+        return result
+
+    def tracked_count(self, path, job, mapq):
+        uses.append(job[1])
+        return count(self, path, job, mapq)
+
+    monkeypatch.setattr(_core, "RegionPlan", plan)
+    monkeypatch.setattr(prepare.RegionCounter, "__call__", tracked_count)
+    prepare.run_preparation(samples, fixture / "target", tmp_path / "prepared", threads=4)
+    assert plans
+    assert len(uses) == 2 * len(plans)
+    assert all(sum(used is plan for used in uses) == 2 for plan in plans)
