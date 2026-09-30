@@ -154,7 +154,7 @@ requires-dist = [
     { name = "matplotlib", marker = "extra == 'plots'", specifier = ">=3.8,<4" },
     { name = "numpy", specifier = ">=1.26,<3" },
     { name = "pybigwig", specifier = ">=0.3.22,<1" },
-    { name = "pysam", specifier = ">=0.22,<1" },
+    { name = "pysam", specifier = "==0.24.1" },
     { name = "pyyaml", specifier = ">=6,<7" },
     { name = "scipy", specifier = ">=1.12,<2" },
 ]
