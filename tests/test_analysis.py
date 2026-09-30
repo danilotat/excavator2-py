@@ -142,11 +142,11 @@ def test_truncated_support_failure_does_not_publish_partial_samples(
     processed = []
 
     def unsupported_second_sample(*args):
-        rows, path, indices = original_segment_profile(*args)
+        rows, path, indices, ids = original_segment_profile(*args)
         processed.append(True)
         if len(processed) == 2:
             rows[0, 5] = "100"
-        return rows, path, indices
+        return rows, path, indices, ids
 
     monkeypatch.setattr(analyze, "segment_profile", unsupported_second_sample)
     output = tmp_path / "results"
@@ -202,14 +202,14 @@ def test_design_order_and_duplicate_yaml(tmp_path):
         read_yaml(path)
 
 
-def test_makedata_preserves_cross_chromosome_grouping():
+def test_summary_preserves_cross_chromosome_boundary():
     rows = np.array(
         [["chr1", "1", "1", "2", "0", "0", "IN"], ["chr2", "3", "3", "4", "0", "0", "OUT"]]
     )
-    starts, ends, values = summarize(rows)
-    assert_array_equal(starts, [0])
-    assert_array_equal(ends, [2])
-    assert_array_equal(values, [0])
+    starts, ends, values = summarize(rows, [0, 0])
+    assert_array_equal(starts, [0, 1])
+    assert_array_equal(ends, [1, 2])
+    assert_array_equal(values, [0, 0])
 
 
 def test_cli_records_per_sample_r_state_without_changing_unique_calls(tmp_path, calibrated):
@@ -264,8 +264,11 @@ def test_analysis_replays_original_ties_independently_per_sample(tmp_path, monke
 
     def tied_fit(*args, **kwargs):
         fit = real_fit(*args, **kwargs)
-        assert len(fit.posterior) == 4
-        return replace(fit, posterior=expected["posterior"][:4])
+        assert len(fit.posterior) >= 4
+        posterior = np.zeros_like(fit.posterior)
+        posterior[:, 2] = 1
+        posterior[:4] = expected["posterior"][:4]
+        return replace(fit, posterior=posterior)
 
     monkeypatch.setattr(analyze, "fit_fastcall", tied_fit)
     seeds = tmp_path / "seeds.json"
@@ -284,12 +287,12 @@ def test_analysis_replays_original_ties_independently_per_sample(tmp_path, monke
     )
     for sample in ("Test1", "Test2"):
         with np.load(output / "Results" / sample / "checkpoints.npz") as data:
-            assert_array_equal(data["labels"], expected["calls"][:4, 0])
+            assert_array_equal(data["labels"][:4], expected["calls"][:4, 0])
             from excavator2.fastcall import assign_labels
 
-            rest = assign_labels(expected["posterior"][4:], r_seed=data["r_seed_after"])
-            assert_array_equal(rest.labels, expected["calls"][4:, 0])
-            assert_array_equal(rest.r_seed, expected["seed_after"])
+            replay = assign_labels(data["posterior"], r_seed=expected["seed_before"])
+            assert_array_equal(data["labels"], replay.labels)
+            assert_array_equal(data["r_seed_after"], replay.r_seed)
 
 
 @pytest.mark.parametrize("states", [{}, {"Unknown": []}, {"Test1": [], "Test2": []}])

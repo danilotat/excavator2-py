@@ -15,7 +15,7 @@ void vector(const Array& a, py::ssize_t size) {
         throw py::value_error("HSLM requires finite inputs");
 }
 py::tuple segment(const Array& values,const Array& means,double mi,double smu,double sepsilon,
-                  const Array& eta,const Array& initial,bool trace) {
+                  const Array& eta,const Array& initial,bool trace,py::object deviations) {
     const auto n=values.size(), k=means.size();
     if (n<1 || k<1 || k>std::numeric_limits<std::int32_t>::max())
         throw py::value_error("HSLM requires nonempty data and states");
@@ -27,6 +27,17 @@ py::tuple segment(const Array& values,const Array& means,double mi,double smu,do
     const auto max=std::numeric_limits<py::ssize_t>::max()/sizeof(double);
     if (n>max/k || k>max/k || (trace && n-1>max/k/k))
         throw py::value_error("HSLM dimensions overflow buffer sizes");
+    Array noise;
+    const double* noise_data=nullptr;
+    if (!deviations.is_none()) {
+        if (!py::isinstance<Array>(deviations))
+            throw py::type_error("HSLM deviations require contiguous float64 buffers");
+        noise=py::cast<Array>(deviations);
+        vector(noise,n);
+        for (py::ssize_t i=0;i<n;++i) if (noise.data()[i]<=0)
+            throw py::value_error("HSLM deviations must be positive");
+        noise_data=noise.data();
+    }
     py::array_t<std::int32_t> path(n);
     Array transitions(trace ? std::vector<py::ssize_t>{n-1,k,k} : std::vector<py::ssize_t>{0});
     Array emissions(trace ? std::vector<py::ssize_t>{n,k} : std::vector<py::ssize_t>{0});
@@ -40,7 +51,7 @@ py::tuple segment(const Array& values,const Array& means,double mi,double smu,do
     auto* pred=trace ? predecessors.mutable_data() : nullptr;
     {
         py::gil_scoped_release release;
-        excavator2::hslm::segment(n,k,x,mu,mi,smu,sepsilon,e,p,out,trans,emit,score,pred);
+        excavator2::hslm::segment(n,k,x,mu,mi,smu,sepsilon,e,p,out,trans,emit,score,pred,noise_data);
     }
     return py::make_tuple(path,transitions,emissions,scores,predecessors);
 }
@@ -48,5 +59,5 @@ py::tuple segment(const Array& values,const Array& means,double mi,double smu,do
 void bind_hslm(py::module_& module) {
     module.def("hslm_segment",&segment,py::arg("values").noconvert(),py::arg("means").noconvert(),
                py::arg("mi"),py::arg("smu"),py::arg("sepsilon"),py::arg("eta").noconvert(),
-               py::arg("initial").noconvert(),py::arg("trace")=false);
+               py::arg("initial").noconvert(),py::arg("trace")=false,py::arg("deviations")=py::none());
 }

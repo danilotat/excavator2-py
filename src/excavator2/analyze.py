@@ -109,8 +109,7 @@ def ratios(test, controls, *, test_exposure, control_exposures):
 
 def segment_profile(matrix, values, target, parameters):
     h, fc = parameters["HSLM"], parameters["FastCall"]
-    estimated = estimate_parameters(values, float(h["Omega"]))
-    rows, paths = [], []
+    rows, paths, segment_ids = [], [], []
     indices = []
     for chromosome in target["chromosomes"]:
         selected = np.flatnonzero(matrix[:, 0] == chromosome)
@@ -131,10 +130,11 @@ def segment_profile(matrix, values, target, parameters):
             fit = segment(
                 values[index],
                 positions[arm],
-                estimated,
+                estimate_parameters(values[index], float(h["Omega"]), matrix[index, 6]),
                 theta=float(h["Theta"]),
                 distance=float(h["D_norm"]),
                 min_windows=fc["minExons"],
+                support=matrix[index, 6] == "IN",
             )
             for i, value in zip(index, fit.values, strict=True):
                 rows.append(
@@ -148,17 +148,28 @@ def segment_profile(matrix, values, target, parameters):
                         matrix[i, 6],
                     ]
                 )
+            offset = segment_ids[-1] + 1 if segment_ids else 0
+            segment_ids.extend(
+                np.repeat(
+                    np.arange(len(fit.filtered_breaks) - 1) + offset, np.diff(fit.filtered_breaks)
+                )
+            )
             paths.append(fit.path)
             indices.extend(index)
     if len(indices) != len(values) or len(set(indices)) != len(values):
         raise ValueError("target chromosome list does not cover every prepared window")
-    return np.array(rows), np.concatenate(paths), np.array(indices)
+    return np.array(rows), np.concatenate(paths), np.array(indices), np.array(segment_ids)
 
 
-def summarize(rows):
-    """MakeData groups by consecutive segment value, even across chromosomes."""
+def summarize(rows, segment_ids):
+    """Preserve inferred segments and hard chromosome/arm boundaries."""
+    segment_ids = np.asarray(segment_ids)
+    if segment_ids.shape != (len(rows),):
+        raise ValueError("segment IDs must match rows")
     segmented = rows[:, 5].astype(float)
-    starts = np.r_[0, np.flatnonzero(np.diff(segmented) != 0) + 1]
+    starts = np.r_[
+        0, np.flatnonzero((segment_ids[1:] != segment_ids[:-1]) | (rows[1:, 0] != rows[:-1, 0])) + 1
+    ]
     ends = np.r_[starts[1:], len(rows)]
     return starts, ends, segmented[starts]
 
@@ -240,8 +251,10 @@ def run_analysis(
                 test_exposure=policy["exposures"][test],
                 control_exposures=[policy["exposures"][c] for c in controls],
             )
-            rows, path, indices = segment_profile(matrices[test], values, target, params)
-            starts, ends, original = summarize(rows)
+            rows, path, indices, segment_ids = segment_profile(
+                matrices[test], values, target, params
+            )
+            starts, ends, original = summarize(rows, segment_ids)
             fc = params["FastCall"]
             fit = fit_fastcall(
                 correct_cellularity(original, float(fc["Cellularity"])),
@@ -257,6 +270,7 @@ def run_analysis(
                 ratios=values,
                 row_indices=indices,
                 path=path,
+                segment_ids=segment_ids,
                 segment_starts=starts,
                 segment_ends=ends,
                 posterior=fit.posterior,
@@ -290,6 +304,8 @@ def run_analysis(
             "target_manifest_sha256": digest(target_folder / "manifest.json"),
             "sample_design_sha256": digest(samples),
             "backend": "scalar",
+            "segmentation_policy": "arm-difference-noise-adaptive-states-stationary-prior",
+            "segment_support": "IN-windows-at-least-minExons",
             "fastcall_posterior": "truncated",
             "fastcall_trace_statistic": "truncated_log_likelihood",
             "threads": 1,

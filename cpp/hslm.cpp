@@ -12,7 +12,7 @@ double elnsum(double x, double y) {
 void segment(std::size_t n, std::size_t k, const double* values, const double* means,
              double mi, double smu, double sepsilon, const double* eta,
              const double* initial, std::int32_t* path, double* transitions,
-             double* emissions, double* scores, std::int32_t* predecessors) {
+             double* emissions, double* scores, std::int32_t* predecessors, const double* deviations) {
     std::vector<double> g(k), previous(k), current(k), block(k*k);
     std::vector<std::int32_t> history(n*k, 0);
     for (std::size_t j=0; j<k; ++j) {
@@ -23,8 +23,9 @@ void segment(std::size_t n, std::size_t k, const double* values, const double* m
     for (std::size_t j=1; j<k; ++j) norm=elnsum(norm,g[j]);
     for (auto& value:g) value-=norm;
     // The unsuffixed Fortran PI literal is rounded to REAL*4, then promoted.
-    const double constant=std::log(1/(std::sqrt(2*3.1415927410125732421875)*sepsilon));
     for (std::size_t t=0; t<n; ++t) {
+        const double deviation=deviations ? deviations[t] : sepsilon;
+        const double constant=std::log(1/(std::sqrt(2*3.1415927410125732421875)*deviation));
         if (t>0) {
             const double jump=std::log(eta[t-1]), stay=std::log(1-eta[t-1]);
             for (std::size_t source=0; source<k; ++source) {
@@ -36,7 +37,7 @@ void segment(std::size_t n, std::size_t k, const double* values, const double* m
             }
         }
         for (std::size_t j=0; j<k; ++j) {
-            const double z=(values[t]-means[j])/sepsilon;
+            const double z=(values[t]-means[j])/deviation;
             const double emission=constant+(-0.5*(z*z));
             if (emissions) emissions[t*k+j]=emission;
             if (t==0) current[j]=initial[j]+emission;

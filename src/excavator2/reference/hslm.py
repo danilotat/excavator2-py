@@ -15,7 +15,7 @@ def elnsum(x: float, y: float) -> float:
     return x + math.log(1 + math.exp(y - x)) if x > y else y + math.log(1 + math.exp(x - y))
 
 
-def matrices(values, means, mi, smu, sepsilon, eta):
+def matrices(values, means, mi, smu, sepsilon, eta, deviations=None):
     k = len(means)
     g = -((means - mi) ** 2 / (2 * smu**2))
     norm = float(g[0])
@@ -33,10 +33,11 @@ def matrices(values, means, mi, smu, sepsilon, eta):
                     elnsum(log_stay, jump) if source == destination else jump
                 )
     emissions = np.empty((len(values), k))
-    constant = math.log(1 / (math.sqrt(2 * 3.1415927410125732421875) * sepsilon))
     for t, value in enumerate(values):
+        deviation = sepsilon if deviations is None else deviations[t]
+        constant = math.log(1 / (math.sqrt(2 * 3.1415927410125732421875) * deviation))
         for j, mean in enumerate(means):
-            emissions[t, j] = constant + -0.5 * ((value - mean) / sepsilon) ** 2
+            emissions[t, j] = constant + -0.5 * ((value - mean) / deviation) ** 2
     return transitions, emissions
 
 
