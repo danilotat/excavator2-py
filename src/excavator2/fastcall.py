@@ -42,7 +42,7 @@ def segment_values(values: ArrayLike) -> FloatArray:
 
 
 def correct_cellularity(values: ArrayLike, cellularity: float = 1.0) -> FloatArray:
-    """Apply the original correction/floor only to the calling values."""
+    """Correct segment ratios for both calling and diploid-equivalent reporting."""
     values = segment_values(values)
     if not np.isfinite(cellularity) or not 0 < cellularity <= 1:
         raise ValueError("cellularity must be in (0, 1]")

@@ -91,8 +91,9 @@ analysis requires calibration rather than inferring absolute CN silently.
 
 This contract preserves signal **before** HSLM and FastCall. A perfectly constant
 profile still fails HSLM's positive-variance requirement; finite ratios do not
-promise a supported downstream fit or clinical validity. FastCall's other model
-and cellularity/reporting limitations remain separate.
+promise a supported downstream fit or clinical validity. See [copy-number interpretation](copy-number-interpretation.md) for corrected
+cellularity reporting, diploid-equivalent semantics, pool weighting and the
+remaining probability-calibration limitation.
 
 The analysis manifest records the full calibration and its file hash, raw depth
 policy, half-read pseudocount and `centering: none`. Existing calibrated ratio

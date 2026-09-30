@@ -256,15 +256,18 @@ def run_analysis(
             )
             starts, ends, original = summarize(rows, segment_ids)
             fc = params["FastCall"]
+            corrected = correct_cellularity(original, float(fc["Cellularity"]))
             fit = fit_fastcall(
-                correct_cellularity(original, float(fc["Cellularity"])),
+                corrected,
                 upper=float(fc["u"]),
                 lower=float(fc["d"]),
             )
             calls = assign_labels(fit.posterior, r_seed=seeds.get(test))
             folder = temporary / "Results" / test
             folder.mkdir(parents=True)
-            write_results(folder, test, rows, starts, ends, original, calls, target, target_folder)
+            write_results(
+                folder, test, rows, starts, ends, original, corrected, calls, target, target_folder
+            )
             np.savez_compressed(
                 folder / "checkpoints.npz",
                 ratios=values,
@@ -273,6 +276,8 @@ def run_analysis(
                 segment_ids=segment_ids,
                 segment_starts=starts,
                 segment_ends=ends,
+                mixture_segments=original,
+                corrected_segments=corrected,
                 posterior=fit.posterior,
                 labels=calls.labels,
                 fastcall_trace=fit.trace,
@@ -306,6 +311,10 @@ def run_analysis(
             "backend": "scalar",
             "segmentation_policy": "arm-difference-noise-adaptive-states-stationary-prior",
             "segment_support": "IN-windows-at-least-minExons",
+            "copy_number_semantics": "cellularity-corrected-diploid-equivalent",
+            "absolute_copy_number": False,
+            "pool_weighting": "equal-after-independent-exposure-calibration",
+            "fastcall_probability_semantics": "class-membership-not-event-confidence",
             "fastcall_posterior": "truncated",
             "fastcall_trace_statistic": "truncated_log_likelihood",
             "threads": 1,

@@ -1,4 +1,4 @@
-"""Legacy table and VCF layout, including historical rounding and grouping."""
+"""Tables and VCFs with explicit corrected diploid-equivalent semantics."""
 
 from datetime import datetime
 from decimal import Decimal
@@ -32,8 +32,8 @@ def vcf_header(sample, assembly, windows):
     ]
     formats = [
         ("GT", "String", "Genotype"),
-        ("CN", "Integer", "Copy number genotype for imprecise events"),
-        ("CNF", "Float", "Copy number genotype fraction for imprecise events"),
+        ("DECN", "Integer", "Rounded cellularity-corrected diploid-equivalent copy number"),
+        ("DECNF", "Float", "Cellularity-corrected diploid-equivalent copy number; not absolute CN"),
         (
             "FCL",
             "Float",
@@ -42,13 +42,14 @@ def vcf_header(sample, assembly, windows):
         (
             "FCP",
             "Float",
-            "FastCall Posterior Probability"
-            if windows
-            else "Posterior Probability inferred by FastCall algorithm",
+            "FastCall class membership conditional on segment ratio; "
+            "not calibrated event confidence",
         ),
     ]
     if windows:
-        formats.append(("L2R", "Float", "Normalized log2Ratio value"))
+        formats.append(
+            ("L2R", "Float", "Observed mixture log2 ratio before cellularity correction")
+        )
     for field, kind, description in formats:
         lines.append(f'##FORMAT=<ID={field},Number=1,Type={kind},Description="{description}">')
     lines.append(
@@ -57,7 +58,9 @@ def vcf_header(sample, assembly, windows):
     return lines
 
 
-def write_results(folder, sample, rows, starts, ends, original, calls, target, target_folder):
+def write_results(
+    folder, sample, rows, starts, ends, original, corrected, calls, target, target_folder
+):
     header = "Chromosome\tPosition\tStart\tEnd\tLog2R\tSegMean\tClass"
     with (folder / f"HSLMResults_{sample}.txt").open("w") as handle:
         handle.write(header + "\n")
@@ -65,10 +68,13 @@ def write_results(folder, sample, rows, starts, ends, original, calls, target, t
             handle.write("\t".join(row) + "\n")
     significant = np.flatnonzero(calls.labels != 0)
     with (folder / f"FastCallResults_{sample}.txt").open("w") as handle:
-        handle.write("Chromosome\tStart\tEnd\tSegment\tCNF\tCN\tCall\tProbCall\n")
+        handle.write(
+            "Chromosome\tStart\tEnd\tMixtureSegment\tCorrectedSegment"
+            "\tDECNF\tDECN\tCall\tProbCall\n"
+        )
         for index in significant:
             start, end = starts[index], ends[index] - 1
-            cnf = 2 * 2 ** original[index]
+            cnf = 2 * 2 ** corrected[index]
             handle.write(
                 "\t".join(
                     [
@@ -76,6 +82,7 @@ def write_results(folder, sample, rows, starts, ends, original, calls, target, t
                         rows[start, 2],
                         rows[end, 3],
                         number(original[index]),
+                        number(corrected[index]),
                         number(cnf),
                         number(np.rint(cnf)),
                         str(calls.labels[index]),
@@ -88,9 +95,9 @@ def write_results(folder, sample, rows, starts, ends, original, calls, target, t
         records = []
         for index in significant:
             start, end = starts[index], ends[index] - 1
-            cnf = np.round(2 * 2 ** original[index], 2)
+            cnf = 2 * 2 ** corrected[index]
             genotype = (
-                f"1/1:{number(np.rint(cnf))}:{number(cnf)}:{calls.labels[index]}:"
+                f".:{number(np.rint(cnf))}:{number(cnf)}:{calls.labels[index]}:"
                 f"{number(np.round(calls.probabilities[index], 2))}"
             )
             selected = range(start, end + 1) if windows else [start]
@@ -119,7 +126,7 @@ def write_results(folder, sample, rows, starts, ends, original, calls, target, t
             for (_, start, end, genotype), base in zip(group, bases, strict=True):
                 start, end = str(int(float(start))), str(int(float(end)))
                 info = f"IMPRECISE;SVTYPE=CNV;END={end};SVLEN={int(end) - int(start) + 1};"
-                fields = "GT:CN:CNF:FCL:FCP" + (":L2R" if windows else "")
+                fields = "GT:DECN:DECNF:FCL:FCP" + (":L2R" if windows else "")
                 lines.append(
                     "\t".join(
                         [chromosome, start, ".", base, "<CNV>", ".", "PASS", info, fields, genotype]

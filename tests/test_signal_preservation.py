@@ -93,6 +93,9 @@ def test_whole_profile_scaling_uses_external_exposure_not_median():
     "patch",
     [
         {"baseline": "unknown"},
+        {"baseline": "haploid-X-reference"},
+        {"baseline": "unknown-PAR-reference"},
+        {"baseline": "triploid-reference"},
         {"bias": "sample-specific"},
         {"exposure_source": "profile-median"},
         {"exposures": {"T": 0, "C": 1}},

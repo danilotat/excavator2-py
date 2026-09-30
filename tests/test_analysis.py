@@ -356,3 +356,37 @@ def test_legacy_converter_preserves_character_values(tmp_path):
     assert prepared["target_id"] == target["target_id"]
     with np.load(output / "prepared/sample-0.npz") as f:
         assert_array_equal(f["matrix"], matrix)
+
+
+@pytest.mark.parametrize("purity", [0.5, 0.05])
+def test_analysis_passes_corrected_values_to_all_outputs(tmp_path, calibrated, purity):
+    from excavator2.analyze import DEFAULTS
+    from excavator2.fastcall import correct_cellularity
+
+    parameters = tmp_path / "parameters.json"
+    params = {key: dict(value) for key, value in DEFAULTS.items()}
+    params["FastCall"]["Cellularity"] = purity
+    parameters.write_text(json.dumps(params))
+    output = tmp_path / "corrected"
+    run_analysis(
+        FIXTURE / "samples.yaml",
+        calibrated[0],
+        FIXTURE / "inputs/target",
+        output,
+        "paired",
+        parameters,
+        calibration=calibrated[1],
+    )
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["absolute_copy_number"] is False
+    for sample in ("Test1", "Test2"):
+        folder = output / "Results" / sample
+        with np.load(folder / "checkpoints.npz") as data:
+            corrected = correct_cellularity(data["mixture_segments"], purity)
+            assert_allclose(data["corrected_segments"], corrected)
+            selected = data["labels"] != 0
+            table = np.genfromtxt(
+                folder / f"FastCallResults_{sample}.txt", names=True, dtype=None, encoding="utf-8"
+            )
+            assert_allclose(table["DECNF"], 2 * np.exp2(corrected[selected]))
+            assert_allclose(table["CorrectedSegment"], corrected[selected])
