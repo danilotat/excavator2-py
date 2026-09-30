@@ -40,7 +40,8 @@ def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np
     if any(c.removeprefix("chr") not in named_bounds for c in chromosomes):
         raise ValueError("geometry requires bounds for all 23 canonical chromosomes")
 
-    unsupported = sorted(set(bed_rows[:, 0]) - set(chromosomes))
+    # Y targets are accepted but excluded from generated windows.
+    unsupported = sorted(set(bed_rows[:, 0]) - set(chromosomes) - {f"{prefix}Y"})
     if unsupported:
         raise ValueError(
             "unsupported BED contigs: "

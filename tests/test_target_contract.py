@@ -186,7 +186,7 @@ def test_target_without_eligible_out_gap_keeps_inside(tmp_path):
     assert set(actual[actual[:, 0] == "chr1", 4]) == {"IN"}
 
 
-@pytest.mark.parametrize("contig", ["chrY", "chrM", "MT", "chrUn", "1"])
+@pytest.mark.parametrize("contig", ["chrM", "MT", "chrUn", "1"])
 def test_unsupported_bed_contigs_fail_instead_of_disappearing(tmp_path, contig):
     from excavator2.target import target_geometry
 
@@ -219,3 +219,21 @@ def test_gap_filter_excludes_full_interval_overlap(tmp_path, interval, kept):
     actual = target_geometry(bed, folder / "chromosomes.tsv", gaps, 100)
     inside = actual[(actual[:, 0] == "chr1") & (actual[:, 4] == "IN")]
     assert bool(len(inside)) == kept
+
+
+@pytest.mark.parametrize("prefix", ["chr", ""])
+@pytest.mark.parametrize("y_first", [False, True])
+def test_y_bed_entries_are_ignored(tmp_path, prefix, y_first):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    plain = tmp_path / "plain.bed"
+    plain.write_text(f"{prefix}1\t500\t560\n")
+    bed = tmp_path / "with-y.bed"
+    y_row = f"{prefix}Y\t800\t850\n"
+    bed.write_text(y_row + plain.read_text() if y_first else plain.read_text() + y_row)
+    args = (folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+    expected = target_geometry(plain, *args)
+    actual = target_geometry(bed, *args)
+    assert_array_equal(actual, expected)
+    assert f"{prefix}Y" not in actual[:, 0]

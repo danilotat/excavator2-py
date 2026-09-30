@@ -6,8 +6,9 @@ failure reporting for P12 (#27). There is no legacy behavior switch.
 
 - Chromosome coordinates are keyed by name (an optional `chr` prefix is normalized);
   duplicate or missing canonical bounds fail. Canonical chromosome ordering remains.
-  BED contigs outside uniformly named 1–22/X fail explicitly instead of being
-  silently dropped. Y/MT/other contig analysis remains unsupported.
+  Uniformly named Y BED entries are accepted and ignored. Other BED contigs
+  outside uniformly named 1–22/X fail explicitly instead of being silently
+  dropped. Y/MT/other contig analysis remains unsupported.
 - IN intervals are sorted and overlapping, nested, duplicate or touching intervals
   are merged before OUT generation. Invalid or out-of-bounds targets fail.
 - OUT intervals use the available gap after subtracting both 200-base flanks.
