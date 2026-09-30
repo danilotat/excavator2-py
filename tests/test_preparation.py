@@ -25,17 +25,17 @@ FIXTURES = Path(__file__).parent / "fixtures/legacy-preparation"
         "chunk_1000001",
     ],
 )
-def test_counts_match_original_chunk_policy(name):
+def test_counts_correct_original_chunk_defects(name):
     with np.load(FIXTURES / f"{name}.npz") as f:
         reads = f["reads"]
         chunks = [reads[i : i + CHUNK_SIZE] for i in range(0, len(reads), CHUNK_SIZE)]
         if len(reads) % CHUNK_SIZE == 0:
             chunks.append(np.array([], dtype=int))
-        if f["failed"][0]:
-            with pytest.raises(ValueError, match="empty chunk"):
-                count_positions(chunks, f["starts"], f["ends"])
-        else:
-            assert_array_equal(count_positions(chunks, f["starts"], f["ends"]), f["counts"])
+        expected = [
+            np.count_nonzero((reads >= a) & (reads <= b))
+            for a, b in zip(f["starts"], f["ends"], strict=True)
+        ]
+        assert_array_equal(count_positions(chunks, f["starts"], f["ends"]), expected)
 
 
 def test_preparation_preserves_raw_density():
@@ -55,7 +55,7 @@ def test_preparation_preserves_raw_density():
         assert_array_equal(result["normalized"] == 0, f["counts"] == 0)
 
 
-def test_selection_keeps_mapq_secondary_supplementary_and_mates(tmp_path):
+def test_selection_filters_mapq_and_retains_other_flag_semantics(tmp_path):
     path = tmp_path / "flags.bam"
     flags = [0, 1, 2, 4, 16, 64, 128, 256, 512, 1024, 2048]
     expected = []
@@ -72,29 +72,30 @@ def test_selection_keeps_mapq_secondary_supplementary_and_mates(tmp_path):
             read.query_sequence = "A"
             read.cigarstring = "1M"
             bam.write(read)
-            if not flag & 1028:
+            if not flag & 1028 and read.mapping_quality >= 20:
                 expected.append(i * 10 + 1)
     pysam.index(str(path))
     with pysam.AlignmentFile(path) as bam:
         assert_array_equal(np.concatenate(list(selected_chunks(bam, "chr1"))), expected)
 
 
-def test_empty_stream_fails_and_final_window_is_flushed_only_by_later_read():
-    with pytest.raises(ValueError, match="empty chunk"):
-        count_positions([np.array([], dtype=int)], [10], [20])
-    assert_array_equal(count_positions([[15, 20]], [10], [20]), [0])
+def test_empty_stream_and_terminal_window():
+    assert_array_equal(count_positions([[]], [10], [20]), [0])
+    assert_array_equal(count_positions([[15, 20]], [10], [20]), [2])
     assert_array_equal(count_positions([[15, 20, 21]], [10], [20]), [2])
 
 
-def test_numpy_counter_matches_literal_state_machine_on_overlapping_windows():
-    from excavator2.reference.reads import count_positions as reference
-
+def test_counts_are_independent_of_partition_and_overlap():
     rng = np.random.default_rng(413)
     for _ in range(30):
         starts = np.sort(rng.integers(1, 1000, size=50))
         ends = starts + rng.integers(1, 100, size=50)
         reads = np.sort(rng.integers(1, 1500, size=1000))
-        assert_array_equal(count_positions([reads], starts, ends), reference([reads], starts, ends))
+        expected = [
+            np.count_nonzero((reads >= a) & (reads <= b)) for a, b in zip(starts, ends, strict=True)
+        ]
+        for chunks in ([reads], np.array_split(reads, 17), [[], reads, []]):
+            assert_array_equal(count_positions(chunks, starts, ends), expected)
 
 
 @pytest.mark.parametrize("threads", [1, 4])
@@ -137,13 +138,28 @@ def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, thread
     with np.load(fixture / "expected.npz") as old:
         for filename in manifest["samples"].values():
             with np.load(output / filename) as new:
-                assert_array_equal(new["counts"], old["counts"])
+                with pysam.AlignmentFile(fixture / "Test1.bam") as bam:
+                    expected = []
+                    for chrom, start, end in old["matrix"][:, [0, 2, 3]]:
+                        expected.append(
+                            sum(
+                                not r.flag & 1028
+                                and r.mapping_quality >= 60
+                                and int(start) <= r.reference_start + 1 <= int(end)
+                                for r in bam.fetch(chrom)
+                            )
+                        )
+                assert_array_equal(new["counts"], expected)
                 assert manifest["depth_policy"] == "raw-counts-v1"
                 assert_array_equal(
                     new["matrix"][:, [0, 1, 2, 3, 4, 6]], old["matrix"][:, [0, 1, 2, 3, 4, 6]]
                 )
-                assert_allclose(new["normalized"], old["weighted"])
-                assert_allclose(new["matrix"][:, 5].astype(float), old["weighted"])
+                assert_allclose(
+                    new["normalized"],
+                    np.array(expected)
+                    / (old["matrix"][:, 3].astype(float) - old["matrix"][:, 2].astype(float)),
+                )
+                assert_allclose(new["matrix"][:, 5].astype(float), new["normalized"], atol=1e-7)
 
 
 def test_failed_preparation_does_not_publish_output(tmp_path):
@@ -159,4 +175,41 @@ def test_failed_preparation_does_not_publish_output(tmp_path):
     with pytest.raises(ValueError, match="index"):
         run_preparation(samples, fixture / "target", tmp_path / "prepared")
     assert not (tmp_path / "prepared").exists()
+    assert not list(tmp_path.glob(".excavator2-prepare-*"))
+
+
+@pytest.mark.parametrize("threads", [1, 2])
+def test_cli_worker_failure_is_nonzero_and_atomic(tmp_path, threads):
+    import shutil
+    import subprocess
+    import sys
+
+    fixture = FIXTURES / "pipeline"
+    bad = tmp_path / "no-index.bam"
+    shutil.copyfile(fixture / "Test1.bam", bad)
+    samples = tmp_path / "samples.yaml"
+    samples.write_text(f"Good: {fixture / 'Test1.bam'}\nBroken: {bad}\n")
+    output = tmp_path / "prepared"
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "excavator2",
+            "prepare",
+            "--samples",
+            str(samples),
+            "--target",
+            str(fixture / "target"),
+            "--output",
+            str(output),
+            "--threads",
+            str(threads),
+        ],
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode != 0
+    assert "Broken" in result.stderr and "index" in result.stderr
+    assert "Complete:" not in result.stderr
+    assert not output.exists()
     assert not list(tmp_path.glob(".excavator2-prepare-*"))

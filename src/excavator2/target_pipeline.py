@@ -56,15 +56,14 @@ def run_target(config, output, force=False, progress=None):
     if progress:
         progress(f"[3/4] Extracting reference features for {len(target):,} windows")
     features = target_features(target, paths["FASTA"], paths["BigWig"])
-    # A malformed legacy target may contain skipped or duplicated feature rows.
-    # Preserve extraction behavior, but do not publish a falsely usable artifact.
+    # Verify the feature contract before publishing the target artifact.
     for chrom in chromosomes:
         windows = target[target[:, 0] == chrom]
         values = features[chrom]
         if any(len(values[key]) != len(windows) for key in ["gc", "mappability", "first_base"]):
-            raise ValueError(f"legacy feature rows do not align with target windows for {chrom}")
+            raise ValueError(f"feature rows do not align with target windows for {chrom}")
         if not np.array_equal(values["first_base"][:, 0], windows[:, 1]):
-            raise ValueError(f"legacy reference coordinates do not align for {chrom}")
+            raise ValueError(f"reference coordinates do not align for {chrom}")
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix=".excavator2-target-", dir=output.parent))
     try:
@@ -83,7 +82,7 @@ def run_target(config, output, force=False, progress=None):
             "preparation": "preparation.npz",
             "window": target_settings["Window"],
             "package_version": __version__,
-            "compatibility": "legacy",
+            "geometry_policy": "merged-bounded-v1",
             "config_sha256": digest(config),
             "inputs": {
                 key: {"path": str(path), "sha256": digest(path)} for key, path in paths.items()

@@ -60,7 +60,7 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
 
         def prepare_sample(item):
             index, (name, path) = item
-            counts = count_bam(path, target, manifest["chromosomes"])
+            counts = count_bam(path, target, manifest["chromosomes"], mapq=mapq)
             trace = normalize(counts, target, gc, mappability)
             normalized = [fixed_number(x) for x in trace["normalized"]]
             matrix = np.column_stack([metadata[:, :5], normalized, metadata[:, 5]])
@@ -73,7 +73,11 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
             futures = {pool.submit(prepare_sample, item): item[0] for item in indexed_items}
             completed = []
             for done, future in enumerate(as_completed(futures), 1):
-                result = future.result()
+                try:
+                    result = future.result()
+                except Exception as error:
+                    name = indexed_items[futures[future]][1][0]
+                    raise ValueError(f"preparation failed for sample {name}: {error}") from error
                 completed.append((futures[future], result))
                 if progress:
                     width = 20
@@ -95,7 +99,8 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
             "samples_sha256": digest(samples),
             "threads": threads,
             "requested_mapq": mapq,
-            "filter_policy": "legacy flags & 1028 == 0; all MAPQ retained",
+            "filter_policy": "flags & 1028 == 0; MAPQ >= requested_mapq",
+            "count_policy": "independent-inclusive-v1",
             "count_backend": "numpy.searchsorted",
             "chunk_size": 500000,
         }

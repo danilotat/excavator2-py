@@ -56,15 +56,16 @@ jobs:
       - name: Verify calibrated analysis and raw preparation contracts
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" -m pytest \
-            tests/test_signal_preservation.py tests/test_preparation.py tests/test_analysis.py
-      - name: Compare target geometry against the pinned legacy script
+            tests/test_signal_preservation.py tests/test_preparation.py tests/test_analysis.py \
+            tests/test_target_contract.py tests/test_target_features.py tests/test_target_pipeline.py
+      - name: Capture historical target geometry from the pinned legacy script
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_target.py \
-            --output .oracle/ci-target-geometry --compare-current
-      - name: Compare target features against the pinned legacy tools
+            --output .oracle/ci-target-geometry
+      - name: Capture historical target features from the pinned legacy tools
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_features.py \
-            --output .oracle/ci-target-features --compare-current
+            --output .oracle/ci-target-features
       - name: Verify HSLM boundary evidence against pinned original R
         run: |
           "$RUNNER_TEMP/concordance-venv/bin/python" tools/oracle/characterize_hslm_edges.py \

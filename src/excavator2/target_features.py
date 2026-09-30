@@ -1,7 +1,6 @@
 """Reference features matching TargetCreate.sh and its decimal text roundtrips."""
 
 import math
-import re
 from decimal import Decimal
 from pathlib import Path
 
@@ -40,34 +39,16 @@ def legacy_decimal(text: str) -> float:
 
 
 def _feature_row_indices(target, chromosomes):
-    """Index whole-word chromosome occurrences anywhere in each legacy row.
-
-    Canonical chromosome names are word tokens. Index them in one pass instead
-    of scanning all rows once per chromosome. Keep literal boundary matching for
-    names containing punctuation, where tokenization would change semantics.
-    A row is selected at most once per chromosome, in original input order.
-    """
+    """Select chromosome names exclusively from column one."""
     selected = {chromosome: [] for chromosome in chromosomes}
-    words = {c for c in chromosomes if re.fullmatch(r"\w+", c)}
-    other = {c: re.compile(rf"(?<!\w){re.escape(c)}(?!\w)") for c in chromosomes if c not in words}
-    tokens = re.compile(r"\w+")
     for index, row in enumerate(target):
-        line = "\t".join(row)
-        for chromosome in words.intersection(tokens.findall(line)):
-            selected[chromosome].append(index)
-        for chromosome, pattern in other.items():
-            if pattern.search(line):
-                selected[chromosome].append(index)
+        if row[0] in selected:
+            selected[row[0]].append(index)
     return selected
 
 
 def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
-    """Return per-chromosome gc, mappability and two-column first_base arrays.
-
-    Uses indexed FASTA and exact covered-base BigWig means. Deliberately retains
-    legacy grep selection and skipped FASTA rows, so feature lengths can differ.
-    This extracts features only; it does not write target artifacts.
-    """
+    """Return aligned reference arrays, rejecting invalid windows with row details."""
     target = np.asarray(target, dtype=str)
     if target.ndim != 2 or target.shape[1] != 5 or not len(target):
         raise ValueError("target must be a nonempty five-column matrix")
@@ -81,16 +62,23 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
         lengths = dict(zip(reference.references, reference.lengths, strict=True))
         bw_lengths = track.chroms()
         for chromosome in chromosomes:
-            # TargetCreate.sh uses grep -w on the entire row, not column one.
             gc, mappability, first_base = [], [], []
             for index in selected_rows[chromosome]:
                 chrom, start, end, _, _ = target[index]
                 chrom = prefix + chrom
                 start, end = int(start), int(end)
                 left = start - 1
-                if left < 0 or end <= left:
+                if (
+                    left < 0
+                    or end < start
+                    or chrom not in lengths
+                    or end > lengths[chrom]
+                    or start >= lengths[chrom]
+                ):
                     raise ValueError(
-                        "legacy feature extraction requires positive valid coordinates"
+                        f"invalid reference window at row {index + 1} ({target[index, 3]}): "
+                        f"{chrom}:{start}-{end}; requires positive valid coordinates, "
+                        "GC interval and first-base position within the FASTA contig"
                     )
                 # UCSC's sixth output column averages covered bases; no coverage is zero.
                 bw_end = min(end, bw_lengths.get(chrom, 0))
@@ -98,15 +86,11 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
                 if left < bw_end:
                     mean = track.stats(chrom, left, bw_end, type="mean", exact=True)[0]
                 mappability.append(legacy_decimal(format(0.0 if mean is None else mean, ".6g")))
-                if chrom in lengths and end <= lengths[chrom]:
-                    sequence = reference.fetch(chrom, left, end).upper()
-                    fraction = (sequence.count("G") + sequence.count("C")) / len(sequence)
-                    gc.append(legacy_decimal(format(float(np.float32(fraction)), ".6f")))
-                # FRB is one base to the right of the GC/MAP left endpoint.
-                if chrom in lengths and start < lengths[chrom]:
-                    first_base.append((str(start), reference.fetch(chrom, start, start + 1)))
-            if not first_base:
-                raise ValueError(f"legacy first-base extraction has no rows for {chromosome}")
+                sequence = reference.fetch(chrom, left, end).upper()
+                fraction = (sequence.count("G") + sequence.count("C")) / len(sequence)
+                gc.append(legacy_decimal(format(float(np.float32(fraction)), ".6f")))
+                # FRB retains the existing one-base-right reference convention.
+                first_base.append((str(start), reference.fetch(chrom, start, start + 1)))
             result[chromosome] = {
                 "gc": np.asarray(gc, dtype=float),
                 "mappability": np.asarray(mappability, dtype=float),

@@ -81,25 +81,38 @@ def test_off_target_endpoint_and_flank_quirks():
     assert any(list(row[[1, 2, 4]]) == ["501", "600", "OUT"] for row in chr1)
 
 
-@pytest.mark.parametrize("name", MANIFEST["cases"])
-def test_python_geometry_matches_original(name):
+def test_geometry_sorts_merges_and_bounds_windows(tmp_path):
     from excavator2.target import target_geometry
 
-    folder = FIXTURES / name
-    arguments = (folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
-    if MANIFEST["cases"][name]["expected_success"]:
-        actual = target_geometry(*arguments)
-        assert_array_equal(actual, target(name))
-        with np.load(folder / "expected.npz") as data:
-            assert_array_equal(list(dict.fromkeys(actual[:, 0])), data["chromosomes"])
-    else:
-        errors = {
-            "no_eligible_gap": "no eligible off-target gap for chr1",
-            "no_alternate_gap": "requires an alternate-contig gap row",
-            "missing_chromosome_gap": "requires gaps for chr2",
-        }
-        with pytest.raises(ValueError, match=errors[name]):
-            target_geometry(*arguments)
+    folder = FIXTURES / "unsorted_overlap"
+    args = (folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+    actual = target_geometry(folder / "target.bed", *args)
+    bed = tmp_path / "reversed.bed"
+    bed.write_text("\n".join(reversed((folder / "target.bed").read_text().splitlines())))
+    assert_array_equal(actual, target_geometry(bed, *args))
+    inside = actual[(actual[:, 0] == "chr1") & (actual[:, 4] == "IN")]
+    assert_array_equal(inside[:, 1:3], [["500", "700"], ["1300", "1400"]])
+    for chrom in set(actual[:, 0]):
+        rows = actual[actual[:, 0] == chrom]
+        positions = rows[:, 1:3].astype(int)
+        assert np.all(positions[:, 1] <= 3000)
+        for left, right in positions[rows[:, 4] == "OUT"]:
+            assert right - left + 1 == 100
+            for a, b in positions[rows[:, 4] == "IN"]:
+                assert right <= a - 200 or left > b + 200
+
+
+def test_geometry_bounds_follow_names(tmp_path):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    coordinates = tmp_path / "coordinates.tsv"
+    lines = (folder / "chromosomes.tsv").read_text().splitlines()
+    lines[0] = "chr1\t0\t2000"
+    coordinates.write_text("\n".join(reversed(lines)))
+    actual = target_geometry(folder / "target.bed", coordinates, folder / "gaps.tsv", 100)
+    assert actual[actual[:, 0] == "chr1", 2].astype(int).max() <= 2000
+    assert actual[actual[:, 0] == "chrX", 2].astype(int).max() == 3000
 
 
 @pytest.mark.parametrize("window", [0, -1, 9, 10.5, True])
@@ -125,7 +138,12 @@ def test_geometry_ignores_extra_bed_columns(tmp_path):
         )
     )
     actual = target_geometry(bed, folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
-    assert_array_equal(actual, target("standard"))
+    assert_array_equal(
+        actual,
+        target_geometry(
+            folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100
+        ),
+    )
 
 
 def test_geometry_rejects_incomplete_coordinate_table(tmp_path):
@@ -136,3 +154,26 @@ def test_geometry_rejects_incomplete_coordinate_table(tmp_path):
     coordinates.write_text("chr1\t0\t3000\n")
     with pytest.raises(ValueError, match="23 canonical coordinate rows"):
         target_geometry(folder / "target.bed", coordinates, folder / "gaps.tsv", 100)
+
+
+@pytest.mark.parametrize("kind", ["duplicate", "missing"])
+def test_geometry_rejects_ambiguous_named_bounds(tmp_path, kind):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    rows = (folder / "chromosomes.tsv").read_text().splitlines()
+    rows[-1] = "chr1\t0\t3000" if kind == "duplicate" else "chrY\t0\t3000"
+    coords = tmp_path / "coordinates.tsv"
+    coords.write_text("\n".join(rows))
+    with pytest.raises(ValueError, match="duplicate|all 23 canonical"):
+        target_geometry(folder / "target.bed", coords, folder / "gaps.tsv", 100)
+
+
+def test_target_without_eligible_out_gap_keeps_inside():
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "no_eligible_gap"
+    actual = target_geometry(
+        folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100
+    )
+    assert set(actual[actual[:, 0] == "chr1", 4]) == {"IN"}

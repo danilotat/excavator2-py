@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import re
 from pathlib import Path
 
 import numpy as np
@@ -14,10 +13,9 @@ from excavator2.target_features import _feature_row_indices, target_features
 FIXTURES = Path(__file__).parent / "fixtures/legacy-target-features"
 
 
-def test_index_preserves_whole_row_matching_order_and_boundaries():
+def test_index_matches_only_the_chromosome_column():
     chromosomes = ["chr1", "chr10", "1", "X", "chr1-alt", "chr1.1", "chr1_alt", "é"]
-    # Legacy grep selects matches in any column. Repeated tokens select a row
-    # only once; punctuation and underscores have different word boundaries.
+    # Numeric coordinates and chromosome-like IDs must not select extra rows.
     rows = np.array(
         [
             ["chr10", "1", "10", "chr1:chr1", "IN"],
@@ -28,11 +26,10 @@ def test_index_preserves_whole_row_matching_order_and_boundaries():
     )
     indexed = _feature_row_indices(rows, chromosomes)
     for chromosome in chromosomes:
-        literal = re.compile(rf"(?<!\w){re.escape(chromosome)}(?!\w)")
-        expected = [i for i, row in enumerate(rows) if literal.search("\t".join(row))]
+        expected = [i for i, row in enumerate(rows) if row[0] == chromosome]
         assert indexed[chromosome] == expected
-    assert indexed["1"] == [0, 2]
-    assert indexed["chr1"] == [0, 1, 2, 3]
+    assert indexed["1"] == []
+    assert indexed["chr1"] == []
 
 
 def test_feature_fixture_integrity():
@@ -45,7 +42,7 @@ def test_feature_fixture_integrity():
 
 @pytest.mark.parametrize(
     "name",
-    ["standard", "bare_names", "past_end", "precision", "blocks_2999", "blocks_3000"],
+    ["standard", "precision", "blocks_2999", "blocks_3000"],
 )
 def test_features_match_original(name):
     target = np.loadtxt(FIXTURES / name / "target.tsv", dtype=str, ndmin=2)
@@ -71,15 +68,19 @@ def test_bigwig_3000_block_algorithm_switch_preserves_values():
         assert_array_equal(expected_below["MAP_chr1"], expected_boundary["MAP_chr1"][:2999])
 
 
-@pytest.mark.parametrize("name", ["zero_start", "last_base", "missing_contig", "partial_skips"])
-def test_feature_failures_match_original(name):
-    manifest = json.loads((FIXTURES / "manifest.json").read_text())
-    assert manifest["cases"][name]["status"] != 0
+@pytest.mark.parametrize(
+    "name", ["zero_start", "last_base", "missing_contig", "partial_skips", "past_end"]
+)
+def test_invalid_reference_windows_fail_explicitly(name):
     target = np.loadtxt(FIXTURES / name / "target.tsv", dtype=str, ndmin=2)
-    message = (
-        "positive valid coordinates"
-        if name == "zero_start"
-        else "first-base extraction has no rows"
-    )
-    with pytest.raises(ValueError, match=message):
+    with pytest.raises(ValueError, match="invalid reference window at row"):
         target_features(target, FIXTURES / "reference.fa", FIXTURES / "reference.bw")
+
+
+def test_bare_chromosomes_select_only_their_own_rows():
+    target = np.loadtxt(FIXTURES / "bare_names/target.tsv", dtype=str, ndmin=2)
+    actual = target_features(target, FIXTURES / "reference.fa", FIXTURES / "reference.bw")
+    for chrom, features in actual.items():
+        rows = target[target[:, 0] == chrom]
+        assert all(len(v) == len(rows) for v in features.values())
+        assert_array_equal(features["first_base"][:, 0], rows[:, 1])

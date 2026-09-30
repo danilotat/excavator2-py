@@ -108,3 +108,23 @@ def test_target_refuses_existing_output_and_force(config, tmp_path):
         run_target(config, tmp_path / "forced", force=True)
     assert sentinel.read_text() == "keep"
     assert not (tmp_path / "forced").exists()
+
+
+@pytest.mark.parametrize("failure", ["features", "write"])
+def test_target_reference_and_write_errors_are_atomic(config, tmp_path, monkeypatch, failure):
+    if failure == "features":
+        settings = yaml.safe_load(config.read_text())
+        coordinates = Path(settings["Reference"]["Chromosomes"])
+        coordinates.write_text(coordinates.read_text().replace("3000", "6000"))
+        message = "invalid reference window"
+    else:
+
+        def fail_write(*args, **kwargs):
+            raise OSError("injected disk failure")
+
+        monkeypatch.setattr(np, "savez_compressed", fail_write)
+        message = "injected disk failure"
+    with pytest.raises((ValueError, OSError), match=message):
+        run_target(config, tmp_path / "failed")
+    assert not (tmp_path / "failed").exists()
+    assert not list(tmp_path.glob(".excavator2-target-*"))
