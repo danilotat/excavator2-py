@@ -40,6 +40,14 @@ def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np
     if any(c.removeprefix("chr") not in named_bounds for c in chromosomes):
         raise ValueError("geometry requires bounds for all 23 canonical chromosomes")
 
+    unsupported = sorted(set(bed_rows[:, 0]) - set(chromosomes))
+    if unsupported:
+        raise ValueError(
+            "unsupported BED contigs: "
+            + ", ".join(unsupported)
+            + "; target generation supports uniformly named 1-22 and X only"
+        )
+
     result = []
     for chromosome in chromosomes:
         start, end = named_bounds[chromosome.removeprefix("chr")]
@@ -79,7 +87,8 @@ def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np
         keep = np.ones(len(positions), dtype=bool)
         # Vectorize across windows without allocating a windows-by-gaps matrix.
         for left, right in chromosome_gaps:
-            keep &= ~np.any((positions >= left) & (positions < right), axis=1)
+            if right > left:
+                keep &= ~((positions[:, 0] < right) & (positions[:, 1] >= left))
         for (left, right), label in zip(positions[keep], labels[keep], strict=True):
             result.append((chromosome, str(left), str(right), f"a{len(result) + 1}", label))
     if not result:

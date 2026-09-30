@@ -82,7 +82,8 @@ def run_target(config, output, force=False, progress=None):
             "preparation": "preparation.npz",
             "window": target_settings["Window"],
             "package_version": __version__,
-            "geometry_policy": "merged-bounded-v1",
+            "geometry_policy": "merged-bounded-overlap-v2",
+            "contig_policy": "canonical-1-22-X-reject-unsupported",
             "config_sha256": digest(config),
             "inputs": {
                 key: {"path": str(path), "sha256": digest(path)} for key, path in paths.items()

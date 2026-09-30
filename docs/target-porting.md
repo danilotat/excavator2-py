@@ -1,11 +1,13 @@
 # Current target and counting corrections
 
-The current implementation replaces legacy defects T02/T03/T04/T13/T14
-(issues #29–#31, #33–#34), P01/P04/P05/P08 (#21–#23, #25), and strengthens
+The current implementation replaces legacy defects T01/T02/T03/T04/T06/T13/T14/T16
+(issues #28–#35), P01/P04/P05/P08 (#21–#23, #25), and strengthens
 failure reporting for P12 (#27). There is no legacy behavior switch.
 
 - Chromosome coordinates are keyed by name (an optional `chr` prefix is normalized);
   duplicate or missing canonical bounds fail. Canonical chromosome ordering remains.
+  BED contigs outside uniformly named 1–22/X fail explicitly instead of being
+  silently dropped. Y/MT/other contig analysis remains unsupported.
 - IN intervals are sorted and overlapping, nested, duplicate or touching intervals
   are merged before OUT generation. Invalid or out-of-bounds targets fail.
 - OUT intervals use the available gap after subtracting both 200-base flanks.
@@ -13,8 +15,12 @@ failure reporting for P12 (#27). There is no legacy behavior switch.
   emit no OUT rows. Target-free chromosomes use positive starts: `[left+1, right]`.
 - Existing IN coordinate values, GC/MAP `[start-1,end)` and first-base
   `[start,start+1)` extraction conventions remain. This is not a general BED
-  coordinate-system migration. Gap endpoint filtering and canonical-contig scope
-  are unchanged.
+  coordinate-system migration. Gap filtering rejects any intersection of a stored
+  inclusive window with a half-open gap `[left,right)`, including windows spanning
+  the gap. Empty gaps remove nothing.
+- Legacy GC/MAP exports are joined by exact chromosome filename, independently
+  for each covariate. Missing exports, nonfinite values, wrong row counts and
+  chromosome ordering mismatches fail explicitly.
 - Feature rows are selected by exact chromosome column equality. Invalid FASTA
   intervals or first-base positions fail with row number, ID and coordinates;
   rows are never silently skipped. BigWig uncovered bases retain the existing policy.

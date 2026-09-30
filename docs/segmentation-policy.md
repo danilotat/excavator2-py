@@ -103,3 +103,16 @@ The paired and pooled profiles are not independent evidence. No claim is made
 that every changed call is biologically correct or that sensitivity, specificity,
 or probability calibration is established for real non-normal samples. Such cohort
 qualification remains outstanding; the report makes the intentional changes visible.
+
+
+## Centromere geometry (A15, issue #20)
+
+Window intervals, rather than just midpoints, determine arm membership. A window
+must lie entirely before or entirely after the inclusive centromere interval.
+Any intersection, including either endpoint or a window spanning the centromere,
+raises a chromosome-specific error. This applies even when the short arm is absent;
+centromeric windows are never silently included or dropped. Either arm may be
+empty, and single-window arms/chromosomes retain their observed level. Both arms
+remain separate segments even when their medians match. Invalid centromere bounds
+fail before segmentation. Remove excluded windows from the target before analysis;
+no automatic masking or row loss is performed.

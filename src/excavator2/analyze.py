@@ -113,19 +113,20 @@ def segment_profile(matrix, values, target, parameters):
     indices = []
     for chromosome in target["chromosomes"]:
         selected = np.flatnonzero(matrix[:, 0] == chromosome)
-        if len(selected) < 2:
-            raise ValueError(f"unsupported empty or single-window chromosome: {chromosome}")
+        if not len(selected):
+            raise ValueError(f"unsupported empty chromosome: {chromosome}")
         positions = np.trunc(matrix[selected, 1].astype(float))
         first, last = target["centromeres"][chromosome]
-        before, after = np.flatnonzero(positions < first), np.flatnonzero(positions > last)
-        arms = [np.arange(len(selected))]
-        if len(before):
-            if not len(after):
-                raise ValueError(f"legacy arm split has no long arm: {chromosome}")
-            arms = [np.arange(before[-1] + 1), np.arange(after[0], len(selected))]
-            if sum(map(len, arms)) != len(selected):
-                raise ValueError("legacy arm split excludes windows inside the centromere")
+        if not np.isfinite([first, last]).all() or first > last:
+            raise ValueError(f"invalid centromere bounds: {chromosome}")
+        starts = matrix[selected, 2].astype(float)
+        ends = matrix[selected, 3].astype(float)
+        if np.any((starts <= last) & (ends >= first)):
+            raise ValueError(f"target windows overlap centromere: {chromosome}")
+        arms = [np.flatnonzero(ends < first), np.flatnonzero(starts > last)]
         for arm in arms:
+            if not len(arm):
+                continue
             index = selected[arm]
             fit = segment(
                 values[index],
@@ -309,6 +310,7 @@ def run_analysis(
             "target_manifest_sha256": digest(target_folder / "manifest.json"),
             "sample_design_sha256": digest(samples),
             "backend": "scalar",
+            "centromere_policy": "reject-overlap-independent-arms",
             "segmentation_policy": "arm-difference-noise-adaptive-states-stationary-prior",
             "segment_support": "IN-windows-at-least-minExons",
             "copy_number_semantics": "cellularity-corrected-diploid-equivalent",

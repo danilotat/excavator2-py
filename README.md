@@ -110,7 +110,10 @@ uv run python -c "import pysam; pysam.faidx('data/reference.fa')"
 The chromosome-coordinate, centromere and gap tables use the legacy formats;
 see [the example config](.test/config.yaml) and [reference annotation files](.test/ref/).
 Reference FASTA and BigWig files are not bundled. The current compatibility policy
-uses chromosomes 1–22 and X; arbitrary contigs/assemblies are not qualified.
+uses chromosomes 1–22 and X and rejects BED rows on unsupported contigs
+(including Y/MT) instead of silently discarding them. Arbitrary contigs/assemblies
+are not qualified. Gap-overlapping windows are excluded in full. Analysis rejects
+windows touching or spanning a centromere; either chromosome arm may be absent.
 
 Create `samples.yaml`, mapping unique sample names to coordinate-sorted,
 indexed **BAM** files:
