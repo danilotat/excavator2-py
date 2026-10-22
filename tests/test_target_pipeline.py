@@ -55,6 +55,11 @@ def config(tmp_path):
 
 def test_target_cli_publishes_compatible_artifact(config, tmp_path):
     output = tmp_path / "target"
+    # Contigs outside autosomes and X are reported; centromere names may omit "chr".
+    with (tmp_path / "target.bed").open("a") as handle:
+        handle.write("chrY\t800\t850\nchrM\t10\t60\nchrY\t900\t950\n")
+    centro = tmp_path / "centro.tsv"
+    centro.write_text(centro.read_text().replace("chr", ""))
     result = subprocess.run(
         [
             sys.executable,
@@ -73,7 +78,11 @@ def test_target_cli_publishes_compatible_artifact(config, tmp_path):
     assert "excavator2 target: [1/4] Loading" in result.stderr
     assert "excavator2 target: [3/4] Extracting reference features" in result.stderr
     assert "excavator2 target: Complete:" in result.stderr
+    assert "outside reference autosomes and X: chrM (1), chrY (2)" in result.stderr
     manifest = load_manifest(output, "target")
+    assert manifest["excluded_bed_contigs"] == {"chrM": 1, "chrY": 2}
+    assert manifest["chromosomes"] == [f"chr{i}" for i in range(1, 23)] + ["chrX"]
+    assert manifest["centromeres"]["chrX"] == [1400, 1600]
     with np.load(output / manifest["preparation"], allow_pickle=False) as data:
         target = data["target"]
         assert manifest["target_id"] == metadata_identity(window_metadata(target))

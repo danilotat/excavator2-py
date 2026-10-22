@@ -160,7 +160,7 @@ def test_geometry_rejects_incomplete_coordinate_table(tmp_path):
     folder = FIXTURES / "standard"
     coordinates = tmp_path / "chromosomes.tsv"
     coordinates.write_text("chr1\t0\t3000\n")
-    with pytest.raises(ValueError, match="23 canonical coordinate rows"):
+    with pytest.raises(ValueError, match="require autosomes and X"):
         target_geometry(folder / "target.bed", coordinates, folder / "gaps.tsv", 100)
 
 
@@ -173,7 +173,7 @@ def test_geometry_rejects_ambiguous_named_bounds(tmp_path, kind):
     rows[-1] = "chr1\t0\t3000" if kind == "duplicate" else "chrY\t0\t3000"
     coords = tmp_path / "coordinates.tsv"
     coords.write_text("\n".join(rows))
-    with pytest.raises(ValueError, match="duplicate|all 23 canonical"):
+    with pytest.raises(ValueError, match="duplicate|require autosomes and X"):
         target_geometry(folder / "target.bed", coords, folder / "gaps.tsv", 100)
 
 
@@ -189,15 +189,34 @@ def test_target_without_eligible_out_gap_keeps_inside(tmp_path):
     assert set(actual[actual[:, 0] == "chr1", 4]) == {"IN"}
 
 
-@pytest.mark.parametrize("contig", ["chrM", "chrUn"])
-def test_unsupported_bed_contigs_fail_instead_of_disappearing(tmp_path, contig):
-    from excavator2.target import target_geometry
+@pytest.mark.parametrize("contig", ["chrM", "chrUn_KI270302v1", "HLA-A*01:01:01:01", "chrEBV"])
+def test_other_bed_contigs_are_excluded_and_reported(tmp_path, contig):
+    from excavator2.target import select_contigs, target_geometry
 
     folder = FIXTURES / "standard"
-    bed = tmp_path / "target.bed"
-    bed.write_text(f"chr1\t500\t560\n{contig}\t800\t850\n")
-    with pytest.raises(ValueError, match=f"unsupported BED contigs: {contig}"):
-        target_geometry(bed, folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+    plain, bed = tmp_path / "plain.bed", tmp_path / "target.bed"
+    plain.write_text("chr1\t500\t560\n")
+    # Unprefixed decoy names do not count against the BED's chr convention.
+    bed.write_text(f"chr1\t500\t560\n{contig}\t800\t850\n{contig}\t900\t950\n")
+    args = (folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+    assert_array_equal(target_geometry(bed, *args), target_geometry(plain, *args))
+    coordinates = np.loadtxt(folder / "chromosomes.tsv", dtype=str, usecols=0)
+    chromosomes, excluded = select_contigs(["chr1", contig, contig], coordinates)
+    assert chromosomes == [f"chr{c}" for c in [*range(1, 23), "X"]]
+    assert excluded == {contig: 2}
+
+
+def test_chromosomes_come_from_reference_names(tmp_path):
+    from excavator2.target import select_contigs
+
+    # Numeric order, X last, BED naming; Y and unplaced reference contigs are ignored.
+    reference = ["2", "chr10", "chrY", "chrX", "1", "chrUn_x", "chrM"]
+    assert select_contigs(["chr1", "chr2"], reference)[0] == ["chr1", "chr2", "chr10", "chrX"]
+    assert select_contigs(["1", "Y"], reference) == (["1", "2", "10", "X"], {"Y": 1})
+    with pytest.raises(ValueError, match="missing from chromosome coordinates: chr3"):
+        select_contigs(["chr1", "chr3"], reference)
+    with pytest.raises(ValueError, match="no intervals on reference autosomes or X"):
+        select_contigs(["chrY"], reference)
 
 
 def test_chromosome_without_gap_rows_keeps_all_windows(tmp_path):

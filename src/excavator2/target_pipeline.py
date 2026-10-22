@@ -9,7 +9,7 @@ import numpy as np
 
 from . import __version__
 from .artifacts import digest, metadata_identity, read_yaml, window_metadata
-from .target import target_geometry
+from .target import contig_key, select_contigs, target_geometry
 from .target_features import target_features
 
 
@@ -46,10 +46,19 @@ def run_target(config, output, force=False, progress=None):
         paths["BED"], paths["Chromosomes"], paths["Gaps"], target_settings.get("Window")
     )
     chromosomes = list(dict.fromkeys(target[:, 0]))
+    _, excluded = select_contigs(
+        np.loadtxt(paths["BED"], dtype=str, delimiter="\t", usecols=0, ndmin=1),
+        np.loadtxt(paths["Chromosomes"], dtype=str, delimiter="\t", usecols=0, ndmin=1),
+    )
+    if excluded and progress:
+        counts = ", ".join(f"{name} ({n:,})" for name, n in excluded.items())
+        progress(f"Excluded BED rows outside reference autosomes and X: {counts}")
     centro = np.loadtxt(paths["Centromeres"], dtype=str, skiprows=1, ndmin=2)
+    keys = {contig_key(chrom): chrom for chrom in chromosomes}
     centers = {
-        row[0] if len(chromosomes[0]) >= 4 else row[0][3:]: [int(row[1]), int(row[2])]
+        keys[contig_key(row[0])]: [int(row[1]), int(row[2])]
         for row in centro
+        if contig_key(row[0]) in keys
     }
     if any(chrom not in centers for chrom in chromosomes):
         raise ValueError("centromere table is missing target chromosomes")
@@ -83,7 +92,8 @@ def run_target(config, output, force=False, progress=None):
             "window": target_settings["Window"],
             "package_version": __version__,
             "geometry_policy": "merged-bounded-overlap-v2",
-            "contig_policy": "canonical-1-22-X-reject-unsupported",
+            "contig_policy": "reference-autosomes-X-exclude-other-bed-contigs",
+            "excluded_bed_contigs": excluded,
             "config_sha256": digest(config),
             "inputs": {
                 key: {"path": str(path), "sha256": digest(path)} for key, path in paths.items()
