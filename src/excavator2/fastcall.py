@@ -157,6 +157,84 @@ def call_probabilities(
     return np.diff(cumulative, axis=1)
 
 
+@dataclass(frozen=True)
+class FastCallEvents:
+    # Event index of each segment.
+    ids: NDArray[np.int64]
+    # Window ranges [starts, ends) of each event.
+    starts: NDArray[np.int64]
+    ends: NDArray[np.int64]
+    mixture: FloatArray
+    corrected: FloatArray
+    labels: NDArray[np.int32]
+    probabilities: FloatArray
+
+
+def fastcall_events(
+    values: ArrayLike,
+    classes: ArrayLike,
+    starts,
+    ends,
+    segments: ArrayLike,
+    labels: ArrayLike,
+    arms: ArrayLike,
+    noise,
+    *,
+    k: float = 2.0,
+    upper: float = 0.35,
+    lower: float = 0.5,
+    cellularity: float = 1.0,
+) -> FastCallEvents:
+    """Group adjacent same-label segments whose medians agree within k standard errors.
+
+    The most consistent boundaries are removed first, then the merged medians and
+    standard errors are recomputed. Events are rescored like segments; unmerged
+    events keep their segment values exactly.
+    """
+    values, segments = segment_values(values), segment_values(segments)
+    classes, labels, arms = np.asarray(classes), np.asarray(labels), np.asarray(arms)
+    starts, ends = np.asarray(starts, dtype=np.int64), np.asarray(ends, dtype=np.int64)
+    if not np.isfinite(k) or k < 0:
+        raise ValueError("MergeK must be finite and nonnegative")
+    if not (segments.shape == labels.shape == arms.shape == starts.shape == ends.shape):
+        raise ValueError("segment fields must have matching lengths")
+    if starts[0] != 0 or ends[-1] != len(values) or (starts[1:] != ends[:-1]).any():
+        raise ValueError("segments must partition the windows")
+
+    def statistics(first, last):
+        window = slice(starts[first], ends[last])
+        error = segment_standard_errors(classes[window], [0], [ends[last] - starts[first]], noise)
+        return np.median(values[window]), error[0]
+
+    bounds = np.arange(len(segments) + 1)
+    medians = segments.copy()
+    errors = segment_standard_errors(classes, starts, ends, noise)
+    while len(bounds) > 2:
+        left, right = bounds[:-2], bounds[1:-1]
+        same = (labels[left] == labels[right]) & (arms[left] == arms[right])
+        z = np.abs(np.diff(medians)) / np.hypot(errors[:-1], errors[1:])
+        eligible = same & (z <= k)
+        if not eligible.any():
+            break
+        # Remove all equally consistent boundaries together, as in filter_breaks.
+        chosen = np.flatnonzero(eligible & (z == z[eligible].min()))
+        first = np.ones(len(medians), dtype=bool)
+        first[chosen + 1] = False
+        bounds = np.delete(bounds, chosen + 1)
+        medians, errors = medians[first], errors[first]
+        for event in np.unique(np.cumsum(first)[chosen] - 1):
+            medians[event], errors[event] = statistics(bounds[event], bounds[event + 1] - 1)
+    return FastCallEvents(
+        np.repeat(np.arange(len(bounds) - 1), np.diff(bounds)),
+        starts[bounds[:-1]],
+        ends[bounds[1:] - 1],
+        medians,
+        correct_cellularity(medians, cellularity),
+        labels[bounds[:-1]].astype(np.int32),
+        call_probabilities(medians, errors, upper=upper, lower=lower, cellularity=cellularity),
+    )
+
+
 def fit_fastcall(
     values: ArrayLike,
     *,

@@ -158,8 +158,12 @@ counts and normalization checkpoints. Under `results/Results/<sample>/`, analysi
 writes:
 
 - `HSLMResults_<sample>.txt`: window ratios and segmentation.
-- `FastCallResults_<sample>.txt`: called regions and copy-number estimates.
-- `EXCAVATORWindowCall_<sample>.vcf` and `EXCAVATORRegionCall_<sample>.vcf`.
+- `FastCallResults_<sample>.txt`: called segments, copy-number estimates and
+  the event (`EventId`) each segment belongs to.
+- `EXCAVATORWindowCall_<sample>.vcf` (per window) and
+  `EXCAVATORRegionCall_<sample>.vcf` (per event). Adjacent same-call segments
+  merge into one event when their medians agree within `MergeK` standard errors;
+  see [event merging](docs/copy-number-interpretation.md#event-merging-76).
 - `checkpoints.npz`: numerical intermediates used for comparison.
 
 The result manifest records inputs, parameters and execution settings. Random

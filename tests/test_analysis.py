@@ -71,14 +71,16 @@ def test_cli_reports_segment_interval_probabilities(tmp_path, experiment, prepar
             altered = 1 - probabilities[significant, 2]
         assert manifest["fastcall_probability_semantics"] == "segment-level-interval-probability"
         assert set(manifest["samples"][sample]["measurement_noise"]) == {"IN", "OUT"}
-        calls = np.loadtxt(folder / f"FastCallResults_{sample}.txt", dtype=str, skiprows=1)
-        assert_allclose(calls[:, -2].astype(float), called, atol=1e-14)
-        assert_allclose(calls[:, -1].astype(float), altered, atol=1e-14)
+        calls = np.genfromtxt(
+            folder / f"FastCallResults_{sample}.txt", names=True, dtype=None, encoding="utf-8"
+        )
+        assert_allclose(calls["ProbCall"], called, atol=1e-14)
+        assert_allclose(calls["ProbAltered"], altered, atol=1e-14)
         # Segments just below the gain/amplification edge: either class, surely altered.
-        edge = np.isclose(calls[:, 4].astype(float), 0.9)
+        edge = np.isclose(calls["CorrectedSegment"], 0.9)
         assert edge.any()
-        assert_allclose(calls[edge, -2].astype(float), 0.5, atol=1e-6)
-        assert_allclose(calls[edge, -1].astype(float), 1)
+        assert_allclose(calls["ProbCall"][edge], 0.5, atol=1e-6)
+        assert_allclose(calls["ProbAltered"][edge], 1)
 
 
 def test_failed_analysis_does_not_publish_partial_results(tmp_path, prepared_data):
@@ -423,6 +425,57 @@ def test_omitted_ploidy_defaults_to_diploid(tmp_path, prepared_data):
     )
     manifest = json.loads((output / "manifest.json").read_text())
     assert manifest["parameters"]["FastCall"]["Ploidy"] == 2
+    assert manifest["parameters"]["FastCall"]["MergeK"] == 2
+
+
+def test_events_group_segments_in_region_vcf_only(tmp_path, prepared_data):
+    from excavator2.analyze import DEFAULTS
+
+    parameters = tmp_path / "parameters.json"
+    params = {key: dict(value) for key, value in DEFAULTS.items()}
+    params["FastCall"]["MergeK"] = 1e9
+    parameters.write_text(json.dumps(params))
+    for name, file in [("default", None), ("merged", parameters)]:
+        run_analysis(
+            FIXTURE / "samples.yaml",
+            prepared_data,
+            FIXTURE / "inputs/target",
+            tmp_path / name,
+            "paired",
+            file,
+        )
+    for sample in ("Test1", "Test2"):
+        default, merged = (tmp_path / name / "Results" / sample for name in ("default", "merged"))
+        with np.load(default / "checkpoints.npz") as data:
+            # Noiseless fixture steps are far beyond two standard errors.
+            assert_array_equal(data["event_ids"], np.arange(len(data["labels"])))
+        with np.load(merged / "checkpoints.npz") as data:
+            labels, ids = data["labels"], data["event_ids"]
+            # A huge threshold merges every same-call run; fixture runs lie within one arm.
+            first = np.r_[True, ids[1:] != ids[:-1]]
+            assert_array_equal(labels[first], data["event_labels"])
+            assert (np.diff(data["event_labels"]) != 0).all()
+            called = np.flatnonzero(data["event_labels"] != 0)
+            table = np.genfromtxt(
+                merged / f"FastCallResults_{sample}.txt", names=True, dtype=None, encoding="utf-8"
+            )
+            assert_array_equal(table["EventId"], ids[labels != 0])
+            assert len(np.unique(table["EventId"])) < len(table)
+            vcf = (merged / f"EXCAVATORRegionCall_{sample}.vcf").read_text().splitlines()
+            records = [line.split("\t") for line in vcf if not line.startswith("#")]
+            assert len(records) == len(called)
+            probabilities = data["event_probabilities"][called]
+            fcp = probabilities[np.arange(len(called)), data["event_labels"][called] + 2]
+            fields = [dict(zip(r[8].split(":"), r[9].split(":"), strict=True)) for r in records]
+            assert_allclose([float(f["FCP"]) for f in fields], np.round(fcp, 2))
+        # Segment outputs are unchanged by merging.
+        for output in ["HSLMResults", "EXCAVATORWindowCall"]:
+            suffix = "txt" if output == "HSLMResults" else "vcf"
+            old = (default / f"{output}_{sample}.{suffix}").read_text().splitlines()
+            new = (merged / f"{output}_{sample}.{suffix}").read_text().splitlines()
+            assert [x for x in old if "fileDate" not in x] == [
+                x for x in new if "fileDate" not in x
+            ]
 
 
 def test_analysis_help_has_no_calibration_option():

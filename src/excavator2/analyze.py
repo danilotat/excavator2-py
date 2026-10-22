@@ -13,6 +13,7 @@ from .fastcall import (
     assign_labels,
     call_probabilities,
     correct_cellularity,
+    fastcall_events,
     fit_fastcall,
     recenter_ploidy,
     segment_standard_errors,
@@ -23,7 +24,14 @@ from .writers import number, write_results
 
 DEFAULTS = {
     "HSLM": {"Omega": 0.1, "Theta": 1e-5, "D_norm": 1e6},
-    "FastCall": {"Cellularity": 1.0, "d": 0.5, "u": 0.35, "minExons": 4, "Ploidy": 2.0},
+    "FastCall": {
+        "Cellularity": 1.0,
+        "d": 0.5,
+        "u": 0.35,
+        "minExons": 4,
+        "Ploidy": 2.0,
+        "MergeK": 2.0,
+    },
 }
 
 
@@ -134,6 +142,16 @@ def segment_profile(matrix, values, target, parameters):
     return np.array(rows), np.concatenate(paths), np.array(indices), np.array(segment_ids)
 
 
+def segment_arms(rows, starts, target):
+    """Chromosome arm of each segment, from its first window."""
+    return np.array(
+        [
+            f"{chromosome}:{'q' if float(start) > target['centromeres'][chromosome][1] else 'p'}"
+            for chromosome, start in rows[starts][:, [0, 2]]
+        ]
+    )
+
+
 def summarize(rows, segment_ids):
     """Preserve inferred segments and hard chromosome/arm boundaries."""
     segment_ids = np.asarray(segment_ids)
@@ -188,6 +206,7 @@ def run_analysis(
     if isinstance(fastcall, dict):
         # Omitted Ploidy keeps the median window as the diploid reference.
         fastcall.setdefault("Ploidy", DEFAULTS["FastCall"]["Ploidy"])
+        fastcall.setdefault("MergeK", DEFAULTS["FastCall"]["MergeK"])
     if set(params) != set(DEFAULTS) or any(set(params[k]) != set(DEFAULTS[k]) for k in DEFAULTS):
         raise ValueError("parameters must contain the documented HSLM and FastCall fields")
     names = list(dict.fromkeys(name for test, controls in design for name in [test, *controls]))
@@ -238,6 +257,20 @@ def run_analysis(
                 lower=float(fc["d"]),
                 cellularity=float(fc["Cellularity"]),
             )
+            events = fastcall_events(
+                recenter_ploidy(values[indices], float(fc["Ploidy"]), float(fc["Cellularity"])),
+                classes,
+                starts,
+                ends,
+                original,
+                calls.labels,
+                segment_arms(rows, starts, target),
+                noise,
+                k=float(fc["MergeK"]),
+                upper=float(fc["u"]),
+                lower=float(fc["d"]),
+                cellularity=float(fc["Cellularity"]),
+            )
             folder = temporary / "Results" / test
             folder.mkdir(parents=True)
             write_results(
@@ -250,6 +283,7 @@ def run_analysis(
                 corrected,
                 calls,
                 probabilities,
+                events,
                 target,
                 target_folder,
             )
@@ -268,6 +302,13 @@ def run_analysis(
                 measurement_noise=np.array([noise["IN"], noise["OUT"]]),
                 segment_standard_errors=errors,
                 call_probabilities=probabilities,
+                event_ids=events.ids,
+                event_starts=events.starts,
+                event_ends=events.ends,
+                event_mixture_segments=events.mixture,
+                event_corrected_segments=events.corrected,
+                event_labels=events.labels,
+                event_probabilities=events.probabilities,
                 fastcall_trace=fit.trace,
                 **(
                     {"r_seed_before": seeds[test], "r_seed_after": calls.r_seed}
@@ -279,6 +320,7 @@ def run_analysis(
                 "windows": len(rows),
                 "segments": len(starts),
                 "calls": int(np.count_nonzero(calls.labels)),
+                "events": int(np.count_nonzero(events.labels)),
                 "fastcall_iterations": fit.iterations,
                 "measurement_noise": noise,
             }
@@ -304,6 +346,7 @@ def run_analysis(
             "fastcall_probability_semantics": "segment-level-interval-probability",
             "call_probability_model": "normal-segment-median-within-segment-difference-noise",
             "fastcall_posterior": "truncated",
+            "event_policy": "adjacent-same-label-same-arm-median-difference-within-MergeK-SE",
             "fastcall_trace_statistic": "truncated_log_likelihood",
             "threads": 1,
             "rng_policy": "per-sample-original-R-state" if seeds else "reject-random-ties",

@@ -128,3 +128,33 @@ depth, IN/OUT composition, noise and purity.
 
 Regression evidence is in `tests/test_reporting_semantics.py`,
 `tests/test_analysis.py` and `tests/test_signal_preservation.py`.
+
+## Event merging ([#76](https://github.com/danilotat/excavator2-py/issues/76))
+
+HSLM often splits one alteration into adjacent segments with the same FastCall
+label, for example across a large gap between targets, where its distance prior
+makes a boundary cheap. Analysis groups such segments into events, after the
+merge pass of DRAGEN's
+[CNV smoothing](https://help.dragen.illumina.com/dragen-v4.4/product-guide/dragen-v4.4/dragen-dna-pipeline/cnv-calling/additional-documentation/cnv-ascn#wgs-cnv-smoothing).
+
+Two adjacent events in one chromosome arm, with the same label, merge when
+`|m1 - m2| / sqrt(SE1^2 + SE2^2) <= MergeK`, using mixture medians and the H07
+standard errors. The most consistent boundaries are removed first (equal ties
+together), then the merged median and standard error are recomputed from all of
+the event's windows, and the test repeats until no boundary qualifies. A merged
+median lies between its parts' medians, so the label never changes. Events are
+rescored like segments: DECNF and probabilities come from the merged median and
+its standard error. An unmerged event keeps its segment's values exactly.
+
+The test uses evidence, not distance. A bp merge distance would reflect target
+layout on exome and panel data, and would block the gap-induced splits merging is
+meant to undo. A within-class step supported by many windows, such as a subclonal
+gain next to a clonal one, exceeds the threshold and stays two events. `MergeK`
+is an optional FastCall parameter (default 2); 0 merges only identical medians.
+DRAGEN's removal of negligible segments corresponds to `minExons`.
+
+Merging is reporting only. HSLM rows, the segment-level `FastCallResults` rows and
+the Window VCF keep every segment; `FastCallResults` gains an `EventId` column,
+and the Region VCF has one record per called event. Checkpoints save event IDs,
+window ranges, medians, labels and probabilities, and the manifest records
+`event_policy`. Evidence is in `tests/test_events.py` and `tests/test_analysis.py`.

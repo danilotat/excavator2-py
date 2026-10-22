@@ -43,7 +43,9 @@ Paired analysis sorts numeric suffixes and requires matching C/T pairs. Sample
 names must be plain path components; duplicate YAML keys/names are rejected.
 `--parameters` accepts the original HSLM/FastCall YAML fields and defaults.
 FastCall also accepts an optional `Ploidy` (default 2) that re-centers segment
-ratios on a known tumor ploidy ([details](copy-number-interpretation.md#ploidy-re-centering-75)).
+ratios on a known tumor ploidy ([details](copy-number-interpretation.md#ploidy-re-centering-75)),
+and an optional `MergeK` (default 2) that groups adjacent same-call segments into
+events ([details](copy-number-interpretation.md#event-merging-76)).
 On `dev/improvements`, FastCall uses the fitted truncation for final calls,
 fixing A19. The analysis manifest records `fastcall_posterior: truncated`;
 see [A19](fastcall-a19.md) for numerical limits. Reported call probabilities come
@@ -54,7 +56,7 @@ This initial implementation requires `--threads 1` and a new output directory;
 and published after every sample succeeds. Plots are not generated.
 
 Outputs under `Results/<sample>/` retain the original HSLM/FastCall table and
-region/window VCF names. `checkpoints.npz` also records ratios, row indices,
+region/window VCF names; Region VCF records are merged events. `checkpoints.npz` also records ratios, row indices,
 Viterbi paths, segment boundaries, posteriors, labels and FastCall traces.
 `manifest.json` records input hashes, parameters, design and backend.
 

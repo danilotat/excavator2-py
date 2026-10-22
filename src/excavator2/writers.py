@@ -64,6 +64,22 @@ def vcf_header(sample, assembly, windows):
     return lines
 
 
+def call_summary(probabilities, labels):
+    """Probabilities of the called class and of any non-normal class."""
+    called = probabilities[np.arange(len(labels)), labels + 2]
+    return called, probabilities[:, [0, 1, 3, 4]].sum(axis=1)
+
+
+def genotypes(corrected, labels, probabilities):
+    called, altered = call_summary(probabilities, labels)
+    cnf = 2 * 2 ** np.asarray(corrected)
+    return [
+        f".:{number(np.rint(c))}:{number(c)}:{label}:"
+        f"{number(np.round(p, 2))}:{number(np.round(a, 2))}"
+        for c, label, p, a in zip(cnf, labels, called, altered, strict=True)
+    ]
+
+
 def write_results(
     folder,
     sample,
@@ -74,21 +90,22 @@ def write_results(
     corrected,
     calls,
     probabilities,
+    events,
     target,
     target_folder,
 ):
+    """Segments in tables and the Window VCF; merged events in the Region VCF."""
     header = "Chromosome\tPosition\tStart\tEnd\tLog2R\tSegMean\tClass"
     with (folder / f"HSLMResults_{sample}.txt").open("w") as handle:
         handle.write(header + "\n")
         for row in rows:
             handle.write("\t".join(row) + "\n")
     significant = np.flatnonzero(calls.labels != 0)
-    called = probabilities[np.arange(len(calls.labels)), calls.labels + 2]
-    altered = probabilities[:, [0, 1, 3, 4]].sum(axis=1)
+    called, altered = call_summary(probabilities, calls.labels)
     with (folder / f"FastCallResults_{sample}.txt").open("w") as handle:
         handle.write(
             "Chromosome\tStart\tEnd\tMixtureSegment\tCorrectedSegment"
-            "\tDECNF\tDECN\tCall\tProbCall\tProbAltered\n"
+            "\tDECNF\tDECN\tCall\tProbCall\tProbAltered\tEventId\n"
         )
         for index in significant:
             start, end = starts[index], ends[index] - 1
@@ -106,19 +123,23 @@ def write_results(
                         str(calls.labels[index]),
                         number(called[index]),
                         number(altered[index]),
+                        str(events.ids[index]),
                     ]
                 )
                 + "\n"
             )
+    segment_genotypes = genotypes(corrected, calls.labels, probabilities)
+    event_genotypes = genotypes(events.corrected, events.labels, events.probabilities)
     for windows in [True, False]:
         records = []
-        for index in significant:
-            start, end = starts[index], ends[index] - 1
-            cnf = 2 * 2 ** corrected[index]
-            genotype = (
-                f".:{number(np.rint(cnf))}:{number(cnf)}:{calls.labels[index]}:"
-                f"{number(np.round(called[index], 2))}:{number(np.round(altered[index], 2))}"
-            )
+        if windows:
+            intervals = [(starts[i], ends[i] - 1, segment_genotypes[i]) for i in significant]
+        else:
+            intervals = [
+                (events.starts[i], events.ends[i] - 1, event_genotypes[i])
+                for i in np.flatnonzero(events.labels != 0)
+            ]
+        for start, end, genotype in intervals:
             selected = range(start, end + 1) if windows else [start]
             for row in selected:
                 records.append(

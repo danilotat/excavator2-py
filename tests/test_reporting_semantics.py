@@ -9,11 +9,30 @@ from excavator2.fastcall import (
     assign_labels,
     call_probabilities,
     correct_cellularity,
+    fastcall_events,
     fit_fastcall,
     segment_standard_errors,
     window_noise,
 )
 from excavator2.writers import write_results
+
+# Per-window noise giving a one-window segment a standard error of 0.1.
+NOISE = dict.fromkeys(["IN", "OUT"], 0.1 / np.sqrt(np.pi / 2))
+
+
+def unmerged_events(mixture, calls, cellularity=1.0):
+    n = len(mixture)
+    return fastcall_events(
+        mixture,
+        np.array(["IN"] * n),
+        np.arange(n),
+        np.arange(1, n + 1),
+        mixture,
+        calls.labels,
+        np.array(["chr1:p"] * n),
+        NOISE,
+        cellularity=cellularity,
+    )
 
 
 @pytest.mark.parametrize("chromosome", ["chr1", "chrX"])
@@ -24,6 +43,10 @@ def test_corrected_reporting_and_floor(tmp_path, purity, chromosome):
     corrected = correct_cellularity(mixture, purity)
     calls = assign_labels(fit_fastcall(corrected).posterior)
     probabilities = call_probabilities(mixture, np.full(3, 0.1), cellularity=purity)
+    # Distinct labels never merge, so each segment is its own event.
+    events = unmerged_events(mixture, calls, purity)
+    assert_array_equal(events.ids, np.arange(3))
+    assert_allclose(events.probabilities, probabilities)
     rows = np.array(
         [
             [chromosome, str(i), str(i), str(i + 1), str(x), str(x), "IN"]
@@ -46,6 +69,7 @@ def test_corrected_reporting_and_floor(tmp_path, purity, chromosome):
         corrected,
         calls,
         probabilities,
+        events,
         target,
         tmp_path,
     )
@@ -60,6 +84,7 @@ def test_corrected_reporting_and_floor(tmp_path, purity, chromosome):
     called = probabilities[np.arange(3), calls.labels + 2]
     assert_allclose(table["ProbCall"], called)
     assert_allclose(table["ProbAltered"], 1 - probabilities[:, 2])
+    assert_array_equal(table["EventId"], np.arange(3))
     for kind in ["Window", "Region"]:
         text = (tmp_path / f"EXCAVATOR{kind}Call_T.vcf").read_text()
         assert "not absolute CN" in text
@@ -159,6 +184,7 @@ def test_reference_bases_match_scientific_positions(tmp_path):
         mixture,
         calls,
         call_probabilities(mixture, np.full(2, 0.1)),
+        unmerged_events(mixture, calls),
         target,
         tmp_path,
     )
