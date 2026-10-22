@@ -1,21 +1,23 @@
 # Current target and counting corrections
 
 The current implementation replaces legacy defects T01/T02/T03/T04/T06/T13/T14/T16
-(issues #28–#35), P01/P04/P05/P08 (#21–#23, #25), and strengthens
+(issues #28–#35), T10/T17 (#58, #62), P01/P04/P05/P08 (#21–#23, #25), and strengthens
 failure reporting for P12 (#27). There is no legacy behavior switch.
 
 - Chromosome coordinates are keyed by name (an optional `chr` prefix is normalized);
   duplicate or missing canonical bounds fail. Canonical chromosome ordering remains.
   Uniformly named Y BED entries are accepted and ignored. Other BED contigs
   outside uniformly named 1–22/X fail explicitly instead of being silently
-  dropped. Y/MT/other contig analysis remains unsupported.
+  dropped. Y/MT/other contig analysis remains unsupported. The `chr` prefix is
+  taken from all BED rows; mixing prefixed and bare names fails.
 - IN intervals are sorted and overlapping, nested, duplicate or touching intervals
   are merged before OUT generation. Invalid or out-of-bounds targets fail.
 - OUT intervals use the available gap after subtracting both 200-base flanks.
   Only full windows are emitted, within chromosome bounds. Empty eligible gaps
   emit no OUT rows. Target-free chromosomes use positive starts: `[left+1, right]`.
 - Existing IN coordinate values, GC/MAP `[start-1,end)` and first-base
-  `[start,start+1)` extraction conventions remain. This is not a general BED
+  `[start,start+1)` extraction conventions remain; a BED start of 0 clamps the
+  GC/MAP interval to `[0,end)`. This is not a general BED
   coordinate-system migration. Gap filtering rejects any intersection of a stored
   inclusive window with a half-open gap `[left,right)`, including windows spanning
   the gap. Empty gaps remove nothing.

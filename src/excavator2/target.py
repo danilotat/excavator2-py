@@ -22,7 +22,10 @@ def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np
     if np.any(gap_positions[:, 1] < gap_positions[:, 0]):
         raise ValueError("gap ends must not precede starts")
 
-    prefix = "chr" if len(bed_rows[0, 0]) > 3 else ""
+    named = np.char.startswith(bed_rows[:, 0], "chr")
+    if named.any() != named.all():
+        raise ValueError("BED contigs must all use or all omit the 'chr' prefix")
+    prefix = "chr" if named.all() else ""
     chromosomes = [f"{prefix}{c}" for c in [*range(1, 23), "X"]]
     gap_names = np.array([c if prefix else c.replace("chr", "", 1) for c in gap_rows[:, 0]])
     alternate = np.array(["_" in c for c in gap_names], dtype=bool)

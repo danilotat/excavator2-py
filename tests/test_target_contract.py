@@ -189,7 +189,7 @@ def test_target_without_eligible_out_gap_keeps_inside(tmp_path):
     assert set(actual[actual[:, 0] == "chr1", 4]) == {"IN"}
 
 
-@pytest.mark.parametrize("contig", ["chrM", "MT", "chrUn", "1"])
+@pytest.mark.parametrize("contig", ["chrM", "chrUn"])
 def test_unsupported_bed_contigs_fail_instead_of_disappearing(tmp_path, contig):
     from excavator2.target import target_geometry
 
@@ -197,6 +197,18 @@ def test_unsupported_bed_contigs_fail_instead_of_disappearing(tmp_path, contig):
     bed = tmp_path / "target.bed"
     bed.write_text(f"chr1\t500\t560\n{contig}\t800\t850\n")
     with pytest.raises(ValueError, match=f"unsupported BED contigs: {contig}"):
+        target_geometry(bed, folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
+
+
+@pytest.mark.parametrize("first", ["chr1", "1"])
+def test_mixed_bed_prefixes_fail_regardless_of_first_row(tmp_path, first):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    other = "1" if first == "chr1" else "chr1"
+    bed = tmp_path / "target.bed"
+    bed.write_text(f"{first}\t500\t560\n{other}\t1300\t1400\n")
+    with pytest.raises(ValueError, match="all use or all omit"):
         target_geometry(bed, folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
 
 

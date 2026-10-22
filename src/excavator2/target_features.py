@@ -67,9 +67,10 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
                 chrom, start, end, _, _ = target[index]
                 chrom = prefix + chrom
                 start, end = int(start), int(end)
-                left = start - 1
+                # A BED start of 0 has no base to its left; clamp to the contig start.
+                left = max(start - 1, 0)
                 if (
-                    left < 0
+                    start < 0
                     or end < start
                     or chrom not in lengths
                     or end > lengths[chrom]
@@ -77,7 +78,7 @@ def target_features(target: np.ndarray, fasta: Path, bigwig: Path) -> dict:
                 ):
                     raise ValueError(
                         f"invalid reference window at row {index + 1} ({target[index, 3]}): "
-                        f"{chrom}:{start}-{end}; requires positive valid coordinates, "
+                        f"{chrom}:{start}-{end}; requires nonnegative valid coordinates, "
                         "GC interval and first-base position within the FASTA contig"
                     )
                 # UCSC's sixth output column averages covered bases; no coverage is zero.

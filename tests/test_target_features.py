@@ -68,13 +68,23 @@ def test_bigwig_3000_block_algorithm_switch_preserves_values():
         assert_array_equal(expected_below["MAP_chr1"], expected_boundary["MAP_chr1"][:2999])
 
 
-@pytest.mark.parametrize(
-    "name", ["zero_start", "last_base", "missing_contig", "partial_skips", "past_end"]
-)
+@pytest.mark.parametrize("name", ["last_base", "missing_contig", "partial_skips", "past_end"])
 def test_invalid_reference_windows_fail_explicitly(name):
     target = np.loadtxt(FIXTURES / name / "target.tsv", dtype=str, ndmin=2)
     with pytest.raises(ValueError, match="invalid reference window at row"):
         target_features(target, FIXTURES / "reference.fa", FIXTURES / "reference.bw")
+
+
+def test_zero_start_clamps_gc_interval_to_contig_start():
+    target = np.loadtxt(FIXTURES / "zero_start" / "target.tsv", dtype=str, ndmin=2)
+    actual = target_features(target, FIXTURES / "reference.fa", FIXTURES / "reference.bw")
+    one = target_features(
+        np.array([["chr1", "1", "9", "a1", "IN"]]),
+        FIXTURES / "reference.fa",
+        FIXTURES / "reference.bw",
+    )
+    assert_array_equal(actual["chr1"]["gc"], one["chr1"]["gc"])
+    assert_array_equal(actual["chr1"]["first_base"][:, 0], ["0"])
 
 
 def test_bare_chromosomes_select_only_their_own_rows():
