@@ -90,8 +90,8 @@ def test_target_cli_publishes_compatible_artifact(config, tmp_path):
 
 def test_target_failure_does_not_publish(config, tmp_path):
     settings = yaml.safe_load(config.read_text())
-    Path(settings["Reference"]["Gaps"]).write_text("id\tchrom\tstart\tend\n0\tchr1_alt\t0\t1\n")
-    with pytest.raises(ValueError, match="requires gaps"):
+    Path(settings["Reference"]["Gaps"]).write_text("id\tchrom\tstart\tend\n0\tchr1\t0\t1\n")
+    with pytest.raises(ValueError, match="alternate-contig gap row"):
         run_target(config, tmp_path / "failed")
     assert not (tmp_path / "failed").exists()
     assert not list(tmp_path.glob(".excavator2-target-*"))

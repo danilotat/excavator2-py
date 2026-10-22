@@ -85,9 +85,8 @@ def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np
         labels = np.array(["IN"] * len(inside) + ["OUT"] * len(outside))
         order = np.argsort(positions[:, 0], kind="stable")
         positions, labels = positions[order], labels[order]
+        # A chromosome without gap rows is one contig with no gaps.
         chromosome_gaps = gap_positions[gap_names == chromosome]
-        if not len(chromosome_gaps):
-            raise ValueError(f"legacy gap filtering requires gaps for {chromosome}")
         keep = np.ones(len(positions), dtype=bool)
         # Vectorize across windows without allocating a windows-by-gaps matrix.
         for left, right in chromosome_gaps:

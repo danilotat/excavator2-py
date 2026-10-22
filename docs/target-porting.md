@@ -1,7 +1,7 @@
 # Current target and counting corrections
 
 The current implementation replaces legacy defects T01/T02/T03/T04/T06/T13/T14/T16
-(issues #28–#35), T10/T17 (#58, #62), P01/P04/P05/P08 (#21–#23, #25), and strengthens
+(issues #28–#35), T09/T10/T17 (#57, #58, #62), P01/P04/P05/P08 (#21–#23, #25), and strengthens
 failure reporting for P12 (#27). There is no legacy behavior switch.
 
 - Chromosome coordinates are keyed by name (an optional `chr` prefix is normalized);
@@ -17,7 +17,8 @@ failure reporting for P12 (#27). There is no legacy behavior switch.
   emit no OUT rows. Target-free chromosomes use positive starts: `[left+1, right]`.
 - Existing IN coordinate values, GC/MAP `[start-1,end)` and first-base
   `[start,start+1)` extraction conventions remain; a BED start of 0 clamps the
-  GC/MAP interval to `[0,end)`. This is not a general BED
+  GC/MAP interval to `[0,end)`. A chromosome without gap rows is a single
+  contig with no gaps. This is not a general BED
   coordinate-system migration. Gap filtering rejects any intersection of a stored
   inclusive window with a half-open gap `[left,right)`, including windows spanning
   the gap. Empty gaps remove nothing.

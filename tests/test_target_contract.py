@@ -200,6 +200,20 @@ def test_unsupported_bed_contigs_fail_instead_of_disappearing(tmp_path, contig):
         target_geometry(bed, folder / "chromosomes.tsv", folder / "gaps.tsv", 100)
 
 
+def test_chromosome_without_gap_rows_keeps_all_windows(tmp_path):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    rows = (folder / "gaps.tsv").read_text().splitlines(keepends=True)
+    missing, empty = tmp_path / "missing.tsv", tmp_path / "empty.tsv"
+    missing.write_text("".join(row for row in rows if "\tchr2\t" not in row))
+    empty.write_text(missing.read_text() + "1\tchr2\t0\t0\n")
+    args = (folder / "target.bed", folder / "chromosomes.tsv")
+    actual = target_geometry(*args, missing, 100)
+    assert_array_equal(actual, target_geometry(*args, empty, 100))
+    assert "chr2" in actual[:, 0]
+
+
 @pytest.mark.parametrize("first", ["chr1", "1"])
 def test_mixed_bed_prefixes_fail_regardless_of_first_row(tmp_path, first):
     from excavator2.target import target_geometry
