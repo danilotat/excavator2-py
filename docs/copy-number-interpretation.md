@@ -42,6 +42,29 @@ Adding absolute CN later requires region-specific reference and contaminant
 ploidy, sample context, validated PAR handling, and an appropriate calling model.
 The fixed FastCall means and class thresholds retain their diploid-relative meaning.
 
+## Ploidy re-centering ([#75](https://github.com/danilotat/excavator2-py/issues/75))
+
+Depth normalization and IN/OUT median centering set log2 ratio 0 to the copy
+number of the median window, in paired and pooled designs alike; a matched normal
+removes locus bias but not the genome-wide scale. FastCall reads that level as
+diploid. In a tumor of ploidy 2.85 most of the genome is then shifted: CN 2 sits
+near `log2(2/2.85) = -0.51` and is called a loss, while CN 3 sits near 0.
+
+The optional FastCall `Ploidy` parameter (default 2, no shift) supplies the known
+tumor ploidy P. After segmentation, each segment median m becomes
+`m + log2((p*P + 2*(1-p)) / 2)`, where p is `Cellularity` and the contaminant is
+diploid. Cellularity correction, FastCall labels, probabilities, `MixtureSegment`,
+`CorrectedSegment` and DECNF use the shifted value. Segmentation does not, because
+its reset prior is centered at zero; segment values are medians of observations,
+so the shift is an exact translation. HSLM rows and window `L2R` stay
+median-centered observations.
+
+This is the manual re-centering used for CNVkit in published benchmarks, not
+ploidy inference. It assumes the median window's copy number approximates the
+mean ploidy; for a genome mostly at CN 3 with ploidy 2.85, the shift is off by
+`log2(3/2.85) = 0.07`. DECNF remains diploid-equivalent and is absolute only to
+the extent that P and this assumption hold.
+
 ## P15 assessment: control depth still affects arithmetic pooling
 
 Analysis averages normalized counts across selected controls without a pseudocount,

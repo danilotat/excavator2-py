@@ -42,6 +42,8 @@ only T-labelled samples are analyzed, matching the original job splitter.
 Paired analysis sorts numeric suffixes and requires matching C/T pairs. Sample
 names must be plain path components; duplicate YAML keys/names are rejected.
 `--parameters` accepts the original HSLM/FastCall YAML fields and defaults.
+FastCall also accepts an optional `Ploidy` (default 2) that re-centers segment
+ratios on a known tumor ploidy ([details](copy-number-interpretation.md#ploidy-re-centering-75)).
 On `dev/improvements`, FastCall uses the fitted truncation for final calls,
 fixing A19. The analysis manifest records `fastcall_posterior: truncated`;
 see [A19](fastcall-a19.md) for numerical limits. Reported call probabilities come

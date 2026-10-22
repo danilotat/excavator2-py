@@ -14,6 +14,7 @@ from .fastcall import (
     call_probabilities,
     correct_cellularity,
     fit_fastcall,
+    recenter_ploidy,
     segment_standard_errors,
     window_noise,
 )
@@ -22,7 +23,7 @@ from .writers import number, write_results
 
 DEFAULTS = {
     "HSLM": {"Omega": 0.1, "Theta": 1e-5, "D_norm": 1e6},
-    "FastCall": {"Cellularity": 1.0, "d": 0.5, "u": 0.35, "minExons": 4},
+    "FastCall": {"Cellularity": 1.0, "d": 0.5, "u": 0.35, "minExons": 4, "Ploidy": 2.0},
 }
 
 
@@ -183,6 +184,10 @@ def run_analysis(
             for name, state in seeds.items()
         }
     params = read_yaml(parameters) if parameters else DEFAULTS
+    fastcall = params.get("FastCall") if isinstance(params, dict) else None
+    if isinstance(fastcall, dict):
+        # Omitted Ploidy keeps the median window as the diploid reference.
+        fastcall.setdefault("Ploidy", DEFAULTS["FastCall"]["Ploidy"])
     if set(params) != set(DEFAULTS) or any(set(params[k]) != set(DEFAULTS[k]) for k in DEFAULTS):
         raise ValueError("parameters must contain the documented HSLM and FastCall fields")
     names = list(dict.fromkeys(name for test, controls in design for name in [test, *controls]))
@@ -213,8 +218,9 @@ def run_analysis(
             rows, path, indices, segment_ids = segment_profile(
                 matrices[test], values, target, params
             )
-            starts, ends, original = summarize(rows, segment_ids)
+            starts, ends, centered = summarize(rows, segment_ids)
             fc = params["FastCall"]
+            original = recenter_ploidy(centered, float(fc["Ploidy"]), float(fc["Cellularity"]))
             corrected = correct_cellularity(original, float(fc["Cellularity"]))
             fit = fit_fastcall(
                 corrected,

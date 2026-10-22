@@ -55,6 +55,19 @@ def correct_cellularity(values: ArrayLike, cellularity: float = 1.0) -> FloatArr
     return segment_values(np.log2(corrected))
 
 
+def recenter_ploidy(values: ArrayLike, ploidy: float = 2.0, cellularity: float = 1.0) -> FloatArray:
+    """Shift median-centered mixture ratios so zero is diploid, given tumor ploidy."""
+    values = segment_values(values)
+    if not np.isfinite(ploidy) or ploidy <= 0:
+        raise ValueError("ploidy must be positive and finite")
+    if not np.isfinite(cellularity) or not 0 < cellularity <= 1:
+        raise ValueError("cellularity must be in (0, 1]")
+    if ploidy == 2:
+        return values.copy()
+    mixture = cellularity * ploidy + 2 * (1 - cellularity)
+    return segment_values(values + np.log2(mixture / 2))
+
+
 def start_conditions(
     values: FloatArray, upper: float, lower: float
 ) -> tuple[FloatArray, FloatArray]:

@@ -375,6 +375,56 @@ def test_analysis_passes_corrected_values_to_all_outputs(tmp_path, prepared_data
             assert_allclose(table["CorrectedSegment"], corrected[selected])
 
 
+def test_analysis_recenters_segments_on_ploidy(tmp_path, prepared_data):
+    from excavator2.analyze import DEFAULTS
+
+    parameters = tmp_path / "parameters.json"
+    params = {key: dict(value) for key, value in DEFAULTS.items()}
+    params["FastCall"]["Ploidy"] = 3
+    parameters.write_text(json.dumps(params))
+    for name, file in [("diploid", None), ("triploid", parameters)]:
+        run_analysis(
+            FIXTURE / "samples.yaml",
+            prepared_data,
+            FIXTURE / "inputs/target",
+            tmp_path / name,
+            "paired",
+            file,
+        )
+    manifest = json.loads((tmp_path / "triploid/manifest.json").read_text())
+    assert manifest["parameters"]["FastCall"]["Ploidy"] == 3
+    for sample in ("Test1", "Test2"):
+        checkpoints = [
+            np.load(tmp_path / name / "Results" / sample / "checkpoints.npz")
+            for name in ("diploid", "triploid")
+        ]
+        diploid, triploid = checkpoints
+        # Segmentation is unchanged; only segment levels move.
+        assert_array_equal(diploid["segment_ids"], triploid["segment_ids"])
+        assert_allclose(triploid["mixture_segments"], diploid["mixture_segments"] + np.log2(1.5))
+        for data in checkpoints:
+            data.close()
+
+
+def test_omitted_ploidy_defaults_to_diploid(tmp_path, prepared_data):
+    parameters = tmp_path / "parameters.yaml"
+    parameters.write_text(
+        "HSLM: {Omega: 0.1, Theta: 1e-5, D_norm: 1e6}\n"
+        "FastCall: {Cellularity: 1, d: 0.5, u: 0.35, minExons: 4}\n"
+    )
+    output = tmp_path / "results"
+    run_analysis(
+        FIXTURE / "samples.yaml",
+        prepared_data,
+        FIXTURE / "inputs/target",
+        output,
+        "paired",
+        parameters,
+    )
+    manifest = json.loads((output / "manifest.json").read_text())
+    assert manifest["parameters"]["FastCall"]["Ploidy"] == 2
+
+
 def test_analysis_help_has_no_calibration_option():
     result = subprocess.run(
         [sys.executable, "-m", "excavator2", "analyze", "--help"],
