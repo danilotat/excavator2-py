@@ -11,7 +11,7 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 from excavator2.analyze import experimental_design, run_analysis, summarize
-from excavator2.artifacts import load_manifest, read_yaml
+from excavator2.artifacts import digest, load_manifest, read_yaml
 
 FIXTURE = Path(__file__).parent / "fixtures" / "legacy-analysis"
 
@@ -135,6 +135,26 @@ def test_manifest_checksums_and_target_identity(tmp_path, prepared_data):
     (prepared / next(iter(manifest["files"]))).write_bytes(b"corrupted")
     with pytest.raises(ValueError, match="checksum"):
         load_manifest(prepared, "prepared")
+
+
+def test_nested_windows_are_rejected_before_analysis(tmp_path):
+    prepared = tmp_path / "prepared"
+    shutil.copytree(FIXTURE / "inputs/prepared", prepared)
+    manifest = json.loads((prepared / "manifest.json").read_text())
+    for filename in manifest["files"]:
+        with np.load(prepared / filename, allow_pickle=False) as data:
+            arrays = dict(data)
+        # Original geometry: a wide window enclosing its successor.
+        arrays["matrix"][0, 3] = arrays["matrix"][1, 3]
+        np.savez_compressed(prepared / filename, **arrays)
+        manifest["files"][filename] = digest(prepared / filename)
+    (prepared / "manifest.json").write_text(json.dumps(manifest))
+    output = tmp_path / "output"
+    with pytest.raises(ValueError, match="overlap on chr1; regenerate the target"):
+        run_analysis(
+            FIXTURE / "samples.yaml", prepared, FIXTURE / "inputs/target", output, "paired"
+        )
+    assert not output.exists()
 
 
 def test_design_order_and_duplicate_yaml(tmp_path):

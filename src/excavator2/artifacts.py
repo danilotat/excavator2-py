@@ -180,6 +180,23 @@ def metadata_identity(metadata):
     return hashlib.sha256(json.dumps(metadata.tolist(), separators=(",", ":")).encode()).hexdigest()
 
 
+def require_disjoint_windows(metadata):
+    """Merged geometry yields disjoint start-ordered windows, so midpoints increase.
+
+    Older or original targets keep nested windows whose midpoints decrease; reject
+    them before counting or segmentation instead of failing inside HSLM.
+    """
+    starts, ends = coordinate_values(metadata[:, 2]), coordinate_values(metadata[:, 3])
+    same = metadata[1:, 0] == metadata[:-1, 0]
+    overlap = np.flatnonzero(same & (starts[1:] <= ends[:-1]))
+    if len(overlap):
+        i = overlap[0]
+        raise ValueError(
+            f"target windows {metadata[i, 4]} and {metadata[i + 1, 4]} overlap on "
+            f"{metadata[i, 0]}; regenerate the target with this version"
+        )
+
+
 def load_preparation_exports(folder, chromosomes):
     folder = Path(folder)
     targets = list(folder.glob("*.RData/MyTarget"))

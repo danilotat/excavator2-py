@@ -56,7 +56,8 @@ prepared samples and target features are supplied.
 Preparation excludes flags 4 and 1024 and requires MAPQ >= `--mapq` (default 20).
 Other alignment flags retain their existing treatment. Positions are one-based
 SAM starts, counted independently in each inclusive `[start,end]` interval.
-Overlapping/nested windows can count the same read. Operational chunks contain
+Generated targets are disjoint; `prepare` and `analyze` reject overlapping windows
+from older or original targets, whose midpoints can decrease (#73). Operational chunks contain
 500,000 selected records, but partitioning does not change counts. Empty streams
 produce zeros; terminal windows and exact multiples of the chunk size are handled.
 

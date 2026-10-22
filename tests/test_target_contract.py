@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
+from excavator2.artifacts import require_disjoint_windows, window_metadata
+
 FIXTURES = Path(__file__).parent / "fixtures/legacy-target"
 MANIFEST = json.loads((FIXTURES / "manifest.json").read_text())
 
@@ -92,6 +94,7 @@ def test_geometry_sorts_merges_and_bounds_windows(tmp_path):
     assert_array_equal(actual, target_geometry(bed, *args))
     inside = actual[(actual[:, 0] == "chr1") & (actual[:, 4] == "IN")]
     assert_array_equal(inside[:, 1:3], [["500", "700"], ["1300", "1400"]])
+    require_disjoint_windows(window_metadata(actual))
     for chrom in set(actual[:, 0]):
         rows = actual[actual[:, 0] == chrom]
         positions = rows[:, 1:3].astype(int)

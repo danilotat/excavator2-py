@@ -8,7 +8,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .artifacts import digest, load_manifest, read_yaml
+from .artifacts import digest, load_manifest, read_yaml, require_disjoint_windows
 from .fastcall import assign_labels, correct_cellularity, fit_fastcall
 from .hslm import estimate_parameters, segment
 from .writers import number, write_results
@@ -196,6 +196,7 @@ def run_analysis(
     metadata = next(iter(matrices.values()))[:, [0, 1, 2, 3, 4, 6]]
     if any(not np.array_equal(m[:, [0, 1, 2, 3, 4, 6]], metadata) for m in matrices.values()):
         raise ValueError("prepared sample windows differ")
+    require_disjoint_windows(metadata)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix=".excavator2-", dir=output.parent))
     try:

@@ -184,6 +184,32 @@ def test_failed_preparation_does_not_publish_output(tmp_path):
     assert not list(tmp_path.glob(".excavator2-prepare-*"))
 
 
+def test_nested_target_windows_are_rejected_before_counting(tmp_path):
+    import json
+    import shutil
+
+    from excavator2.artifacts import digest, metadata_identity, window_metadata
+    from excavator2.prepare import run_preparation
+
+    fixture = FIXTURES / "pipeline"
+    target = tmp_path / "target"
+    shutil.copytree(fixture / "target", target)
+    manifest = json.loads((target / "manifest.json").read_text())
+    with np.load(target / manifest["preparation"], allow_pickle=False) as data:
+        arrays = dict(data)
+    # Original geometry: a wide window enclosing its successor.
+    arrays["target"][0, 2] = arrays["target"][1, 2]
+    np.savez_compressed(target / manifest["preparation"], **arrays)
+    manifest["files"][manifest["preparation"]] = digest(target / manifest["preparation"])
+    manifest["target_id"] = metadata_identity(window_metadata(arrays["target"]))
+    (target / "manifest.json").write_text(json.dumps(manifest))
+    samples = tmp_path / "samples.yaml"
+    samples.write_text(f"Test1: {fixture / 'Test1.bam'}\n")
+    with pytest.raises(ValueError, match="regenerate the target"):
+        run_preparation(samples, target, tmp_path / "prepared")
+    assert not (tmp_path / "prepared").exists()
+
+
 @pytest.mark.parametrize("threads", [1, 2])
 def test_cli_worker_failure_is_nonzero_and_atomic(tmp_path, threads):
     import shutil
