@@ -30,12 +30,12 @@ plots that the port does not. Neither timed stage generates plots.
 
 <!-- ci-benchmark:start -->
 
-Latest passing [CI measurement](https://github.com/danilotat/excavator2-py/actions/runs/36269024286) · revision `a78d1dc` · 4,113 synthetic windows · one analysis test sample.
+Latest passing [CI measurement](https://github.com/danilotat/excavator2-py/actions/runs/39753242108) · revision `ca31cd6` · 4,113 synthetic windows · one analysis test sample.
 
 | Stage | Original | Python/C++ | Original / port | Measured runs |
 | --- | ---: | ---: | ---: | ---: |
-| Target generation | 26.860 s | 0.294 s | 91.32× | 1 |
-| Paired analysis | 0.925 s | 0.389 s | 2.38× | 3 |
+| Target generation | 18.645 s | 0.200 s | 93.10× | 1 |
+| Paired analysis | 0.600 s | 0.289 s | 2.08× | 3 |
 
 Analysis values are medians after one excluded warm-up. Ratios above 1 mean the port was faster.
 

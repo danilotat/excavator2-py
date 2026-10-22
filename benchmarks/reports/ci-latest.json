@@ -1,21 +1,21 @@
 {
   "analysis_runs": [
     {
-      "original": 0.9248507170000266,
+      "original": 0.6001073500000302,
       "parity": {
         "excluded_fields": [
           "VCF fileDate"
         ],
         "files": {
           "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
-            "original_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
-            "rewritten_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "original_sha256": "e9c689bfdf6ca351399a39281c86cdea3959cdf24102df1e050557d632b7e407",
+            "rewritten_sha256": "e9c689bfdf6ca351399a39281c86cdea3959cdf24102df1e050557d632b7e407",
             "rows": 19,
             "text_equal": true
           },
           "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
-            "original_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
-            "rewritten_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "original_sha256": "ebaeda46314b4e57db948b4296c107e368c554f512b1d45a641719813d227959",
+            "rewritten_sha256": "ebaeda46314b4e57db948b4296c107e368c554f512b1d45a641719813d227959",
             "rows": 212,
             "text_equal": true
           },
@@ -36,24 +36,24 @@
         },
         "passed": true
       },
-      "port": 0.38935608100001673
+      "port": 0.26008314299997437
     },
     {
-      "original": 0.9352961470000309,
+      "original": 0.6640545330000123,
       "parity": {
         "excluded_fields": [
           "VCF fileDate"
         ],
         "files": {
           "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
-            "original_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
-            "rewritten_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "original_sha256": "e9c689bfdf6ca351399a39281c86cdea3959cdf24102df1e050557d632b7e407",
+            "rewritten_sha256": "e9c689bfdf6ca351399a39281c86cdea3959cdf24102df1e050557d632b7e407",
             "rows": 19,
             "text_equal": true
           },
           "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
-            "original_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
-            "rewritten_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "original_sha256": "ebaeda46314b4e57db948b4296c107e368c554f512b1d45a641719813d227959",
+            "rewritten_sha256": "ebaeda46314b4e57db948b4296c107e368c554f512b1d45a641719813d227959",
             "rows": 212,
             "text_equal": true
           },
@@ -74,24 +74,24 @@
         },
         "passed": true
       },
-      "port": 0.3915455840000277
+      "port": 0.28875053499996284
     },
     {
-      "original": 0.9254372920000264,
+      "original": 0.5793125509999868,
       "parity": {
         "excluded_fields": [
           "VCF fileDate"
         ],
         "files": {
           "Results/Test1/EXCAVATORRegionCall_Test1.vcf": {
-            "original_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
-            "rewritten_sha256": "93e934fb38e1a8987f14bd60d466e70498169efc46464831d74fd62c3d81c7e1",
+            "original_sha256": "e9c689bfdf6ca351399a39281c86cdea3959cdf24102df1e050557d632b7e407",
+            "rewritten_sha256": "e9c689bfdf6ca351399a39281c86cdea3959cdf24102df1e050557d632b7e407",
             "rows": 19,
             "text_equal": true
           },
           "Results/Test1/EXCAVATORWindowCall_Test1.vcf": {
-            "original_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
-            "rewritten_sha256": "c2243480889b2da74ec09d17f38989a6f756c199d008f77dccdf62cafc7e8dfa",
+            "original_sha256": "ebaeda46314b4e57db948b4296c107e368c554f512b1d45a641719813d227959",
+            "rewritten_sha256": "ebaeda46314b4e57db948b4296c107e368c554f512b1d45a641719813d227959",
             "rows": 212,
             "text_equal": true
           },
@@ -112,7 +112,7 @@
         },
         "passed": true
       },
-      "port": 0.38473005499997726
+      "port": 0.29507843800001865
     }
   ],
   "analysis_test_samples": 1,
@@ -210,22 +210,22 @@
   },
   "machine": "x86_64",
   "passed": true,
-  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
   "python": "3.12.3 (main, Aug 31 2026, 10:18:26) [GCC 13.3.0]",
-  "run_url": "https://github.com/danilotat/excavator2-py/actions/runs/36269024286",
-  "runner": "GitHub Actions 1000000451",
+  "run_url": "https://github.com/danilotat/excavator2-py/actions/runs/39753242108",
+  "runner": "GitHub Actions 1000000715",
   "samples": 3,
   "scope": "synthetic target and paired analysis; not full-pipeline or real-WES speedup",
-  "source_commit": "a78d1dc18fb1de63fb3feb6ecdfdc176bcd3e387",
+  "source_commit": "ca31cd6ecc3b0e3bd5b02a6805c9f8bbfc1c5161",
   "stages": {
     "paired_analysis": {
-      "original_seconds": 0.9254372920000264,
-      "port_seconds": 0.38935608100001673,
+      "original_seconds": 0.6001073500000302,
+      "port_seconds": 0.28875053499996284,
       "runs": 3
     },
     "target": {
-      "original_seconds": 26.859930807999973,
-      "port_seconds": 0.29412707400001636,
+      "original_seconds": 18.644858796999983,
+      "port_seconds": 0.20026937500000486,
       "runs": 1
     }
   },
