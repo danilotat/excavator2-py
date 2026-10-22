@@ -42,8 +42,14 @@ def vcf_header(sample, assembly, windows):
         (
             "FCP",
             "Float",
-            "FastCall class membership conditional on segment ratio; "
-            "not calibrated event confidence",
+            "Probability that the segment level lies in the called class interval, "
+            "from segment measurement uncertainty; not calibrated event confidence",
+        ),
+        (
+            "FPA",
+            "Float",
+            "Probability that the segment level lies outside the normal interval, "
+            "from segment measurement uncertainty; not calibrated event confidence",
         ),
     ]
     if windows:
@@ -59,7 +65,17 @@ def vcf_header(sample, assembly, windows):
 
 
 def write_results(
-    folder, sample, rows, starts, ends, original, corrected, calls, target, target_folder
+    folder,
+    sample,
+    rows,
+    starts,
+    ends,
+    original,
+    corrected,
+    calls,
+    probabilities,
+    target,
+    target_folder,
 ):
     header = "Chromosome\tPosition\tStart\tEnd\tLog2R\tSegMean\tClass"
     with (folder / f"HSLMResults_{sample}.txt").open("w") as handle:
@@ -67,10 +83,12 @@ def write_results(
         for row in rows:
             handle.write("\t".join(row) + "\n")
     significant = np.flatnonzero(calls.labels != 0)
+    called = probabilities[np.arange(len(calls.labels)), calls.labels + 2]
+    altered = probabilities[:, [0, 1, 3, 4]].sum(axis=1)
     with (folder / f"FastCallResults_{sample}.txt").open("w") as handle:
         handle.write(
             "Chromosome\tStart\tEnd\tMixtureSegment\tCorrectedSegment"
-            "\tDECNF\tDECN\tCall\tProbCall\n"
+            "\tDECNF\tDECN\tCall\tProbCall\tProbAltered\n"
         )
         for index in significant:
             start, end = starts[index], ends[index] - 1
@@ -86,7 +104,8 @@ def write_results(
                         number(cnf),
                         number(np.rint(cnf)),
                         str(calls.labels[index]),
-                        number(calls.probabilities[index]),
+                        number(called[index]),
+                        number(altered[index]),
                     ]
                 )
                 + "\n"
@@ -98,7 +117,7 @@ def write_results(
             cnf = 2 * 2 ** corrected[index]
             genotype = (
                 f".:{number(np.rint(cnf))}:{number(cnf)}:{calls.labels[index]}:"
-                f"{number(np.round(calls.probabilities[index], 2))}"
+                f"{number(np.round(called[index], 2))}:{number(np.round(altered[index], 2))}"
             )
             selected = range(start, end + 1) if windows else [start]
             for row in selected:
@@ -127,7 +146,7 @@ def write_results(
             for (_, start, end, genotype), base in zip(group, bases, strict=True):
                 start, end = str(int(float(start))), str(int(float(end)))
                 info = f"IMPRECISE;SVTYPE=CNV;END={end};SVLEN={int(end) - int(start) + 1};"
-                fields = "GT:DECN:DECNF:FCL:FCP" + (":L2R" if windows else "")
+                fields = "GT:DECN:DECNF:FCL:FCP:FPA" + (":L2R" if windows else "")
                 lines.append(
                     "\t".join(
                         [chromosome, start, ".", base, "<CNV>", ".", "PASS", info, fields, genotype]

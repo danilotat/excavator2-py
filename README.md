@@ -165,9 +165,10 @@ writes:
 The result manifest records inputs, parameters and execution settings. Random
 FastCall ties require the original per-sample R RNG state via `--r-seed-states`;
 see [the replay contract](docs/hslm-analysis.md#replaying-original-fastcall-random-ties).
-Final probabilities use truncated class support, recorded in the manifest.
-Probabilities of 1 inside a single allowed class express a hard model boundary,
-not calibrated biological certainty. See [A19 and its remaining limits](docs/fastcall-a19.md).
+Calls use truncated class support ([A19](docs/fastcall-a19.md)). `ProbCall`/`FCP`
+and `ProbAltered`/`FPA` reflect each segment's measurement uncertainty from its
+window count, noise and distance to thresholds; they are not calibrated event
+confidence. See [H07](docs/copy-number-interpretation.md#h07-probabilities-from-segment-measurement-uncertainty).
 Each command provides `--help`.
 
 ## Citation and license

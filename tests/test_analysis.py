@@ -22,7 +22,7 @@ def prepared_data():
 
 
 @pytest.mark.parametrize("experiment", ["paired", "pooling"])
-def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, prepared_data):
+def test_cli_reports_segment_interval_probabilities(tmp_path, experiment, prepared_data):
     output = tmp_path / "results"
     result = subprocess.run(
         [
@@ -64,8 +64,21 @@ def test_cli_defaults_to_truncated_fastcall_probabilities(tmp_path, experiment, 
             labels = np.searchsorted([-1.3, -0.5, 0.35, 0.9], values) - 2
             assert_array_equal(data["labels"], labels)
             assert_array_equal(data["posterior"], np.eye(5)[labels + 2])
+            probabilities = data["call_probabilities"]
+            assert_allclose(probabilities.sum(axis=1), 1)
+            significant = labels != 0
+            called = probabilities[np.arange(len(labels)), labels + 2][significant]
+            altered = 1 - probabilities[significant, 2]
+        assert manifest["fastcall_probability_semantics"] == "segment-level-interval-probability"
+        assert set(manifest["samples"][sample]["measurement_noise"]) == {"IN", "OUT"}
         calls = np.loadtxt(folder / f"FastCallResults_{sample}.txt", dtype=str, skiprows=1)
-        assert_array_equal(calls[:, -1].astype(float), 1)
+        assert_allclose(calls[:, -2].astype(float), called, atol=1e-14)
+        assert_allclose(calls[:, -1].astype(float), altered, atol=1e-14)
+        # Segments just below the gain/amplification edge: either class, surely altered.
+        edge = np.isclose(calls[:, 4].astype(float), 0.9)
+        assert edge.any()
+        assert_allclose(calls[edge, -2].astype(float), 0.5, atol=1e-6)
+        assert_allclose(calls[edge, -1].astype(float), 1)
 
 
 def test_failed_analysis_does_not_publish_partial_results(tmp_path, prepared_data):

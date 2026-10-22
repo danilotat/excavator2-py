@@ -9,7 +9,14 @@ from pathlib import Path
 import numpy as np
 
 from .artifacts import digest, load_manifest, read_yaml, require_disjoint_windows
-from .fastcall import assign_labels, correct_cellularity, fit_fastcall
+from .fastcall import (
+    assign_labels,
+    call_probabilities,
+    correct_cellularity,
+    fit_fastcall,
+    segment_standard_errors,
+    window_noise,
+)
 from .hslm import estimate_parameters, segment
 from .writers import number, write_results
 
@@ -215,10 +222,30 @@ def run_analysis(
                 lower=float(fc["d"]),
             )
             calls = assign_labels(fit.posterior, r_seed=seeds.get(test))
+            classes = rows[:, 6]
+            noise = window_noise(values[indices], classes, starts, ends)
+            errors = segment_standard_errors(classes, starts, ends, noise)
+            probabilities = call_probabilities(
+                original,
+                errors,
+                upper=float(fc["u"]),
+                lower=float(fc["d"]),
+                cellularity=float(fc["Cellularity"]),
+            )
             folder = temporary / "Results" / test
             folder.mkdir(parents=True)
             write_results(
-                folder, test, rows, starts, ends, original, corrected, calls, target, target_folder
+                folder,
+                test,
+                rows,
+                starts,
+                ends,
+                original,
+                corrected,
+                calls,
+                probabilities,
+                target,
+                target_folder,
             )
             np.savez_compressed(
                 folder / "checkpoints.npz",
@@ -232,6 +259,9 @@ def run_analysis(
                 corrected_segments=corrected,
                 posterior=fit.posterior,
                 labels=calls.labels,
+                measurement_noise=np.array([noise["IN"], noise["OUT"]]),
+                segment_standard_errors=errors,
+                call_probabilities=probabilities,
                 fastcall_trace=fit.trace,
                 **(
                     {"r_seed_before": seeds[test], "r_seed_after": calls.r_seed}
@@ -244,6 +274,7 @@ def run_analysis(
                 "segments": len(starts),
                 "calls": int(np.count_nonzero(calls.labels)),
                 "fastcall_iterations": fit.iterations,
+                "measurement_noise": noise,
             }
         manifest = {
             "schema": 1,
@@ -264,7 +295,8 @@ def run_analysis(
             "copy_number_semantics": "cellularity-corrected-diploid-equivalent",
             "absolute_copy_number": False,
             "pool_weighting": "arithmetic-mean-of-normalized-counts",
-            "fastcall_probability_semantics": "class-membership-not-event-confidence",
+            "fastcall_probability_semantics": "segment-level-interval-probability",
+            "call_probability_model": "normal-segment-median-within-segment-difference-noise",
             "fastcall_posterior": "truncated",
             "fastcall_trace_statistic": "truncated_log_likelihood",
             "threads": 1,

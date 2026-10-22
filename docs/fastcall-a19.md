@@ -32,6 +32,9 @@ prior[j] * normal_pdf(x; mean[j], sd[j]) * I(lower[j] <= x <= upper[j])
 The five weights are normalized to sum to one. Outside shared endpoints only
 one class is allowed, so its probability is 1. This is a consequence of the hard
 support assumption, not calibrated certainty about biological copy number.
+Reported `ProbCall`/`FCP` values now come from segment measurement uncertainty
+instead ([H07](copy-number-interpretation.md#h07-probabilities-from-segment-measurement-uncertainty));
+this posterior still determines labels and is saved in checkpoints.
 
 ## Scope
 

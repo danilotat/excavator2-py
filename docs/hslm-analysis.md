@@ -44,7 +44,9 @@ names must be plain path components; duplicate YAML keys/names are rejected.
 `--parameters` accepts the original HSLM/FastCall YAML fields and defaults.
 On `dev/improvements`, FastCall uses the fitted truncation for final calls,
 fixing A19. The analysis manifest records `fastcall_posterior: truncated`;
-see [A19](fastcall-a19.md) for probability interpretation and numerical limits.
+see [A19](fastcall-a19.md) for numerical limits. Reported call probabilities come
+from segment measurement uncertainty
+([H07](copy-number-interpretation.md#h07-probabilities-from-segment-measurement-uncertainty)).
 This initial implementation requires `--threads 1` and a new output directory;
 `--force` is explicitly unsupported. Results are assembled in a temporary sibling
 and published after every sample succeeds. Plots are not generated.

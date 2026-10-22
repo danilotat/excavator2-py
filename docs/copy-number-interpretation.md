@@ -1,8 +1,8 @@
 # Copy-number interpretation and remaining model limits
 
 This resolves the reporting contract for A18 ([#6](https://github.com/danilotat/excavator2-py/issues/6))
-and A25 ([#11](https://github.com/danilotat/excavator2-py/issues/11)), and assesses
-P15 ([#18](https://github.com/danilotat/excavator2-py/issues/18)) and
+and A25 ([#11](https://github.com/danilotat/excavator2-py/issues/11)), assesses
+P15 ([#18](https://github.com/danilotat/excavator2-py/issues/18)), and addresses
 H07 ([#17](https://github.com/danilotat/excavator2-py/issues/17)) in the current
 Python pipeline. Historical R behavior is unchanged.
 
@@ -56,30 +56,52 @@ than claiming depth-invariant pooling. Control CNVs, quality weighting and outli
 handling remain unresolved modeling questions; no replacement pooling rule is
 introduced. See [automatic normalization](analysis-normalization.md).
 
-## H07 assessment: probabilities are not calibrated event confidence
+## H07: probabilities from segment measurement uncertainty
 
-FastCall consumes only segment medians, one observation per segment. Segment
-length, depth, IN/OUT composition and measurement error do not enter its
-likelihood. Its truncated class supports have disjoint interiors. An interior
-value therefore has posterior 1 for its sole supported class, irrespective of
-support or noise. Shared endpoints are the exception and can have competing
-class probabilities. Fragmentation changes priors and fitted widths without
-changing those interior probabilities. Both numerical backends reproduce this.
+The FastCall fit sees one median per segment. Since A19, its truncated class
+supports have disjoint interiors, so its posterior is 1 for the class containing
+the median, irrespective of length or noise. Labels still come from that fit,
+which equals the interval containing the median, and it is kept as a diagnostic
+(`posterior`, `fastcall_trace`). Reported probabilities no longer use it.
 
-`ProbCall` and VCF `FCP` are conditional class membership. VCF descriptions and
-the manifest explicitly exclude calibrated event confidence. They must not be
-used as empirical error rates. Numerical stability and coherent fitting do not
-establish calibration.
+`ProbCall`/`FCP` is the probability that the true segment level lies in the
+called class interval. `ProbAltered`/`FPA` is the probability that it lies
+outside the normal interval. Both come from each segment's own windows:
 
-An uncertainty-aware replacement needs a likelihood for noisy segment estimates,
-including window dependence and purity uncertainty. Evaluate it using independent
-truth-labelled samples, keeping patients and shared controls separate between
-fit and validation sets. Measure reliability, Brier score and log loss by length,
-depth, IN/OUT composition, noise and purity; include null segments and repeated
-segmentations of the same event. Do not treat multiplied segment length as an
-independent-observation count. No truth-labelled cohort was available for this
-assessment, so empirical calibration remains open and no new confidence model
-is introduced.
+1. Per sample, estimate robust window noise separately for IN and OUT from
+   adjacent same-class differences within segments:
+   `sigma = median(|difference|) / 0.9539`. Steps between segments are excluded.
+2. A segment median of `n_IN` and `n_OUT` windows has standard error
+   `SE = sqrt(pi/2) * sqrt(n_IN * sigma_IN^2 + n_OUT * sigma_OUT^2) / n`.
+3. With the observed mixture median normal around the true level and a flat
+   prior, each class probability is a difference of normal CDFs at its edges.
+   Corrected edges `-1.3, -d, u, 0.9` map to the mixture scale through the
+   monotone cellularity correction. The outer classes are open-ended, so the
+   five probabilities sum to one, and mixtures below the correction floor are
+   deep losses.
+
+Short or noisy segments, and segments near a threshold, therefore get lower
+probabilities; fragmenting other parts of a profile does not change them. A
+median just below 0.9 is a gain with `ProbCall` about 0.5 but `ProbAltered` 1.
+`ProbCall` can be below another class's probability when the median lies near
+the edge of a narrow interval; the label remains the interval containing it.
+The manifest records `fastcall_probability_semantics:
+segment-level-interval-probability` and per-sample `measurement_noise`;
+checkpoints save the noise, standard errors and all five probabilities.
+
+Windows are treated as independent. On two real paired WES runs of one cell line
+(about 354,000 windows each), the lag-1 correlation of within-segment residuals
+was about 0.05 (rank correlation about 0.03), at most about 0.09 for IN windows
+under 1 kb apart. That reduces the effective window count by about 10%, so no
+correction is applied. The noise level differed between runs (OUT 0.31 versus
+0.57), which is why it is estimated per sample and class.
+
+These probabilities describe random measurement error given the segmentation.
+They exclude boundary uncertainty, purity uncertainty and systematic bias such
+as a control CNV in the pool (P15), so they are not calibrated event confidence
+and must not be used as empirical error rates. Calibration remains open: compare
+calls between replicate runs, or against truth-labelled samples, by length,
+depth, IN/OUT composition, noise and purity.
 
 Regression evidence is in `tests/test_reporting_semantics.py`,
 `tests/test_analysis.py` and `tests/test_signal_preservation.py`.
