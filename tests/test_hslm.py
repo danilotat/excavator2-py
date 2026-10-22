@@ -85,13 +85,25 @@ def test_original_kernel_traces(case):
 def test_invalid_domains_fail_explicitly():
     with pytest.raises(ValueError, match="variance"):
         estimate_parameters(np.zeros(10))
-    with pytest.raises(ValueError, match="nondecreasing"):
-        distance_covariates([2, 1], 0.1, 100)
     p = estimate_parameters(np.linspace(-1, 1, 10))
     with pytest.raises(ValueError, match="single-window"):
         segment([0], [1], p)
     with pytest.raises(ValueError, match="same length"):
         segment([0, 1], [1], p)
+
+
+def test_decreasing_midpoints_are_co_located():
+    # Deliberate divergence: the original produces invalid probabilities here.
+    nested = distance_covariates([3000, 1250, 5150], 1e-5, 1e6)
+    duplicate = distance_covariates([1250, 1250, 5150], 1e-5, 1e6)
+    assert_array_equal(nested[0], duplicate[0])
+    assert 0 < nested[1] < 1
+    values = np.r_[np.zeros(6), np.ones(6)]
+    positions = np.array([100, 3000, 1250, 5150, 5100, 7000, 9000, 8500, 11e3, 12e3, 13e3, 14e3])
+    p = estimate_parameters(values)
+    python, native = (segment(values, positions, p, backend=b) for b in ["python", "native"])
+    assert_array_equal(python.path, native.path)
+    assert_array_equal(python.values, native.values)
 
 
 @pytest.mark.parametrize(

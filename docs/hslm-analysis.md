@@ -120,12 +120,19 @@ and is not a full-pipeline speedup claim. Run `python benchmarks/hslm.py`.
 No SIMD/AVX or alternative recurrence is enabled.
 
 Unsupported cases fail explicitly: constant/non-finite global variance,
-single-window/empty arms, decreasing positions, centromere splits that exclude
-windows or lack a long arm, and random FastCall ties without a recorded R state.
+single-window/empty arms, centromere splits that exclude windows or lack a long
+arm, and random FastCall ties without a recorded R state.
+
+Deliberate divergence: overlapping or nested target windows are sorted by start,
+so their midpoints can decrease within an arm. The original then derives transition
+probabilities above one and fails. The port clamps negative midpoint distances to
+zero, treating those neighbours as co-located like duplicate positions. Row order is
+unchanged, and inputs with nondecreasing midpoints produce identical results.
 The lower-level FastCall API can replay an exported R RNG state; the CLI does not
 yet accept one. Multi-profile HSLM, CRAM/preparation, plots, arbitrary malformed
 legacy inputs and cross-platform numerical qualification remain outside this
-M3 acceptance scope. No known scientific bug has been intentionally repaired.
+M3 acceptance scope. Apart from the decreasing-midpoint divergence above, no
+known scientific bug has been intentionally repaired.
 
 ## Live CI concordance
 

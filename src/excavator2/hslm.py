@@ -63,9 +63,10 @@ def distance_covariates(positions, theta, distance):
     positions = np.trunc(positions)
     if (np.abs(positions) > np.iinfo(np.int32).max).any():
         raise ValueError("positions exceed the legacy integer range")
-    delta = np.diff(positions)
-    if (delta < 0).any():
-        raise ValueError("positions must be nondecreasing within an arm")
+    # Deliberate divergence: start-sorted overlapping or nested windows can have
+    # decreasing midpoints, which the original turns into invalid probabilities.
+    # Treat such neighbours as co-located, the duplicate-position case.
+    delta = np.maximum(np.diff(positions), 0)
     with np.errstate(divide="ignore"):
         return theta + (1 - theta) * np.exp(np.log(theta) / (delta / distance))
 

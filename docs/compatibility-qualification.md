@@ -191,6 +191,8 @@ calls only. A first fixture with longer overlapping IN windows also exposed
 nonmonotonic midpoints and failed in both original inference and port validation.
 The passing fixture uses shorter intervals, without changing either scientific
 implementation. Reproducer details are retained in the local improvement log.
+The port now accepts such inputs by deliberate divergence; see
+[HSLM analysis](hslm-analysis.md).
 
 ## Final M6 acceptance scope
 
