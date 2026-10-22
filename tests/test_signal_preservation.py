@@ -65,7 +65,7 @@ def test_pooling_uses_normalized_values_and_separate_class_medians():
 def test_original_zero_replacement_uses_each_class_minimum():
     target = np.array(
         [
-            ["chr1", str(i * 20), str(i * 20 + 10), f"a{i}", kind]
+            ["chr1", str(i * 20), str(i * 20 + 9), f"a{i}", kind]
             for i, kind in enumerate(["IN"] * 3 + ["OUT"] * 3)
         ]
     )

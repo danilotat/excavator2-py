@@ -6,7 +6,8 @@ requirement.
 
 ## Preparation
 
-1. Divide counts by window length (`end - start`).
+1. Divide counts by inclusive window length (`end - start + 1`), matching the
+   inclusive counting intervals (P09, #51). The original divided by `end - start`.
 2. Apply the original size correction to IN windows.
 3. Apply mappability correction separately to IN and OUT.
 4. Apply GC correction separately to IN and OUT.

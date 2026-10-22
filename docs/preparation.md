@@ -69,7 +69,8 @@ policies. Worker failures include the sample name and cause a nonzero CLI exit;
 no partial preparation is published (P12, #27).
 
 `normalization.py` applies the original size/MAP/GC corrections and class-wise
-minimum-nonzero replacement after dividing counts by `end-start`. Analysis uses
+minimum-nonzero replacement after dividing counts by the inclusive length
+`end - start + 1` (P09, #51). Analysis uses
 normalized prepared values. See
 [target corrections](target-porting.md) for geometry and feature changes.
 

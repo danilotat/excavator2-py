@@ -46,10 +46,11 @@ def test_counts_correct_original_chunk_defects(name):
 def test_normalization_trace_matches_original():
     with np.load(FIXTURES / "normalization.npz") as f:
         n = len(f["counts"])
+        # The original divided by end - start; [1, length] has that inclusive length.
         target = np.column_stack(
             [
                 np.repeat("chr1", n),
-                np.zeros(n, dtype=int),
+                np.ones(n, dtype=int),
                 f["lengths"],
                 np.repeat("gene", n),
                 f["classes"],
@@ -64,6 +65,20 @@ def test_normalization_trace_matches_original():
             ("normalized", "normalized"),
         ]:
             assert_allclose(result[name], f[original], rtol=1e-14, atol=1e-15)
+
+
+def test_normalization_length_counts_both_inclusive_endpoints():
+    # P09 (#51): one-base windows failed, and every window was one base short.
+    target = np.array(
+        [
+            ["chr1", "100", "100", "a", "IN"],
+            ["chr1", "200", "209", "b", "IN"],
+            ["chr1", "300", "300", "c", "OUT"],
+            ["chr1", "400", "409", "d", "OUT"],
+        ]
+    )
+    trace = normalize([3, 30, 5, 50], target, np.full(4, 0.5), np.full(4, 0.9))
+    assert_allclose(trace["weighted"], [3, 3, 5, 5])
 
 
 def test_selection_filters_mapq_and_excluded_flags(tmp_path):
@@ -168,7 +183,7 @@ def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, thread
                 assert_allclose(
                     new["weighted"],
                     np.array(expected)
-                    / (old["matrix"][:, 3].astype(float) - old["matrix"][:, 2].astype(float)),
+                    / (old["matrix"][:, 3].astype(float) - old["matrix"][:, 2].astype(float) + 1),
                 )
                 assert_allclose(new["matrix"][:, 5].astype(float), new["normalized"], atol=1e-7)
 
