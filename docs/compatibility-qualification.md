@@ -5,6 +5,9 @@ acceptance dataset and the committed differential corpus. The user explicitly
 deferred plotting on 2026-09-26; scientific arrays, decisions, tables and VCFs are
 the acceptance scope. No original scientific defect is repaired by this milestone.
 
+This is a historical record. CI no longer runs the live legacy concordance job
+described below: the implementation now deliberately departs from the original.
+
 M6.1 began at `ac53247279f28966437c7788c49caa0196064941`; its evidence below is
 historical. The final qualification section distinguishes the final code's checks
 from those earlier runs.

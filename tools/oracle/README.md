@@ -82,10 +82,10 @@ with only VCF dates excluded. See `baseline-report.json`, `golden.sha256.json`, 
 `docs/legacy-baseline.md`. `environment-explicit.txt` records the image's installed
 package URLs. Other experimental modes and worker counts remain unqualified.
 
-## Live old-versus-current CI concordance
+## Live old-versus-current concordance
 
-The `Live legacy concordance (paired and pooling)` job in `python-port.yml`
-runs on every push, pull request, and manual workflow dispatch. It builds the
+CI no longer runs these comparisons: the implementation now deliberately departs
+from the original, so they are manual, historical checks. A run builds the
 current wheel and tests it in a separate environment. Each run:
 
 1. Extracts the original commit in `baseline.json` with `git archive`.
@@ -100,10 +100,8 @@ current wheel and tests it in a separate environment. Each run:
 Calls and VCF records must match exactly (except VCF `fileDate`). HSLM coordinates,
 classes, row order and segment boundaries must agree exactly; continuous HSLM
 values retain rtol=1e-13 and atol=2e-15. Missing or extra output files fail the job.
-Failures return a nonzero exit code; no `continue-on-error` or conditional skip
-is used for concordance. The `legacy-concordance` artifact retains JSON reports,
-source/input provenance, both sets of outputs and logs for 14 days, including
-failed runs. The existing cross-platform fixture tests remain separate.
+Failures return a nonzero exit code. The output folder retains JSON reports,
+source/input provenance, both sets of outputs and logs, including failed runs.
 
 Reproduce with Docker available and the current package installed:
 
@@ -150,17 +148,14 @@ BigWig bases, decimal rounding, bare-name grep behavior, boundary failures and
 the 2,999/3,000-block UCSC algorithm switch.
 Without `--compare-current`, the tool only captures original outputs.
 
-The CI concordance job runs this against the installed wheel on every workflow
-run, and uploads `.oracle/ci-target-features/` with the existing reports. This
-qualifies feature extraction. CLI integration and supplied-reference acceptance
+This qualified feature extraction. CLI integration and supplied-reference acceptance
 are documented in `docs/target-porting.md`. Committed captures are in `tests/fixtures/legacy-target-features/`.
 
 
 ## M5 geometry and full-target acceptance
 
 `characterize_target.py --output .oracle/geometry --compare-current` also compares
-newly captured legacy geometry against the current Python implementation. CI runs
-this against the installed wheel and retains `.oracle/ci-target-geometry/`.
+newly captured legacy geometry against the current Python implementation.
 
 `compare_target.py ORIGINAL_CONVERTED_TARGET NEW_TARGET --report report.json`
 compares manifest identity/reference metadata and every target/GC/MAP/FRB array
@@ -189,9 +184,7 @@ VCF fileDate excluded). Each mode must produce exactly four non-normal loss/gain
 scientific output files. Missing outputs fail even when the old wrapper reports
 success. Logs, hashes and `concordance.json` remain available on failure.
 
-The CI concordance job invokes this with its installed wheel and uploads
-`.oracle/ci-end-to-end/` alongside the existing stage comparisons. It uses neither
-large downloaded reference assets nor pre-existing local oracle runs.
+It uses neither large downloaded reference assets nor pre-existing local oracle runs.
 
 Local M6.2 acceptance produced exact matches for 4,113 windows across all three
 samples and four calls per mode. The original plotting stage fails on the synthetic

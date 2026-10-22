@@ -147,15 +147,11 @@ legacy inputs and cross-platform numerical qualification remain outside this
 M3 acceptance scope. Those compatibility claims apply to `main`; the
 improvements branch changes final FastCall probabilities as documented above.
 
-## Live CI concordance
+## Live legacy concordance
 
-Every push and pull request now also runs a fresh pinned-legacy versus current-wheel
-comparison for paired and pooled non-normal analysis. Reports, outputs and failure
-logs are uploaded as the `legacy-concordance` artifact. See
-[the oracle harness instructions](../tools/oracle/README.md#live-old-versus-current-ci-concordance)
-for reproduction and the exact gates. The job now also covers original versus current preparation on small BAMs;
-the large supplied BAM/reference run is not part of this per-PR job. The new harness passes locally; its first GitHub-hosted run
-will occur when these commits are pushed.
+CI no longer compares against the pinned original, since the implementation now
+deliberately departs from it. The harness can still be run manually; see
+[the oracle harness instructions](../tools/oracle/README.md#live-old-versus-current-concordance).
 
 ## Replaying original FastCall random ties
 
