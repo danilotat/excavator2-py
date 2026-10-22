@@ -53,10 +53,12 @@ prepared samples and target features are supplied.
 
 ## Current counting policy
 
-Preparation excludes flags 4 and 1024 and requires MAPQ >= `--mapq` (default 20).
-Other alignment flags retain their existing treatment. Positions are one-based
+Preparation excludes unmapped (0x4), mate-unmapped (0x8; paired-end only), secondary (0x100),
+QC-failed (0x200), duplicate (0x400) and supplementary (0x800) records (#49), and
+requires MAPQ >= `--mapq` (default 20). Positions are one-based
 SAM starts, counted independently in each inclusive `[start,end]` interval.
-Overlapping/nested windows can count the same read. Operational chunks contain
+Generated targets are disjoint; `prepare` and `analyze` reject overlapping windows
+from older or original targets, whose midpoints can decrease (#73). Operational chunks contain
 500,000 selected records, but partitioning does not change counts. Empty streams
 produce zeros; terminal windows and exact multiples of the chunk size are handled.
 
@@ -67,7 +69,8 @@ policies. Worker failures include the sample name and cause a nonzero CLI exit;
 no partial preparation is published (P12, #27).
 
 `normalization.py` applies the original size/MAP/GC corrections and class-wise
-minimum-nonzero replacement after dividing counts by `end-start`. Analysis uses
+minimum-nonzero replacement after dividing counts by the inclusive length
+`end - start + 1` (P09, #51). Analysis uses
 normalized prepared values. See
 [target corrections](target-porting.md) for geometry and feature changes.
 

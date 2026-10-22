@@ -8,7 +8,12 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 from excavator2.normalization import normalize
-from excavator2.reference.bam_counts import CHUNK_SIZE, count_positions, selected_chunks
+from excavator2.reference.bam_counts import (
+    CHUNK_SIZE,
+    EXCLUDED_FLAGS,
+    count_positions,
+    selected_chunks,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures/legacy-preparation"
 
@@ -41,10 +46,11 @@ def test_counts_correct_original_chunk_defects(name):
 def test_normalization_trace_matches_original():
     with np.load(FIXTURES / "normalization.npz") as f:
         n = len(f["counts"])
+        # The original divided by end - start; [1, length] has that inclusive length.
         target = np.column_stack(
             [
                 np.repeat("chr1", n),
-                np.zeros(n, dtype=int),
+                np.ones(n, dtype=int),
                 f["lengths"],
                 np.repeat("gene", n),
                 f["classes"],
@@ -61,9 +67,23 @@ def test_normalization_trace_matches_original():
             assert_allclose(result[name], f[original], rtol=1e-14, atol=1e-15)
 
 
-def test_selection_filters_mapq_and_retains_other_flag_semantics(tmp_path):
+def test_normalization_length_counts_both_inclusive_endpoints():
+    # P09 (#51): one-base windows failed, and every window was one base short.
+    target = np.array(
+        [
+            ["chr1", "100", "100", "a", "IN"],
+            ["chr1", "200", "209", "b", "IN"],
+            ["chr1", "300", "300", "c", "OUT"],
+            ["chr1", "400", "409", "d", "OUT"],
+        ]
+    )
+    trace = normalize([3, 30, 5, 50], target, np.full(4, 0.5), np.full(4, 0.9))
+    assert_allclose(trace["weighted"], [3, 3, 5, 5])
+
+
+def test_selection_filters_mapq_and_excluded_flags(tmp_path):
     path = tmp_path / "flags.bam"
-    flags = [0, 1, 2, 4, 16, 64, 128, 256, 512, 1024, 2048]
+    flags = [0, 1, 2, 4, 8, 9, 16, 64, 128, 256, 512, 1024, 2048]
     expected = []
     with pysam.AlignmentFile(
         path, "wb", header={"HD": {"SO": "coordinate"}, "SQ": [{"SN": "chr1", "LN": 10000}]}
@@ -78,7 +98,7 @@ def test_selection_filters_mapq_and_retains_other_flag_semantics(tmp_path):
             read.query_sequence = "A"
             read.cigarstring = "1M"
             bam.write(read)
-            if not flag & 1028 and read.mapping_quality >= 20:
+            if not flag & EXCLUDED_FLAGS and read.mapping_quality >= 20:
                 expected.append(i * 10 + 1)
     pysam.index(str(path))
     with pysam.AlignmentFile(path) as bam:
@@ -149,7 +169,7 @@ def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, thread
                     for chrom, start, end in old["matrix"][:, [0, 2, 3]]:
                         expected.append(
                             sum(
-                                not r.flag & 1028
+                                not r.flag & EXCLUDED_FLAGS
                                 and r.mapping_quality >= 60
                                 and int(start) <= r.reference_start + 1 <= int(end)
                                 for r in bam.fetch(chrom)
@@ -163,7 +183,7 @@ def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, thread
                 assert_allclose(
                     new["weighted"],
                     np.array(expected)
-                    / (old["matrix"][:, 3].astype(float) - old["matrix"][:, 2].astype(float)),
+                    / (old["matrix"][:, 3].astype(float) - old["matrix"][:, 2].astype(float) + 1),
                 )
                 assert_allclose(new["matrix"][:, 5].astype(float), new["normalized"], atol=1e-7)
 
@@ -182,6 +202,32 @@ def test_failed_preparation_does_not_publish_output(tmp_path):
         run_preparation(samples, fixture / "target", tmp_path / "prepared")
     assert not (tmp_path / "prepared").exists()
     assert not list(tmp_path.glob(".excavator2-prepare-*"))
+
+
+def test_nested_target_windows_are_rejected_before_counting(tmp_path):
+    import json
+    import shutil
+
+    from excavator2.artifacts import digest, metadata_identity, window_metadata
+    from excavator2.prepare import run_preparation
+
+    fixture = FIXTURES / "pipeline"
+    target = tmp_path / "target"
+    shutil.copytree(fixture / "target", target)
+    manifest = json.loads((target / "manifest.json").read_text())
+    with np.load(target / manifest["preparation"], allow_pickle=False) as data:
+        arrays = dict(data)
+    # Original geometry: a wide window enclosing its successor.
+    arrays["target"][0, 2] = arrays["target"][1, 2]
+    np.savez_compressed(target / manifest["preparation"], **arrays)
+    manifest["files"][manifest["preparation"]] = digest(target / manifest["preparation"])
+    manifest["target_id"] = metadata_identity(window_metadata(arrays["target"]))
+    (target / "manifest.json").write_text(json.dumps(manifest))
+    samples = tmp_path / "samples.yaml"
+    samples.write_text(f"Test1: {fixture / 'Test1.bam'}\n")
+    with pytest.raises(ValueError, match="regenerate the target"):
+        run_preparation(samples, target, tmp_path / "prepared")
+    assert not (tmp_path / "prepared").exists()
 
 
 @pytest.mark.parametrize("threads", [1, 2])

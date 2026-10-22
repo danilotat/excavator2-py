@@ -8,14 +8,30 @@ from pathlib import Path
 
 import numpy as np
 
-from .artifacts import digest, load_manifest, read_yaml
-from .fastcall import assign_labels, correct_cellularity, fit_fastcall
+from .artifacts import digest, load_manifest, read_yaml, require_disjoint_windows
+from .fastcall import (
+    assign_labels,
+    call_probabilities,
+    correct_cellularity,
+    fastcall_events,
+    fit_fastcall,
+    recenter_ploidy,
+    segment_standard_errors,
+    window_noise,
+)
 from .hslm import estimate_parameters, segment
 from .writers import number, write_results
 
 DEFAULTS = {
     "HSLM": {"Omega": 0.1, "Theta": 1e-5, "D_norm": 1e6},
-    "FastCall": {"Cellularity": 1.0, "d": 0.5, "u": 0.35, "minExons": 4},
+    "FastCall": {
+        "Cellularity": 1.0,
+        "d": 0.5,
+        "u": 0.35,
+        "minExons": 4,
+        "Ploidy": 2.0,
+        "MergeK": 2.0,
+    },
 }
 
 
@@ -126,6 +142,16 @@ def segment_profile(matrix, values, target, parameters):
     return np.array(rows), np.concatenate(paths), np.array(indices), np.array(segment_ids)
 
 
+def segment_arms(rows, starts, target):
+    """Chromosome arm of each segment, from its first window."""
+    return np.array(
+        [
+            f"{chromosome}:{'q' if float(start) > target['centromeres'][chromosome][1] else 'p'}"
+            for chromosome, start in rows[starts][:, [0, 2]]
+        ]
+    )
+
+
 def summarize(rows, segment_ids):
     """Preserve inferred segments and hard chromosome/arm boundaries."""
     segment_ids = np.asarray(segment_ids)
@@ -176,6 +202,11 @@ def run_analysis(
             for name, state in seeds.items()
         }
     params = read_yaml(parameters) if parameters else DEFAULTS
+    fastcall = params.get("FastCall") if isinstance(params, dict) else None
+    if isinstance(fastcall, dict):
+        # Omitted Ploidy keeps the median window as the diploid reference.
+        fastcall.setdefault("Ploidy", DEFAULTS["FastCall"]["Ploidy"])
+        fastcall.setdefault("MergeK", DEFAULTS["FastCall"]["MergeK"])
     if set(params) != set(DEFAULTS) or any(set(params[k]) != set(DEFAULTS[k]) for k in DEFAULTS):
         raise ValueError("parameters must contain the documented HSLM and FastCall fields")
     names = list(dict.fromkeys(name for test, controls in design for name in [test, *controls]))
@@ -196,6 +227,7 @@ def run_analysis(
     metadata = next(iter(matrices.values()))[:, [0, 1, 2, 3, 4, 6]]
     if any(not np.array_equal(m[:, [0, 1, 2, 3, 4, 6]], metadata) for m in matrices.values()):
         raise ValueError("prepared sample windows differ")
+    require_disjoint_windows(metadata)
     output.parent.mkdir(parents=True, exist_ok=True)
     temporary = Path(tempfile.mkdtemp(prefix=".excavator2-", dir=output.parent))
     try:
@@ -205,8 +237,9 @@ def run_analysis(
             rows, path, indices, segment_ids = segment_profile(
                 matrices[test], values, target, params
             )
-            starts, ends, original = summarize(rows, segment_ids)
+            starts, ends, centered = summarize(rows, segment_ids)
             fc = params["FastCall"]
+            original = recenter_ploidy(centered, float(fc["Ploidy"]), float(fc["Cellularity"]))
             corrected = correct_cellularity(original, float(fc["Cellularity"]))
             fit = fit_fastcall(
                 corrected,
@@ -214,10 +247,45 @@ def run_analysis(
                 lower=float(fc["d"]),
             )
             calls = assign_labels(fit.posterior, r_seed=seeds.get(test))
+            classes = rows[:, 6]
+            noise = window_noise(values[indices], classes, starts, ends)
+            errors = segment_standard_errors(classes, starts, ends, noise)
+            probabilities = call_probabilities(
+                original,
+                errors,
+                upper=float(fc["u"]),
+                lower=float(fc["d"]),
+                cellularity=float(fc["Cellularity"]),
+            )
+            events = fastcall_events(
+                recenter_ploidy(values[indices], float(fc["Ploidy"]), float(fc["Cellularity"])),
+                classes,
+                starts,
+                ends,
+                original,
+                calls.labels,
+                segment_arms(rows, starts, target),
+                noise,
+                k=float(fc["MergeK"]),
+                upper=float(fc["u"]),
+                lower=float(fc["d"]),
+                cellularity=float(fc["Cellularity"]),
+            )
             folder = temporary / "Results" / test
             folder.mkdir(parents=True)
             write_results(
-                folder, test, rows, starts, ends, original, corrected, calls, target, target_folder
+                folder,
+                test,
+                rows,
+                starts,
+                ends,
+                original,
+                corrected,
+                calls,
+                probabilities,
+                events,
+                target,
+                target_folder,
             )
             np.savez_compressed(
                 folder / "checkpoints.npz",
@@ -231,6 +299,16 @@ def run_analysis(
                 corrected_segments=corrected,
                 posterior=fit.posterior,
                 labels=calls.labels,
+                measurement_noise=np.array([noise["IN"], noise["OUT"]]),
+                segment_standard_errors=errors,
+                call_probabilities=probabilities,
+                event_ids=events.ids,
+                event_starts=events.starts,
+                event_ends=events.ends,
+                event_mixture_segments=events.mixture,
+                event_corrected_segments=events.corrected,
+                event_labels=events.labels,
+                event_probabilities=events.probabilities,
                 fastcall_trace=fit.trace,
                 **(
                     {"r_seed_before": seeds[test], "r_seed_after": calls.r_seed}
@@ -242,7 +320,9 @@ def run_analysis(
                 "windows": len(rows),
                 "segments": len(starts),
                 "calls": int(np.count_nonzero(calls.labels)),
+                "events": int(np.count_nonzero(events.labels)),
                 "fastcall_iterations": fit.iterations,
+                "measurement_noise": noise,
             }
         manifest = {
             "schema": 1,
@@ -263,8 +343,10 @@ def run_analysis(
             "copy_number_semantics": "cellularity-corrected-diploid-equivalent",
             "absolute_copy_number": False,
             "pool_weighting": "arithmetic-mean-of-normalized-counts",
-            "fastcall_probability_semantics": "class-membership-not-event-confidence",
+            "fastcall_probability_semantics": "segment-level-interval-probability",
+            "call_probability_model": "normal-segment-median-within-segment-difference-noise",
             "fastcall_posterior": "truncated",
+            "event_policy": "adjacent-same-label-same-arm-median-difference-within-MergeK-SE",
             "fastcall_trace_statistic": "truncated_log_likelihood",
             "threads": 1,
             "rng_policy": "per-sample-original-R-state" if seeds else "reject-random-ties",

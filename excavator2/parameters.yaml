@@ -10,3 +10,5 @@ FastCall:
   d: 0.5  # Threshold d for the truncated gaussian distribution
   u: 0.35 # Threshold u for the truncated gaussian distribution
   minExons: 4 # Segments with less exons than this threshold will be filtered out
+  Ploidy: 2 # Known tumor ploidy; median window copy number is set to this value
+  MergeK: 2 # Adjacent same-call segments merge into one event if medians differ by <= MergeK SE

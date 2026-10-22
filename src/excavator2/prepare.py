@@ -15,6 +15,7 @@ from .artifacts import (
     load_manifest,
     metadata_identity,
     read_yaml,
+    require_disjoint_windows,
     window_metadata,
 )
 from .normalization import normalize
@@ -40,6 +41,7 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
     metadata = window_metadata(target)
     if metadata_identity(metadata) != manifest["target_id"]:
         raise ValueError("preparation features have a different target identity")
+    require_disjoint_windows(metadata)
     design = read_yaml(samples)
     if not design or not all(
         isinstance(k, str)
@@ -128,7 +130,7 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
             "files": {filename: checksum for _, filename, checksum in results},
             "threads": threads,
             "requested_mapq": mapq,
-            "filter_policy": "flags & 1028 == 0; MAPQ >= requested_mapq",
+            "filter_policy": "flags & 0xF0C == 0; MAPQ >= requested_mapq",
             "count_policy": "independent-inclusive-v1",
             "count_backend": "cpp.htslib-prefix-counts",
         }

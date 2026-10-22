@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from numpy.typing import ArrayLike, NDArray
+from scipy.special import ndtr
 
 from . import _core
 from .reference import fastcall as reference_kernels
@@ -54,6 +55,19 @@ def correct_cellularity(values: ArrayLike, cellularity: float = 1.0) -> FloatArr
     return segment_values(np.log2(corrected))
 
 
+def recenter_ploidy(values: ArrayLike, ploidy: float = 2.0, cellularity: float = 1.0) -> FloatArray:
+    """Shift median-centered mixture ratios so zero is diploid, given tumor ploidy."""
+    values = segment_values(values)
+    if not np.isfinite(ploidy) or ploidy <= 0:
+        raise ValueError("ploidy must be positive and finite")
+    if not np.isfinite(cellularity) or not 0 < cellularity <= 1:
+        raise ValueError("cellularity must be in (0, 1]")
+    if ploidy == 2:
+        return values.copy()
+    mixture = cellularity * ploidy + 2 * (1 - cellularity)
+    return segment_values(values + np.log2(mixture / 2))
+
+
 def start_conditions(
     values: FloatArray, upper: float, lower: float
 ) -> tuple[FloatArray, FloatArray]:
@@ -67,6 +81,158 @@ def start_conditions(
             deviations[j] = np.std(selected, ddof=1)
     deviations[deviations < 0.001] = 0.001
     return means, deviations
+
+
+def class_edges(upper: float = 0.35, lower: float = 0.5) -> FloatArray:
+    """Interior class boundaries on the cellularity-corrected log2 scale."""
+    if not np.isfinite([upper, lower]).all() or not (0 < upper < 0.9 and 0 < lower < 1.3):
+        raise ValueError("require 0 < upper < 0.9 and 0 < lower < 1.3")
+    return np.array([-1.3, -lower, upper, 0.9])
+
+
+def window_noise(values: ArrayLike, classes: ArrayLike, starts, ends) -> dict[str, float]:
+    """Robust per-window noise for IN and OUT from adjacent same-class differences.
+
+    Only pairs inside one segment are used, so copy-number steps do not inflate
+    the estimate. A class without such pairs borrows the estimate over all pairs.
+    """
+    values, classes = segment_values(values), np.asarray(classes)
+    if classes.shape != values.shape or not np.isin(classes, ["IN", "OUT"]).all():
+        raise ValueError("classes must contain IN/OUT labels matching values")
+    segment = np.repeat(np.arange(len(starts)), np.subtract(ends, starts))
+    if segment.shape != values.shape:
+        raise ValueError("segments must partition the windows")
+
+    def estimate(selected):
+        index = np.flatnonzero(selected)
+        same = segment[index[1:]] == segment[index[:-1]]
+        differences = np.abs(np.diff(values[index]))[same]
+        if len(differences) < 2:
+            return None
+        # Median |difference| of two independent N(0, sigma^2) windows is 0.9539 sigma.
+        return float(max(np.median(differences) / 0.9538725524089398, 0.001))
+
+    pooled = estimate(np.ones(len(values), dtype=bool))
+    if pooled is None:
+        raise ValueError("measurement noise requires adjacent windows within segments")
+    return {kind: estimate(classes == kind) or pooled for kind in ["IN", "OUT"]}
+
+
+def segment_standard_errors(classes: ArrayLike, starts, ends, noise) -> FloatArray:
+    """Large-sample standard error of each segment median of independent windows."""
+    classes = np.asarray(classes)
+    starts, ends = np.asarray(starts), np.asarray(ends)
+    variance = np.where(classes == "IN", noise["IN"] ** 2, noise["OUT"] ** 2)
+    total = np.add.reduceat(variance, starts)
+    return np.sqrt(np.pi / 2) * np.sqrt(total) / (ends - starts)
+
+
+def call_probabilities(
+    segments: ArrayLike,
+    standard_errors: ArrayLike,
+    *,
+    upper: float = 0.35,
+    lower: float = 0.5,
+    cellularity: float = 1.0,
+) -> FloatArray:
+    """Probability that each true segment level lies in each class interval.
+
+    The observed mixture median is normal around the true level with its standard
+    error, under a flat prior. Corrected class edges map back to the mixture scale
+    through the monotone cellularity correction; the outer classes are open-ended,
+    so each row sums to one and mixtures below the correction floor are deep losses.
+    """
+    segments = segment_values(segments)
+    errors = np.asarray(standard_errors, dtype=np.float64)
+    if errors.shape != segments.shape or not np.isfinite(errors).all() or (errors <= 0).any():
+        raise ValueError("standard errors must be positive, finite and match segments")
+    if not np.isfinite(cellularity) or not 0 < cellularity <= 1:
+        raise ValueError("cellularity must be in (0, 1]")
+    edges = np.r_[-np.inf, class_edges(upper, lower), np.inf]
+    if cellularity < 1:
+        with np.errstate(divide="ignore"):
+            edges = np.log2(cellularity * np.exp2(edges) + (1 - cellularity))
+        edges[0] = -np.inf
+    cumulative = ndtr((edges - segments[:, None]) / errors[:, None])
+    return np.diff(cumulative, axis=1)
+
+
+@dataclass(frozen=True)
+class FastCallEvents:
+    # Event index of each segment.
+    ids: NDArray[np.int64]
+    # Window ranges [starts, ends) of each event.
+    starts: NDArray[np.int64]
+    ends: NDArray[np.int64]
+    mixture: FloatArray
+    corrected: FloatArray
+    labels: NDArray[np.int32]
+    probabilities: FloatArray
+
+
+def fastcall_events(
+    values: ArrayLike,
+    classes: ArrayLike,
+    starts,
+    ends,
+    segments: ArrayLike,
+    labels: ArrayLike,
+    arms: ArrayLike,
+    noise,
+    *,
+    k: float = 2.0,
+    upper: float = 0.35,
+    lower: float = 0.5,
+    cellularity: float = 1.0,
+) -> FastCallEvents:
+    """Group adjacent same-label segments whose medians agree within k standard errors.
+
+    The most consistent boundaries are removed first, then the merged medians and
+    standard errors are recomputed. Events are rescored like segments; unmerged
+    events keep their segment values exactly.
+    """
+    values, segments = segment_values(values), segment_values(segments)
+    classes, labels, arms = np.asarray(classes), np.asarray(labels), np.asarray(arms)
+    starts, ends = np.asarray(starts, dtype=np.int64), np.asarray(ends, dtype=np.int64)
+    if not np.isfinite(k) or k < 0:
+        raise ValueError("MergeK must be finite and nonnegative")
+    if not (segments.shape == labels.shape == arms.shape == starts.shape == ends.shape):
+        raise ValueError("segment fields must have matching lengths")
+    if starts[0] != 0 or ends[-1] != len(values) or (starts[1:] != ends[:-1]).any():
+        raise ValueError("segments must partition the windows")
+
+    def statistics(first, last):
+        window = slice(starts[first], ends[last])
+        error = segment_standard_errors(classes[window], [0], [ends[last] - starts[first]], noise)
+        return np.median(values[window]), error[0]
+
+    bounds = np.arange(len(segments) + 1)
+    medians = segments.copy()
+    errors = segment_standard_errors(classes, starts, ends, noise)
+    while len(bounds) > 2:
+        left, right = bounds[:-2], bounds[1:-1]
+        same = (labels[left] == labels[right]) & (arms[left] == arms[right])
+        z = np.abs(np.diff(medians)) / np.hypot(errors[:-1], errors[1:])
+        eligible = same & (z <= k)
+        if not eligible.any():
+            break
+        # Remove all equally consistent boundaries together, as in filter_breaks.
+        chosen = np.flatnonzero(eligible & (z == z[eligible].min()))
+        first = np.ones(len(medians), dtype=bool)
+        first[chosen + 1] = False
+        bounds = np.delete(bounds, chosen + 1)
+        medians, errors = medians[first], errors[first]
+        for event in np.unique(np.cumsum(first)[chosen] - 1):
+            medians[event], errors[event] = statistics(bounds[event], bounds[event + 1] - 1)
+    return FastCallEvents(
+        np.repeat(np.arange(len(bounds) - 1), np.diff(bounds)),
+        starts[bounds[:-1]],
+        ends[bounds[1:] - 1],
+        medians,
+        correct_cellularity(medians, cellularity),
+        labels[bounds[:-1]].astype(np.int32),
+        call_probabilities(medians, errors, upper=upper, lower=lower, cellularity=cellularity),
+    )
 
 
 def fit_fastcall(
@@ -90,7 +256,7 @@ def fit_fastcall(
         raise ValueError("require 0 < upper < 0.9 and 0 < lower < 1.3")
     means, deviations = start_conditions(values, upper, lower)
     priors = np.array([0.05, 0.1, 0.7, 0.1, 0.05])
-    edges = [-20.0, -1.3, -lower, upper, 0.9, 20.0]
+    edges = np.r_[-20.0, class_edges(upper, lower), 20.0]
     bounds = np.column_stack([edges[:-1], edges[1:]])
     probabilities, likelihood = expectation(values, means, deviations, priors, bounds)
     trace = []

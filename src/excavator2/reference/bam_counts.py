@@ -3,6 +3,8 @@
 import numpy as np
 
 CHUNK_SIZE = 500000
+# Unmapped, mate unmapped, secondary, QC-failed, duplicate, supplementary.
+EXCLUDED_FLAGS = 0x4 | 0x8 | 0x100 | 0x200 | 0x400 | 0x800
 
 
 def count_positions(chunks, starts, ends):
@@ -33,7 +35,7 @@ def selected_chunks(bam, chromosome, mapq=20):
         raise ValueError("MAPQ must be an integer between 0 and 255")
     chunk = []
     for read in bam.fetch(chromosome):
-        if read.flag & 1028 or read.mapping_quality < mapq:
+        if read.flag & EXCLUDED_FLAGS or read.mapping_quality < mapq:
             continue
         chunk.append(read.reference_start + 1)  # SAM POS, not pysam's zero-based start
         if len(chunk) == CHUNK_SIZE:

@@ -42,8 +42,14 @@ def vcf_header(sample, assembly, windows):
         (
             "FCP",
             "Float",
-            "FastCall class membership conditional on segment ratio; "
-            "not calibrated event confidence",
+            "Probability that the segment level lies in the called class interval, "
+            "from segment measurement uncertainty; not calibrated event confidence",
+        ),
+        (
+            "FPA",
+            "Float",
+            "Probability that the segment level lies outside the normal interval, "
+            "from segment measurement uncertainty; not calibrated event confidence",
         ),
     ]
     if windows:
@@ -58,19 +64,48 @@ def vcf_header(sample, assembly, windows):
     return lines
 
 
+def call_summary(probabilities, labels):
+    """Probabilities of the called class and of any non-normal class."""
+    called = probabilities[np.arange(len(labels)), labels + 2]
+    return called, probabilities[:, [0, 1, 3, 4]].sum(axis=1)
+
+
+def genotypes(corrected, labels, probabilities):
+    called, altered = call_summary(probabilities, labels)
+    cnf = 2 * 2 ** np.asarray(corrected)
+    return [
+        f".:{number(np.rint(c))}:{number(c)}:{label}:"
+        f"{number(np.round(p, 2))}:{number(np.round(a, 2))}"
+        for c, label, p, a in zip(cnf, labels, called, altered, strict=True)
+    ]
+
+
 def write_results(
-    folder, sample, rows, starts, ends, original, corrected, calls, target, target_folder
+    folder,
+    sample,
+    rows,
+    starts,
+    ends,
+    original,
+    corrected,
+    calls,
+    probabilities,
+    events,
+    target,
+    target_folder,
 ):
+    """Segments in tables and the Window VCF; merged events in the Region VCF."""
     header = "Chromosome\tPosition\tStart\tEnd\tLog2R\tSegMean\tClass"
     with (folder / f"HSLMResults_{sample}.txt").open("w") as handle:
         handle.write(header + "\n")
         for row in rows:
             handle.write("\t".join(row) + "\n")
     significant = np.flatnonzero(calls.labels != 0)
+    called, altered = call_summary(probabilities, calls.labels)
     with (folder / f"FastCallResults_{sample}.txt").open("w") as handle:
         handle.write(
             "Chromosome\tStart\tEnd\tMixtureSegment\tCorrectedSegment"
-            "\tDECNF\tDECN\tCall\tProbCall\n"
+            "\tDECNF\tDECN\tCall\tProbCall\tProbAltered\tEventId\n"
         )
         for index in significant:
             start, end = starts[index], ends[index] - 1
@@ -86,20 +121,25 @@ def write_results(
                         number(cnf),
                         number(np.rint(cnf)),
                         str(calls.labels[index]),
-                        number(calls.probabilities[index]),
+                        number(called[index]),
+                        number(altered[index]),
+                        str(events.ids[index]),
                     ]
                 )
                 + "\n"
             )
+    segment_genotypes = genotypes(corrected, calls.labels, probabilities)
+    event_genotypes = genotypes(events.corrected, events.labels, events.probabilities)
     for windows in [True, False]:
         records = []
-        for index in significant:
-            start, end = starts[index], ends[index] - 1
-            cnf = 2 * 2 ** corrected[index]
-            genotype = (
-                f".:{number(np.rint(cnf))}:{number(cnf)}:{calls.labels[index]}:"
-                f"{number(np.round(calls.probabilities[index], 2))}"
-            )
+        if windows:
+            intervals = [(starts[i], ends[i] - 1, segment_genotypes[i]) for i in significant]
+        else:
+            intervals = [
+                (events.starts[i], events.ends[i] - 1, event_genotypes[i])
+                for i in np.flatnonzero(events.labels != 0)
+            ]
+        for start, end, genotype in intervals:
             selected = range(start, end + 1) if windows else [start]
             for row in selected:
                 records.append(
@@ -118,15 +158,16 @@ def write_results(
                 raise ValueError("reference file lacks a manifest checksum")
             with np.load(target_folder / filename, allow_pickle=False) as archive:
                 reference = archive["matrix"]
-            wanted = {record[1] for record in group}
+            # Match numerically: rows may render round positions as e.g. "1e+05".
+            wanted = {int(float(record[1])) for record in group}
             # Legacy selects matching FRB rows in FRB order, not by reordering lookup.
-            bases = reference[np.isin(reference[:, 0], list(wanted)), 1]
+            bases = reference[np.isin(reference[:, 0].astype(int), list(wanted)), 1]
             if len(bases) != len(group):
                 raise ValueError("legacy reference-base selection does not match call rows")
             for (_, start, end, genotype), base in zip(group, bases, strict=True):
                 start, end = str(int(float(start))), str(int(float(end)))
                 info = f"IMPRECISE;SVTYPE=CNV;END={end};SVLEN={int(end) - int(start) + 1};"
-                fields = "GT:DECN:DECNF:FCL:FCP" + (":L2R" if windows else "")
+                fields = "GT:DECN:DECNF:FCL:FCP:FPA" + (":L2R" if windows else "")
                 lines.append(
                     "\t".join(
                         [chromosome, start, ".", base, "<CNV>", ".", "PASS", info, fields, genotype]

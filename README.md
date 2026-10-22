@@ -110,9 +110,10 @@ uv run python -c "import pysam; pysam.faidx('data/reference.fa')"
 The chromosome-coordinate, centromere and gap tables use the legacy formats;
 see [the example config](.test/config.yaml) and [reference annotation files](.test/ref/).
 Reference FASTA and BigWig files are not bundled. The current compatibility policy
-uses chromosomes 1–22 and X and rejects BED rows on unsupported contigs
-(including Y/MT) instead of silently discarding them. Arbitrary contigs/assemblies
-are not qualified. Gap-overlapping windows are excluded in full. Analysis rejects
+analyzes the autosomes and X named in the chromosome coordinate table (1–22 and X
+for hg38). BED rows on other contigs (Y, MT, alternate, decoy) are excluded and
+reported in the target manifest (`excluded_bed_contigs`) and on the console.
+Other assemblies are not qualified. Gap-overlapping windows are excluded in full. Analysis rejects
 windows touching or spanning a centromere; either chromosome arm may be absent.
 
 Create `samples.yaml`, mapping unique sample names to coordinate-sorted,
@@ -158,16 +159,21 @@ counts and normalization checkpoints. Under `results/Results/<sample>/`, analysi
 writes:
 
 - `HSLMResults_<sample>.txt`: window ratios and segmentation.
-- `FastCallResults_<sample>.txt`: called regions and copy-number estimates.
-- `EXCAVATORWindowCall_<sample>.vcf` and `EXCAVATORRegionCall_<sample>.vcf`.
+- `FastCallResults_<sample>.txt`: called segments, copy-number estimates and
+  the event (`EventId`) each segment belongs to.
+- `EXCAVATORWindowCall_<sample>.vcf` (per window) and
+  `EXCAVATORRegionCall_<sample>.vcf` (per event). Adjacent same-call segments
+  merge into one event when their medians agree within `MergeK` standard errors;
+  see [event merging](docs/copy-number-interpretation.md#event-merging-76).
 - `checkpoints.npz`: numerical intermediates used for comparison.
 
 The result manifest records inputs, parameters and execution settings. Random
 FastCall ties require the original per-sample R RNG state via `--r-seed-states`;
 see [the replay contract](docs/hslm-analysis.md#replaying-original-fastcall-random-ties).
-Final probabilities use truncated class support, recorded in the manifest.
-Probabilities of 1 inside a single allowed class express a hard model boundary,
-not calibrated biological certainty. See [A19 and its remaining limits](docs/fastcall-a19.md).
+Calls use truncated class support ([A19](docs/fastcall-a19.md)). `ProbCall`/`FCP`
+and `ProbAltered`/`FPA` reflect each segment's measurement uncertainty from its
+window count, noise and distance to thresholds; they are not calibrated event
+confidence. See [H07](docs/copy-number-interpretation.md#h07-probabilities-from-segment-measurement-uncertainty).
 Each command provides `--help`.
 
 ## Citation and license

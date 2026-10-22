@@ -1,8 +1,8 @@
 # Copy-number interpretation and remaining model limits
 
 This resolves the reporting contract for A18 ([#6](https://github.com/danilotat/excavator2-py/issues/6))
-and A25 ([#11](https://github.com/danilotat/excavator2-py/issues/11)), and assesses
-P15 ([#18](https://github.com/danilotat/excavator2-py/issues/18)) and
+and A25 ([#11](https://github.com/danilotat/excavator2-py/issues/11)), assesses
+P15 ([#18](https://github.com/danilotat/excavator2-py/issues/18)), and addresses
 H07 ([#17](https://github.com/danilotat/excavator2-py/issues/17)) in the current
 Python pipeline. Historical R behavior is unchanged.
 
@@ -42,6 +42,29 @@ Adding absolute CN later requires region-specific reference and contaminant
 ploidy, sample context, validated PAR handling, and an appropriate calling model.
 The fixed FastCall means and class thresholds retain their diploid-relative meaning.
 
+## Ploidy re-centering ([#75](https://github.com/danilotat/excavator2-py/issues/75))
+
+Depth normalization and IN/OUT median centering set log2 ratio 0 to the copy
+number of the median window, in paired and pooled designs alike; a matched normal
+removes locus bias but not the genome-wide scale. FastCall reads that level as
+diploid. In a tumor of ploidy 2.85 most of the genome is then shifted: CN 2 sits
+near `log2(2/2.85) = -0.51` and is called a loss, while CN 3 sits near 0.
+
+The optional FastCall `Ploidy` parameter (default 2, no shift) supplies the known
+tumor ploidy P. After segmentation, each segment median m becomes
+`m + log2((p*P + 2*(1-p)) / 2)`, where p is `Cellularity` and the contaminant is
+diploid. Cellularity correction, FastCall labels, probabilities, `MixtureSegment`,
+`CorrectedSegment` and DECNF use the shifted value. Segmentation does not, because
+its reset prior is centered at zero; segment values are medians of observations,
+so the shift is an exact translation. HSLM rows and window `L2R` stay
+median-centered observations.
+
+This is the manual re-centering used for CNVkit in published benchmarks, not
+ploidy inference. It assumes the median window's copy number approximates the
+mean ploidy; for a genome mostly at CN 3 with ploidy 2.85, the shift is off by
+`log2(3/2.85) = 0.07`. DECNF remains diploid-equivalent and is absolute only to
+the extent that P and this assumption hold.
+
 ## P15 assessment: control depth still affects arithmetic pooling
 
 Analysis averages normalized counts across selected controls without a pseudocount,
@@ -56,30 +79,82 @@ than claiming depth-invariant pooling. Control CNVs, quality weighting and outli
 handling remain unresolved modeling questions; no replacement pooling rule is
 introduced. See [automatic normalization](analysis-normalization.md).
 
-## H07 assessment: probabilities are not calibrated event confidence
+## H07: probabilities from segment measurement uncertainty
 
-FastCall consumes only segment medians, one observation per segment. Segment
-length, depth, IN/OUT composition and measurement error do not enter its
-likelihood. Its truncated class supports have disjoint interiors. An interior
-value therefore has posterior 1 for its sole supported class, irrespective of
-support or noise. Shared endpoints are the exception and can have competing
-class probabilities. Fragmentation changes priors and fitted widths without
-changing those interior probabilities. Both numerical backends reproduce this.
+The FastCall fit sees one median per segment. Since A19, its truncated class
+supports have disjoint interiors, so its posterior is 1 for the class containing
+the median, irrespective of length or noise. Labels still come from that fit,
+which equals the interval containing the median, and it is kept as a diagnostic
+(`posterior`, `fastcall_trace`). Reported probabilities no longer use it.
 
-`ProbCall` and VCF `FCP` are conditional class membership. VCF descriptions and
-the manifest explicitly exclude calibrated event confidence. They must not be
-used as empirical error rates. Numerical stability and coherent fitting do not
-establish calibration.
+`ProbCall`/`FCP` is the probability that the true segment level lies in the
+called class interval. `ProbAltered`/`FPA` is the probability that it lies
+outside the normal interval. Both come from each segment's own windows:
 
-An uncertainty-aware replacement needs a likelihood for noisy segment estimates,
-including window dependence and purity uncertainty. Evaluate it using independent
-truth-labelled samples, keeping patients and shared controls separate between
-fit and validation sets. Measure reliability, Brier score and log loss by length,
-depth, IN/OUT composition, noise and purity; include null segments and repeated
-segmentations of the same event. Do not treat multiplied segment length as an
-independent-observation count. No truth-labelled cohort was available for this
-assessment, so empirical calibration remains open and no new confidence model
-is introduced.
+1. Per sample, estimate robust window noise separately for IN and OUT from
+   adjacent same-class differences within segments:
+   `sigma = median(|difference|) / 0.9539`. Steps between segments are excluded.
+2. A segment median of `n_IN` and `n_OUT` windows has standard error
+   `SE = sqrt(pi/2) * sqrt(n_IN * sigma_IN^2 + n_OUT * sigma_OUT^2) / n`.
+3. With the observed mixture median normal around the true level and a flat
+   prior, each class probability is a difference of normal CDFs at its edges.
+   Corrected edges `-1.3, -d, u, 0.9` map to the mixture scale through the
+   monotone cellularity correction. The outer classes are open-ended, so the
+   five probabilities sum to one, and mixtures below the correction floor are
+   deep losses.
+
+Short or noisy segments, and segments near a threshold, therefore get lower
+probabilities; fragmenting other parts of a profile does not change them. A
+median just below 0.9 is a gain with `ProbCall` about 0.5 but `ProbAltered` 1.
+`ProbCall` can be below another class's probability when the median lies near
+the edge of a narrow interval; the label remains the interval containing it.
+The manifest records `fastcall_probability_semantics:
+segment-level-interval-probability` and per-sample `measurement_noise`;
+checkpoints save the noise, standard errors and all five probabilities.
+
+Windows are treated as independent. On two real paired WES runs of one cell line
+(about 354,000 windows each), the lag-1 correlation of within-segment residuals
+was about 0.05 (rank correlation about 0.03), at most about 0.09 for IN windows
+under 1 kb apart. That reduces the effective window count by about 10%, so no
+correction is applied. The noise level differed between runs (OUT 0.31 versus
+0.57), which is why it is estimated per sample and class.
+
+These probabilities describe random measurement error given the segmentation.
+They exclude boundary uncertainty, purity uncertainty and systematic bias such
+as a control CNV in the pool (P15), so they are not calibrated event confidence
+and must not be used as empirical error rates. Calibration remains open: compare
+calls between replicate runs, or against truth-labelled samples, by length,
+depth, IN/OUT composition, noise and purity.
 
 Regression evidence is in `tests/test_reporting_semantics.py`,
 `tests/test_analysis.py` and `tests/test_signal_preservation.py`.
+
+## Event merging ([#76](https://github.com/danilotat/excavator2-py/issues/76))
+
+HSLM often splits one alteration into adjacent segments with the same FastCall
+label, for example across a large gap between targets, where its distance prior
+makes a boundary cheap. Analysis groups such segments into events, after the
+merge pass of DRAGEN's
+[CNV smoothing](https://help.dragen.illumina.com/dragen-v4.4/product-guide/dragen-v4.4/dragen-dna-pipeline/cnv-calling/additional-documentation/cnv-ascn#wgs-cnv-smoothing).
+
+Two adjacent events in one chromosome arm, with the same label, merge when
+`|m1 - m2| / sqrt(SE1^2 + SE2^2) <= MergeK`, using mixture medians and the H07
+standard errors. The most consistent boundaries are removed first (equal ties
+together), then the merged median and standard error are recomputed from all of
+the event's windows, and the test repeats until no boundary qualifies. A merged
+median lies between its parts' medians, so the label never changes. Events are
+rescored like segments: DECNF and probabilities come from the merged median and
+its standard error. An unmerged event keeps its segment's values exactly.
+
+The test uses evidence, not distance. A bp merge distance would reflect target
+layout on exome and panel data, and would block the gap-induced splits merging is
+meant to undo. A within-class step supported by many windows, such as a subclonal
+gain next to a clonal one, exceeds the threshold and stays two events. `MergeK`
+is an optional FastCall parameter (default 2); 0 merges only identical medians.
+DRAGEN's removal of negligible segments corresponds to `minExons`.
+
+Merging is reporting only. HSLM rows, the segment-level `FastCallResults` rows and
+the Window VCF keep every segment; `FastCallResults` gains an `EventId` column,
+and the Region VCF has one record per called event. Checkpoints save event IDs,
+window ranges, medians, labels and probabilities, and the manifest records
+`event_policy`. Evidence is in `tests/test_events.py` and `tests/test_analysis.py`.

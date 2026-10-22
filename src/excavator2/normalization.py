@@ -28,7 +28,8 @@ def normalize(counts, target, gc, mappability):
     n = len(target)
     if any(x.shape != (n,) for x in [counts, gc, mappability]):
         raise ValueError("counts and target covariates have different shapes")
-    length = coordinate_values(target[:, 2]) - coordinate_values(target[:, 1])
+    # Counting intervals are inclusive [start, end], so a one-base window has length 1.
+    length = coordinate_values(target[:, 2]) - coordinate_values(target[:, 1]) + 1
     if (length <= 0).any() or (counts < 0).any():
         raise ValueError("target lengths must be positive and counts nonnegative")
     if not np.isin(target[:, 4], ["IN", "OUT"]).all():

@@ -42,15 +42,21 @@ only T-labelled samples are analyzed, matching the original job splitter.
 Paired analysis sorts numeric suffixes and requires matching C/T pairs. Sample
 names must be plain path components; duplicate YAML keys/names are rejected.
 `--parameters` accepts the original HSLM/FastCall YAML fields and defaults.
+FastCall also accepts an optional `Ploidy` (default 2) that re-centers segment
+ratios on a known tumor ploidy ([details](copy-number-interpretation.md#ploidy-re-centering-75)),
+and an optional `MergeK` (default 2) that groups adjacent same-call segments into
+events ([details](copy-number-interpretation.md#event-merging-76)).
 On `dev/improvements`, FastCall uses the fitted truncation for final calls,
 fixing A19. The analysis manifest records `fastcall_posterior: truncated`;
-see [A19](fastcall-a19.md) for probability interpretation and numerical limits.
+see [A19](fastcall-a19.md) for numerical limits. Reported call probabilities come
+from segment measurement uncertainty
+([H07](copy-number-interpretation.md#h07-probabilities-from-segment-measurement-uncertainty)).
 This initial implementation requires `--threads 1` and a new output directory;
 `--force` is explicitly unsupported. Results are assembled in a temporary sibling
 and published after every sample succeeds. Plots are not generated.
 
 Outputs under `Results/<sample>/` retain the original HSLM/FastCall table and
-region/window VCF names. `checkpoints.npz` also records ratios, row indices,
+region/window VCF names; Region VCF records are merged events. `checkpoints.npz` also records ratios, row indices,
 Viterbi paths, segment boundaries, posteriors, labels and FastCall traces.
 `manifest.json` records input hashes, parameters, design and backend.
 
@@ -141,15 +147,11 @@ legacy inputs and cross-platform numerical qualification remain outside this
 M3 acceptance scope. Those compatibility claims apply to `main`; the
 improvements branch changes final FastCall probabilities as documented above.
 
-## Live CI concordance
+## Live legacy concordance
 
-Every push and pull request now also runs a fresh pinned-legacy versus current-wheel
-comparison for paired and pooled non-normal analysis. Reports, outputs and failure
-logs are uploaded as the `legacy-concordance` artifact. See
-[the oracle harness instructions](../tools/oracle/README.md#live-old-versus-current-ci-concordance)
-for reproduction and the exact gates. The job now also covers original versus current preparation on small BAMs;
-the large supplied BAM/reference run is not part of this per-PR job. The new harness passes locally; its first GitHub-hosted run
-will occur when these commits are pushed.
+CI no longer compares against the pinned original, since the implementation now
+deliberately departs from it. The harness can still be run manually; see
+[the oracle harness instructions](../tools/oracle/README.md#live-old-versus-current-concordance).
 
 ## Replaying original FastCall random ties
 

@@ -14,6 +14,7 @@ from excavator2.fastcall import (
     assign_labels,
     correct_cellularity,
     fit_fastcall,
+    recenter_ploidy,
 )
 
 FIXTURES = Path(__file__).parent / "fixtures/legacy-fastcall"
@@ -124,6 +125,22 @@ def test_cellularity_matches_original_and_preserves_input():
     )
     assert_array_equal(values, expected["original"])
     assert_array_equal(correct_cellularity(values), values)
+
+
+@pytest.mark.parametrize(
+    ("ploidy", "cellularity", "shift"),
+    [(2, 1, 0), (2.85, 1, np.log2(1.425)), (4, 0.5, np.log2(1.5)), (1, 1, -1)],
+)
+def test_ploidy_recentering_shifts_mixture_median(ploidy, cellularity, shift):
+    values = np.array([-1.0, 0.0, 0.58])
+    assert_allclose(recenter_ploidy(values, ploidy, cellularity), values + shift)
+    assert_array_equal(values, [-1.0, 0.0, 0.58])
+
+
+@pytest.mark.parametrize("ploidy", [0, -1, np.nan, np.inf])
+def test_invalid_ploidy_fails_explicitly(ploidy):
+    with pytest.raises(ValueError, match="ploidy"):
+        recenter_ploidy([0.0], ploidy)
 
 
 @pytest.mark.parametrize("values", [[], [[0.0]], [np.nan], [np.inf]])

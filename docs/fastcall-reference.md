@@ -38,6 +38,8 @@ Inputs must be finite, nonempty 1-D values within the outer bounds `[-20, 20]`.
 Thresholds must satisfy `0 < upper < 0.9`, `0 < lower < 1.3`; cellularity must be
 positive and no greater than one. A class probability of 1 inside its exclusive
 support expresses the hard boundary assumption, not calibrated biological certainty.
+Reported call probabilities use segment measurement uncertainty instead; see
+[H07](copy-number-interpretation.md#h07-probabilities-from-segment-measurement-uncertainty).
 
 ## Numerical implementation
 

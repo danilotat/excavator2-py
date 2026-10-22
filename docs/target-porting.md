@@ -1,21 +1,28 @@
 # Current target and counting corrections
 
 The current implementation replaces legacy defects T01/T02/T03/T04/T06/T13/T14/T16
-(issues #28–#35), P01/P04/P05/P08 (#21–#23, #25), and strengthens
+(issues #28–#35), T09/T10/T17 (#57, #58, #62), P01/P04/P05/P08 (#21–#23, #25), and strengthens
 failure reporting for P12 (#27). There is no legacy behavior switch.
 
-- Chromosome coordinates are keyed by name (an optional `chr` prefix is normalized);
-  duplicate or missing canonical bounds fail. Canonical chromosome ordering remains.
-  Uniformly named Y BED entries are accepted and ignored. Other BED contigs
-  outside uniformly named 1–22/X fail explicitly instead of being silently
-  dropped. Y/MT/other contig analysis remains unsupported.
+- Analyzed chromosomes are the autosomes and X of the chromosome coordinate table
+  (T01, #28): contigs with positive integer names in numeric order, then X; for
+  hg38 this is 1–22 and X. Output names follow the BED's `chr` convention, and
+  coordinate, gap and centromere names match with or without the prefix.
+  Duplicate bounds fail. BED rows on any other contig (Y, MT, alternate, decoy,
+  unplaced) are excluded and reported: the target command prints per-contig row
+  counts and the manifest records them as `excluded_bed_contigs`. A numeric or X
+  BED contig absent from the coordinate table fails as an input mismatch. The
+  `chr` prefix is taken from the kept BED rows; mixing prefixed and bare names
+  fails. Y/MT/other contig analysis remains unsupported.
 - IN intervals are sorted and overlapping, nested, duplicate or touching intervals
   are merged before OUT generation. Invalid or out-of-bounds targets fail.
 - OUT intervals use the available gap after subtracting both 200-base flanks.
   Only full windows are emitted, within chromosome bounds. Empty eligible gaps
   emit no OUT rows. Target-free chromosomes use positive starts: `[left+1, right]`.
 - Existing IN coordinate values, GC/MAP `[start-1,end)` and first-base
-  `[start,start+1)` extraction conventions remain. This is not a general BED
+  `[start,start+1)` extraction conventions remain; a BED start of 0 clamps the
+  GC/MAP interval to `[0,end)`. A chromosome without gap rows is a single
+  contig with no gaps. This is not a general BED
   coordinate-system migration. Gap filtering rejects any intersection of a stored
   inclusive window with a half-open gap `[left,right)`, including windows spanning
   the gap. Empty gaps remove nothing.
@@ -110,9 +117,7 @@ not required. Broader edge-case coverage will be added with implementation.
 Fixture tests run in the existing Linux/macOS wheel CI matrix. They compare every
 Python geometry output cell, row order and chromosome list against the captured
 original outputs, and check failure behavior. This is fixture-based geometry
-concordance; live feature comparison is now also enabled. Full-target
-concordance remains M5.4. Existing live
-preparation/analysis concordance remains enabled.
+concordance. Live comparisons against the original are no longer run in CI.
 
 The internal entry point is `excavator2.target.target_geometry(bed, coordinates,
 gaps, window)`, returning a five-column NumPy string matrix. It creates no files
@@ -192,8 +197,6 @@ python tools/oracle/characterize_features.py \
 
 Use a fresh output directory with Docker available. The harness extracts the
 pinned source commit and runs its unchanged `TargetCreate.sh` and R save scripts.
-The existing CI concordance job now performs this comparison using the installed
-current wheel and retains the results alongside preparation/analysis reports.
 Local feature parity is established on these fixtures and on the supplied
 reference artifacts (see M5.4 below). Arbitrary
 FASTA/BigWig variants, shell metacharacters in names and performance are not yet
