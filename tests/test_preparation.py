@@ -8,7 +8,12 @@ import pytest
 from numpy.testing import assert_allclose, assert_array_equal
 
 from excavator2.normalization import normalize
-from excavator2.reference.bam_counts import CHUNK_SIZE, count_positions, selected_chunks
+from excavator2.reference.bam_counts import (
+    CHUNK_SIZE,
+    EXCLUDED_FLAGS,
+    count_positions,
+    selected_chunks,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures/legacy-preparation"
 
@@ -61,9 +66,9 @@ def test_normalization_trace_matches_original():
             assert_allclose(result[name], f[original], rtol=1e-14, atol=1e-15)
 
 
-def test_selection_filters_mapq_and_retains_other_flag_semantics(tmp_path):
+def test_selection_filters_mapq_and_excluded_flags(tmp_path):
     path = tmp_path / "flags.bam"
-    flags = [0, 1, 2, 4, 16, 64, 128, 256, 512, 1024, 2048]
+    flags = [0, 1, 2, 4, 8, 9, 16, 64, 128, 256, 512, 1024, 2048]
     expected = []
     with pysam.AlignmentFile(
         path, "wb", header={"HD": {"SO": "coordinate"}, "SQ": [{"SN": "chr1", "LN": 10000}]}
@@ -78,7 +83,7 @@ def test_selection_filters_mapq_and_retains_other_flag_semantics(tmp_path):
             read.query_sequence = "A"
             read.cigarstring = "1M"
             bam.write(read)
-            if not flag & 1028 and read.mapping_quality >= 20:
+            if not flag & EXCLUDED_FLAGS and read.mapping_quality >= 20:
                 expected.append(i * 10 + 1)
     pysam.index(str(path))
     with pysam.AlignmentFile(path) as bam:
@@ -149,7 +154,7 @@ def test_prepare_cli_preserves_counts_and_is_thread_independent(tmp_path, thread
                     for chrom, start, end in old["matrix"][:, [0, 2, 3]]:
                         expected.append(
                             sum(
-                                not r.flag & 1028
+                                not r.flag & EXCLUDED_FLAGS
                                 and r.mapping_quality >= 60
                                 and int(start) <= r.reference_start + 1 <= int(end)
                                 for r in bam.fetch(chrom)

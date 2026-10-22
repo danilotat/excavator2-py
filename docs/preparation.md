@@ -53,8 +53,9 @@ prepared samples and target features are supplied.
 
 ## Current counting policy
 
-Preparation excludes flags 4 and 1024 and requires MAPQ >= `--mapq` (default 20).
-Other alignment flags retain their existing treatment. Positions are one-based
+Preparation excludes unmapped (0x4), mate-unmapped (0x8; paired-end only), secondary (0x100),
+QC-failed (0x200), duplicate (0x400) and supplementary (0x800) records (#49), and
+requires MAPQ >= `--mapq` (default 20). Positions are one-based
 SAM starts, counted independently in each inclusive `[start,end]` interval.
 Generated targets are disjoint; `prepare` and `analyze` reject overlapping windows
 from older or original targets, whose midpoints can decrease (#73). Operational chunks contain

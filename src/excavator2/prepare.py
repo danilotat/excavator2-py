@@ -130,7 +130,7 @@ def run_preparation(samples, target_folder, output, threads=1, mapq=20, force=Fa
             "files": {filename: checksum for _, filename, checksum in results},
             "threads": threads,
             "requested_mapq": mapq,
-            "filter_policy": "flags & 1028 == 0; MAPQ >= requested_mapq",
+            "filter_policy": "flags & 0xF0C == 0; MAPQ >= requested_mapq",
             "count_policy": "independent-inclusive-v1",
             "count_backend": "cpp.htslib-prefix-counts",
         }

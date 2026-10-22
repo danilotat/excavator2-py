@@ -63,7 +63,7 @@ not just final calls. See the M5 reports for the original comparison basis.
 | Non-normal paired/pooling | Original fixtures, stage CI and M6.2 complete fresh-reference chain | Final full-chain CI passed; larger real cohorts remain future validation |
 | Target geometry | Eight cases; live old/new comparison; supplied target exact | Additional assemblies, unusual contigs and broader interval edge cases |
 | Target features | Ten cases plus all supplied arrays; binary32/R decimal replay; exact parity immediately below/at UCSC's 3,000-block switch | Additional assemblies and broader missing-data patterns |
-| Read counting | Endpoints, overlaps, terminal/chunk cases; supplied exact counts | CRAM explicitly unsupported; empty streams rejected; unmapped/duplicate filtering and secondary/supplementary/QC-failed retention tested |
+| Read counting | Endpoints, overlaps, terminal/chunk cases; supplied exact counts | CRAM explicitly unsupported; empty streams rejected; unmapped, mate-unmapped, secondary, QC-failed, duplicate and supplementary filtering tested (#49; original retained the last four) |
 | Numerical kernels | Original fixtures, native/reference comparison, sanitizer smoke checks; M6.4 pure-R boundaries; M6.5 full-inference centromere cases | Original near-tie replay and empty-chromosome rejection covered; arbitrary invalid legacy domains excluded |
 | Reproducibility | One/four-worker preparation tests; pinned oracle; installed wheels | Per-sample CLI RNG replay now covered; analysis parallelism remains unsupported |
 | Plots and diagnostics | Scientific data tables/VCF comparisons; [original output inventory and acceptance gates](plotting-scope.md) | Deferred explicitly by user for M6; no visual parity claim |

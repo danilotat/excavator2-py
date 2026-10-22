@@ -96,7 +96,10 @@ public:
         int status;
         while ((status = sam_itr_next(bam.get(), iterator.get(), read.get())) >= 0) {
             const auto& core = read->core;
-            if ((core.flag & 1028) || core.qual < mapq) continue;
+            // Unmapped, mate unmapped, secondary, QC-failed, duplicate, supplementary.
+            constexpr std::uint16_t excluded = BAM_FUNMAP | BAM_FMUNMAP | BAM_FSECONDARY |
+                                               BAM_FQCFAIL | BAM_FDUP | BAM_FSUPPLEMENTARY;
+            if ((core.flag & excluded) || core.qual < mapq) continue;
             const std::int64_t position = core.pos + 1;
             if (position < previous) throw std::invalid_argument("selected positions must be sorted");
             previous = position;

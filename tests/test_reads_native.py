@@ -9,6 +9,7 @@ from numpy.testing import assert_array_equal
 
 from excavator2 import _core
 from excavator2.reads import count_bam
+from excavator2.reference.bam_counts import EXCLUDED_FLAGS
 
 
 def native_count(path, chromosome, starts, ends, mapq):
@@ -43,13 +44,13 @@ def make_bam(path, positions, flags, qualities):
 def test_native_overlaps_endpoints_flags_and_concurrent_calls(tmp_path, mapq):
     rng = np.random.default_rng(413)
     positions = np.sort(rng.integers(1, 1000, size=20000))
-    flags = rng.choice([0, 1, 2, 4, 16, 64, 128, 256, 512, 1024, 2048], size=len(positions))
+    flags = rng.choice([0, 1, 2, 4, 8, 9, 16, 64, 128, 256, 512, 1024, 2048], size=len(positions))
     qualities = rng.choice([0, 19, 20, 60, 255], size=len(positions))
     path = tmp_path / "reads.bam"
     make_bam(path, positions, flags, qualities)
     starts = np.sort(np.r_[0, 1, 1, rng.integers(1, 1100, size=200), 2000])
     ends = starts + rng.integers(0, 300, size=len(starts))
-    selected = positions[((flags & 1028) == 0) & (qualities >= mapq)]
+    selected = positions[((flags & EXCLUDED_FLAGS) == 0) & (qualities >= mapq)]
     expected = [np.count_nonzero((selected >= a) & (selected <= b)) for a, b in zip(starts, ends)]
 
     plan = _core.RegionPlan("chr1", starts, ends)
