@@ -4,6 +4,9 @@ from pathlib import Path
 
 import numpy as np
 
+# Minimum distance between a target and an off-target window (bp).
+DEFAULT_FLANK = 200
+
 
 def contig_key(name: str) -> str:
     """Contig name without an optional 'chr' prefix."""
@@ -43,10 +46,14 @@ def select_contigs(bed_names, coordinate_names) -> tuple[list[str], dict[str, in
     return chromosomes, {str(k): int(n) for k, n in zip(excluded, counts, strict=True)}
 
 
-def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np.ndarray:
+def target_geometry(
+    bed: Path, coordinates: Path, gaps: Path, window: int, flank: int = DEFAULT_FLANK
+) -> np.ndarray:
     """Return chromosome, start, end, ID and IN/OUT columns."""
     if isinstance(window, bool) or not isinstance(window, (int, np.integer)) or window < 10:
         raise ValueError("window must be an integer of at least 10")
+    if isinstance(flank, bool) or not isinstance(flank, (int, np.integer)) or flank < 0:
+        raise ValueError("flank must be a nonnegative integer")
     bed_rows = np.loadtxt(bed, dtype=str, delimiter="\t", usecols=(0, 1, 2), ndmin=2)
     coord_rows = np.loadtxt(coordinates, dtype=str, delimiter="\t", usecols=(0, 1, 2), ndmin=2)
     gap_rows = np.loadtxt(gaps, dtype=str, delimiter="\t", skiprows=1, usecols=(1, 2, 3), ndmin=2)
@@ -96,7 +103,7 @@ def target_geometry(bed: Path, coordinates: Path, gaps: Path, window: int) -> np
             empty_starts = np.concatenate(([start], inside[:, 1]))
             empty_ends = np.concatenate((inside[:, 0], [end]))
             for left, right in zip(empty_starts, empty_ends, strict=True):
-                left, right = left + 200, right - 200
+                left, right = left + flank, right - flank
                 boundaries = left + np.arange(max(0, (right - left) // window) + 1) * window
                 outside.extend(zip(boundaries[:-1] + 1, boundaries[1:], strict=True))
         else:

@@ -81,6 +81,7 @@ def test_target_cli_publishes_compatible_artifact(config, tmp_path):
     assert "outside reference autosomes and X: chrM (1), chrY (2)" in result.stderr
     manifest = load_manifest(output, "target")
     assert manifest["excluded_bed_contigs"] == {"chrM": 1, "chrY": 2}
+    assert manifest["flank"] == 200
     assert manifest["chromosomes"] == [f"chr{i}" for i in range(1, 23)] + ["chrX"]
     assert manifest["centromeres"]["chrX"] == [1400, 1600]
     with np.load(output / manifest["preparation"], allow_pickle=False) as data:
@@ -95,6 +96,21 @@ def test_target_cli_publishes_compatible_artifact(config, tmp_path):
             assert set(data["matrix"][:, 1]) == {"G"}
     assert len(manifest["inputs"]) == 6
     assert not list(tmp_path.glob(".excavator2-target-*"))
+
+
+def test_target_flank_setting_moves_off_target_windows(config, tmp_path):
+    settings = yaml.safe_load(config.read_text())
+    settings["Target"]["Flank"] = 300
+    config.write_text(yaml.safe_dump(settings))
+    run_target(config, tmp_path / "target")
+    manifest = load_manifest(tmp_path / "target", "target")
+    assert manifest["flank"] == 300
+    with np.load(tmp_path / "target" / manifest["preparation"], allow_pickle=False) as data:
+        target = data["target"]
+    outside = target[(target[:, 0] == "chr1") & (target[:, 4] == "OUT"), 1:3].astype(int)
+    # Flanks leave no window before the first target (500-560).
+    assert outside[0, 0] == 861
+    assert np.all((outside[:, 1] <= 1000) | (outside[:, 0] > 1700))
 
 
 def test_target_failure_does_not_publish(config, tmp_path):

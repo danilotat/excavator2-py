@@ -12,3 +12,4 @@ Target:
   Name: SureSelectV7 # target name
   BED: .test/data/SureSelect_Human_All_Exon_V7.hg38.bed # path to target BED file
   Window: 30000 # sliding window size (bp)
+  Flank: 200 # minimum distance between targets and off-target windows (bp)

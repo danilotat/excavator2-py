@@ -9,7 +9,7 @@ import numpy as np
 
 from . import __version__
 from .artifacts import digest, metadata_identity, read_yaml, window_metadata
-from .target import contig_key, select_contigs, target_geometry
+from .target import DEFAULT_FLANK, contig_key, select_contigs, target_geometry
 from .target_features import target_features
 
 
@@ -42,8 +42,9 @@ def run_target(config, output, force=False, progress=None):
     # As with the original CLI, relative reference paths use the working directory.
     if progress:
         progress("[2/4] Building target windows")
+    flank = target_settings.get("Flank", DEFAULT_FLANK)
     target = target_geometry(
-        paths["BED"], paths["Chromosomes"], paths["Gaps"], target_settings.get("Window")
+        paths["BED"], paths["Chromosomes"], paths["Gaps"], target_settings.get("Window"), flank
     )
     chromosomes = list(dict.fromkeys(target[:, 0]))
     _, excluded = select_contigs(
@@ -90,6 +91,7 @@ def run_target(config, output, force=False, progress=None):
             "files": {},
             "preparation": "preparation.npz",
             "window": target_settings["Window"],
+            "flank": flank,
             "package_version": __version__,
             "geometry_policy": "merged-bounded-overlap-v2",
             "contig_policy": "reference-autosomes-X-exclude-other-bed-contigs",

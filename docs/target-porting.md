@@ -16,9 +16,10 @@ failure reporting for P12 (#27). There is no legacy behavior switch.
   fails. Y/MT/other contig analysis remains unsupported.
 - IN intervals are sorted and overlapping, nested, duplicate or touching intervals
   are merged before OUT generation. Invalid or out-of-bounds targets fail.
-- OUT intervals use the available gap after subtracting both 200-base flanks.
-  Only full windows are emitted, within chromosome bounds. Empty eligible gaps
-  emit no OUT rows. Target-free chromosomes use positive starts: `[left+1, right]`.
+- OUT intervals use the available gap after subtracting a flank on each side
+  (see [Off-target flank](#off-target-flank)). Only full windows are emitted,
+  within chromosome bounds. Empty eligible gaps emit no OUT rows. Target-free
+  chromosomes use positive starts: `[left+1, right]`.
 - Existing IN coordinate values, GC/MAP `[start-1,end)` and first-base
   `[start,start+1)` extraction conventions remain; a BED start of 0 clamps the
   GC/MAP interval to `[0,end)`. A chromosome without gap rows is a single
@@ -45,6 +46,37 @@ artifacts are not rewritten. Manifests record `geometry_policy` and `count_polic
 Legacy fixture files remain unchanged as historical evidence; current tests use
 corrected expectations. CI captures legacy outputs without requiring bug parity.
 The historical qualification results below do not qualify the corrected pipeline.
+
+## Off-target flank
+
+`Target.Flank` (nonnegative integer, default 200, #67) is the minimum distance in
+bp between a capture target and an off-target (OUT) window. Reads near a target
+come partly from fragments overlapping the baits, so their depth is not
+off-target background; the flank keeps them out of OUT windows. It does not
+change the window size. The target manifest records it as `flank`.
+
+On a chromosome with targets, each stretch between consecutive targets, and
+between a chromosome bound and its nearest target, is tiled as follows:
+
+```
+left                                                          right
+|-flank-|==window==|==window==|...|==window==|-remainder-|-flank-|
+```
+
+- The first window starts at `left + flank + 1`; full windows follow until no
+  further window fits before `right - flank`.
+- The remainder (shorter than one window) and both flanks get no window. A
+  stretch shorter than `window + 2 * flank` gets no OUT window.
+- Coverage there is not measured. A call spanning windows on both sides still
+  reports an interval that covers it, with copy number inferred from those
+  windows. No call starts before the first window of a chromosome.
+- Gap filtering then drops windows touching a gap; the grid is not re-anchored
+  after a gap. In the hg38 gap table, 1–22 and X start with a 10 kb telomere
+  gap, so with a flank below 10 kb the first window is always dropped.
+
+Target-free chromosomes have no flank: windows tile from the chromosome start.
+Increase the flank for libraries whose fragments extend coverage further beyond
+the baits; a larger flank removes windows near dense targets.
 
 ---
 

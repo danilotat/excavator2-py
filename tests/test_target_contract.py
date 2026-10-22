@@ -131,6 +131,35 @@ def test_geometry_rejects_invalid_window(window):
         )
 
 
+@pytest.mark.parametrize("flank", [-1, 10.5, True])
+def test_geometry_rejects_invalid_flank(flank):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "standard"
+    with pytest.raises(ValueError, match="flank must be a nonnegative integer"):
+        target_geometry(
+            folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100, flank
+        )
+
+
+@pytest.mark.parametrize(("flank", "first"), [(0, 1), (200, 201), (350, 1751)])
+def test_geometry_separates_windows_by_flank(flank, first):
+    from excavator2.target import target_geometry
+
+    folder = FIXTURES / "unsorted_overlap"
+    actual = target_geometry(
+        folder / "target.bed", folder / "chromosomes.tsv", folder / "gaps.tsv", 100, flank
+    )
+    chr1 = actual[actual[:, 0] == "chr1"]
+    positions = chr1[:, 1:3].astype(int)
+    outside = positions[chr1[:, 4] == "OUT"]
+    for a, b in positions[chr1[:, 4] == "IN"]:
+        assert np.all((outside[:, 1] <= a - flank) | (outside[:, 0] > b + flank))
+    # A 350-base flank leaves no full window before the first target (500).
+    assert outside[:, 0].min() == first
+    assert outside[:, 1].max() <= 3000 - flank
+
+
 def test_geometry_ignores_extra_bed_columns(tmp_path):
     from excavator2.target import target_geometry
 

@@ -99,7 +99,11 @@ Target:
   Name: MyCapture
   BED: data/capture.bed
   Window: 30000
+  Flank: 200 # optional; default 200
 ```
+
+`Flank` is the minimum distance in bp between a capture target and an
+off-target window; see [Off-target flank](docs/target-porting.md#off-target-flank).
 
 The FASTA must be indexed. For example:
 
