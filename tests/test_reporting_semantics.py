@@ -68,3 +68,36 @@ def test_probability_is_class_membership_not_support_confidence(backend):
     fragmented = fit_fastcall(np.r_[medians, np.full(20, 0.6)], backend=backend)
     assert fragmented.priors[3] > fit.priors[3]
     assert_array_equal(fragmented.posterior[:6], fit.posterior)
+
+
+def test_reference_bases_match_scientific_positions(tmp_path):
+    # Row text renders round positions in R style ("1e+05"); FRB stores plain integers.
+    mixture = np.log2([0.5, 1.5])
+    calls = assign_labels(fit_fastcall(mixture).posterior)
+    rows = np.array(
+        [
+            ["chr1", "1", "1e+05", "100100", str(mixture[0]), str(mixture[0]), "IN"],
+            ["chr1", "2", "2e+05", "200100", str(mixture[1]), str(mixture[1]), "IN"],
+        ]
+    )
+    np.savez(tmp_path / "reference.npz", matrix=np.array([["100000", "A"], ["200000", "C"]]))
+    target = {
+        "assembly": "synthetic",
+        "references": {"chr1": "reference.npz"},
+        "files": {"reference.npz": "test"},
+    }
+    write_results(
+        tmp_path,
+        "T",
+        rows,
+        np.arange(2),
+        np.arange(1, 3),
+        mixture,
+        mixture,
+        calls,
+        target,
+        tmp_path,
+    )
+    text = (tmp_path / "EXCAVATORWindowCall_T.vcf").read_text()
+    records = [line.split("\t") for line in text.splitlines() if not line.startswith("#")]
+    assert [(r[1], r[3]) for r in records] == [("100000", "A"), ("200000", "C")]

@@ -118,9 +118,10 @@ def write_results(
                 raise ValueError("reference file lacks a manifest checksum")
             with np.load(target_folder / filename, allow_pickle=False) as archive:
                 reference = archive["matrix"]
-            wanted = {record[1] for record in group}
+            # Match numerically: rows may render round positions as e.g. "1e+05".
+            wanted = {int(float(record[1])) for record in group}
             # Legacy selects matching FRB rows in FRB order, not by reordering lookup.
-            bases = reference[np.isin(reference[:, 0], list(wanted)), 1]
+            bases = reference[np.isin(reference[:, 0].astype(int), list(wanted)), 1]
             if len(bases) != len(group):
                 raise ValueError("legacy reference-base selection does not match call rows")
             for (_, start, end, genotype), base in zip(group, bases, strict=True):
